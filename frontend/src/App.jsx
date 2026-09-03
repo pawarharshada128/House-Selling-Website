@@ -87,57 +87,6 @@ const [inquiryLoading, setInquiryLoading] =
   const [formData, setFormData] = useState(emptyForm);
   const [editingId, setEditingId] = useState(null);
 
-<<<<<<< HEAD
-  // =====================================================
-  // FETCH PROPERTIES
-  // =====================================================
-const fetchProperties = async () => {
-  try {
-    const token = localStorage.getItem("token");
-
-    if (!token) {
-      console.error("No authentication token found.");
-      return;
-    }
-
-    const response = await fetch(`${API_URL}/properties`, {
-      method: "GET",
-      headers: {
-        Authorization: `Bearer ${token}`,
-        "Content-Type": "application/json",
-      },
-    });
-
-    const data = await response.json();
-
-    console.log("Properties API response:", data);
-
-    if (response.status === 401) {
-      alert("Session expired. Please login again.");
-      handleLogout();
-      return;
-    }
-
-    if (!response.ok) {
-      console.error("Properties error:", data);
-      return;
-    }
-
-    let propertyData = Array.isArray(data)
-      ? data
-      : data.properties || [];
-
-    // Buyers should see only Available properties
-    if (user?.role === "buyer") {
-      propertyData = propertyData.filter(
-        (property) => property.status === "Available"
-      );
-    }
-
-    setProperties(propertyData);
-  } catch (error) {
-    console.error("Failed to fetch properties:", error);
-=======
 
 const fetchProperties = async () => {
   try {
@@ -193,7 +142,6 @@ const fetchProperties = async () => {
       "FETCH PROPERTIES ERROR:",
       error
     );
->>>>>>> origin/master
   }
 };
   // =====================================================
@@ -226,25 +174,6 @@ const fetchProperties = async () => {
       console.error("Wishlist error:", error);
     }
   };
-<<<<<<< HEAD
-
-  // =====================================================
-  // LOAD DATA
-  // =====================================================
-
-  useEffect(() => {
-    if (!user) {
-      return;
-    }
-
-    fetchProperties();
-
-    if (user.role === "buyer") {
-      fetchWishlist();
-    }
-  }, [user]);
-
-=======
 // =====================================================
 // LOAD DATA
 // =====================================================
@@ -256,7 +185,6 @@ useEffect(() => {
     fetchWishlist();
   }
 }, [user]);
->>>>>>> origin/master
   // =====================================================
   // ADD WISHLIST
   // =====================================================
