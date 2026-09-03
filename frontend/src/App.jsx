@@ -87,6 +87,7 @@ const [inquiryLoading, setInquiryLoading] =
   const [formData, setFormData] = useState(emptyForm);
   const [editingId, setEditingId] = useState(null);
 
+<<<<<<< HEAD
   // =====================================================
   // FETCH PROPERTIES
   // =====================================================
@@ -136,6 +137,63 @@ const fetchProperties = async () => {
     setProperties(propertyData);
   } catch (error) {
     console.error("Failed to fetch properties:", error);
+=======
+
+const fetchProperties = async () => {
+  try {
+
+    console.log("Fetching properties...");
+
+    const response = await fetch(
+      "http://localhost:5000/api/properties"
+    );
+
+    console.log(
+      "Response status:",
+      response.status
+    );
+
+    const data = await response.json();
+
+    console.log(
+      "Properties received:",
+      data
+    );
+
+
+    if (!response.ok) {
+      console.error(
+        "Properties API error:",
+        data
+      );
+      return;
+    }
+
+
+    if (!Array.isArray(data)) {
+      console.error(
+        "Expected array but received:",
+        data
+      );
+
+      setProperties([]);
+      return;
+    }
+
+
+    // ---------------------------------------------
+    // TEMPORARILY SHOW ALL PROPERTIES
+    // ---------------------------------------------
+
+    setProperties(data);
+
+  } catch (error) {
+
+    console.error(
+      "FETCH PROPERTIES ERROR:",
+      error
+    );
+>>>>>>> origin/master
   }
 };
   // =====================================================
@@ -168,6 +226,7 @@ const fetchProperties = async () => {
       console.error("Wishlist error:", error);
     }
   };
+<<<<<<< HEAD
 
   // =====================================================
   // LOAD DATA
@@ -185,6 +244,19 @@ const fetchProperties = async () => {
     }
   }, [user]);
 
+=======
+// =====================================================
+// LOAD DATA
+// =====================================================
+
+useEffect(() => {
+  fetchProperties();
+
+  if (user?.role === "buyer") {
+    fetchWishlist();
+  }
+}, [user]);
+>>>>>>> origin/master
   // =====================================================
   // ADD WISHLIST
   // =====================================================
