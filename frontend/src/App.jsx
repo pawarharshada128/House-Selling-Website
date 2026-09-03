@@ -87,55 +87,61 @@ const [inquiryLoading, setInquiryLoading] =
   const [formData, setFormData] = useState(emptyForm);
   const [editingId, setEditingId] = useState(null);
 
-  // =====================================================
-  // FETCH PROPERTIES
-  // =====================================================
+
 const fetchProperties = async () => {
   try {
-    const token = localStorage.getItem("token");
 
-    if (!token) {
-      console.error("No authentication token found.");
-      return;
-    }
+    console.log("Fetching properties...");
 
-    const response = await fetch(`${API_URL}/properties`, {
-      method: "GET",
-      headers: {
-        Authorization: `Bearer ${token}`,
-        "Content-Type": "application/json",
-      },
-    });
+    const response = await fetch(
+      "http://localhost:5000/api/properties"
+    );
+
+    console.log(
+      "Response status:",
+      response.status
+    );
 
     const data = await response.json();
 
-    console.log("Properties API response:", data);
+    console.log(
+      "Properties received:",
+      data
+    );
 
-    if (response.status === 401) {
-      alert("Session expired. Please login again.");
-      handleLogout();
-      return;
-    }
 
     if (!response.ok) {
-      console.error("Properties error:", data);
+      console.error(
+        "Properties API error:",
+        data
+      );
       return;
     }
 
-    let propertyData = Array.isArray(data)
-      ? data
-      : data.properties || [];
 
-    // Buyers should see only Available properties
-    if (user?.role === "buyer") {
-      propertyData = propertyData.filter(
-        (property) => property.status === "Available"
+    if (!Array.isArray(data)) {
+      console.error(
+        "Expected array but received:",
+        data
       );
+
+      setProperties([]);
+      return;
     }
 
-    setProperties(propertyData);
+
+    // ---------------------------------------------
+    // TEMPORARILY SHOW ALL PROPERTIES
+    // ---------------------------------------------
+
+    setProperties(data);
+
   } catch (error) {
-    console.error("Failed to fetch properties:", error);
+
+    console.error(
+      "FETCH PROPERTIES ERROR:",
+      error
+    );
   }
 };
   // =====================================================
@@ -168,23 +174,17 @@ const fetchProperties = async () => {
       console.error("Wishlist error:", error);
     }
   };
+// =====================================================
+// LOAD DATA
+// =====================================================
 
-  // =====================================================
-  // LOAD DATA
-  // =====================================================
+useEffect(() => {
+  fetchProperties();
 
-  useEffect(() => {
-    if (!user) {
-      return;
-    }
-
-    fetchProperties();
-
-    if (user.role === "buyer") {
-      fetchWishlist();
-    }
-  }, [user]);
-
+  if (user?.role === "buyer") {
+    fetchWishlist();
+  }
+}, [user]);
   // =====================================================
   // ADD WISHLIST
   // =====================================================
