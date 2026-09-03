@@ -1,9 +1,25 @@
-# Ignore all node_modules folders
-**/node_modules/
+# Node modules
+node_modules/
 
-# Ignore environment files
-**/.env
+# Environment variables
+.env
 
-# Build folders
-**/dist/
-**/build/
+# Logs
+*.log
+
+# Build files
+dist/
+build/
+
+# Vite
+.vite/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# VS Code
+.vscode/
+
+# Temporary files
+*.tmp
