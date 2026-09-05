@@ -2,52 +2,43 @@ const mongoose = require("mongoose");
 
 const propertySchema = new mongoose.Schema(
   {
+    // =====================================================
+    // BASIC PROPERTY INFORMATION
+    // =====================================================
+
     title: {
       type: String,
       required: true,
-      trim: true,
     },
 
     property_type: {
       type: String,
-      enum: [
-        "House",
-        "Penthouse",
-        "Villa",
-        "Plot",
-        "Commercial",
-      ],
       required: true,
     },
 
     location: {
       type: String,
       required: true,
-      trim: true,
     },
 
     price: {
       type: Number,
       required: true,
-      min: 0,
     },
 
     bedrooms: {
       type: Number,
-      required: true,
-      min: 0,
+      default: 0,
     },
 
     bathrooms: {
       type: Number,
-      required: true,
-      min: 0,
+      default: 0,
     },
 
     area_sqft: {
       type: Number,
       default: 0,
-      min: 0,
     },
 
     description: {
@@ -55,31 +46,94 @@ const propertySchema = new mongoose.Schema(
       default: "",
     },
 
+    // =====================================================
+    // MAIN IMAGE
+    // =====================================================
+
     image: {
       type: String,
       default: "",
     },
 
+    // =====================================================
+    // ADDITIONAL IMAGES
+    // =====================================================
+
+    images: {
+      type: [String],
+      default: [],
+    },
+
+    // =====================================================
+    // PROPERTY VIDEO
+    // =====================================================
+
+    video: {
+      type: String,
+      default: "",
+    },
+
+    // =====================================================
+    // GOOGLE MAP
+    // =====================================================
+
+    map_location: {
+      type: String,
+      default: "",
+    },
+
+    latitude: {
+      type: Number,
+      default: null,
+    },
+
+    longitude: {
+      type: Number,
+      default: null,
+    },
+
+    // =====================================================
+    // STATUS
+    // =====================================================
+
     status: {
       type: String,
+
       enum: [
         "Pending",
         "Available",
         "Sold",
         "Rejected",
       ],
+
       default: "Pending",
     },
+
+    // =====================================================
+    // OWNER
+    // =====================================================
 
     owner: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",
     },
+
+    // =====================================================
+    // FEATURED
+    // =====================================================
+
+    featured: {
+      type: Boolean,
+      default: false,
+    },
   },
+
   {
     timestamps: true,
   }
 );
 
-module.exports =
-  mongoose.model("Property", propertySchema);
+module.exports = mongoose.model(
+  "Property",
+  propertySchema
+);

@@ -1,11 +1,18 @@
 import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
+
 import "./App.css";
-import Auth from "./Auth";
-import Contact from "./Contact";
 
 const API_URL = "http://localhost:5000/api";
+const SERVER_URL = "http://localhost:5000";
 
 function App() {
+  return <HomePage />;
+}
+
+function HomePage() {
+  const navigate = useNavigate();
+
   // =====================================================
   // USER
   // =====================================================
@@ -32,33 +39,13 @@ function App() {
   // =====================================================
 
   const [properties, setProperties] = useState([]);
-  const [selectedProperty, setSelectedProperty] = useState(null);
 
   // =====================================================
   // WISHLIST
   // =====================================================
 
   const [wishlist, setWishlist] = useState([]);
-// =====================================================
-// INQUIRY
-// =====================================================
 
-const [showInquiryForm, setShowInquiryForm] =
-  useState(false);
-
-const [inquiryProperty, setInquiryProperty] =
-  useState(null);
-
-const [inquiryData, setInquiryData] =
-  useState({
-    name: user?.name || "",
-    email: user?.email || "",
-    phone: "",
-    message: "",
-  });
-
-const [inquiryLoading, setInquiryLoading] =
-  useState(false);
   // =====================================================
   // SEARCH / FILTER
   // =====================================================
@@ -81,69 +68,90 @@ const [inquiryLoading, setInquiryLoading] =
     bathrooms: "",
     area_sqft: "",
     description: "",
-    image: "",
+    image: null,
+    images: [],
+    video: null,
+    latitude: "",
+    longitude: "",
+    map_location: "",
   };
 
   const [formData, setFormData] = useState(emptyForm);
   const [editingId, setEditingId] = useState(null);
 
+  // =====================================================
+  // EXTRACT LATITUDE & LONGITUDE FROM GOOGLE MAPS URL
+  // =====================================================
 
-const fetchProperties = async () => {
-  try {
-
-    console.log("Fetching properties...");
-
-    const response = await fetch(
-      "http://localhost:5000/api/properties"
-    );
-
-    console.log(
-      "Response status:",
-      response.status
-    );
-
-    const data = await response.json();
-
-    console.log(
-      "Properties received:",
-      data
-    );
-
-
-    if (!response.ok) {
-      console.error(
-        "Properties API error:",
-        data
-      );
-      return;
-    }
-
-
-    if (!Array.isArray(data)) {
-      console.error(
-        "Expected array but received:",
-        data
-      );
-
-      setProperties([]);
-      return;
-    }
-
-
-    // ---------------------------------------------
-    // TEMPORARILY SHOW ALL PROPERTIES
-    // ---------------------------------------------
-
-    setProperties(data);
-
-  } catch (error) {
-
-    console.error(
-      "FETCH PROPERTIES ERROR:",
-      error
-    );
+const extractCoordinates = (url) => {
+  if (!url) {
+    return {
+      latitude: "",
+      longitude: "",
+    };
   }
+
+  const match = url.match(
+    /@(-?\d+(?:\.\d+)?),(-?\d+(?:\.\d+)?)/
+  );
+
+  if (match) {
+    return {
+      latitude: Number(match[1]),
+      longitude: Number(match[2]),
+    };
+  }
+
+  return {
+    latitude: "",
+    longitude: "",
+  };
 };
+
+  // =====================================================
+  // FETCH PROPERTIES
+  // =====================================================
+
+  const fetchProperties = async (retryCount = 0) => {
+    try {
+      console.log("Fetching properties...");
+
+      const response = await fetch(`${API_URL}/properties`);
+
+      const data = await response.json();
+
+      console.log("Properties received:", data);
+
+      if (!response.ok) {
+        console.error("Properties API error:", data);
+
+        if (retryCount < 3) {
+          setTimeout(() => {
+            fetchProperties(retryCount + 1);
+          }, 1000);
+        }
+
+        return;
+      }
+
+      if (!Array.isArray(data)) {
+        console.error("Expected array:", data);
+        setProperties([]);
+        return;
+      }
+
+      setProperties(data);
+    } catch (error) {
+      console.error("Failed to fetch properties:", error);
+
+      if (retryCount < 3) {
+        setTimeout(() => {
+          fetchProperties(retryCount + 1);
+        }, 1000);
+      }
+    }
+  };
+
   // =====================================================
   // FETCH WISHLIST
   // =====================================================
@@ -174,17 +182,23 @@ const fetchProperties = async () => {
       console.error("Wishlist error:", error);
     }
   };
-// =====================================================
-// LOAD DATA
-// =====================================================
 
-useEffect(() => {
-  fetchProperties();
+  // =====================================================
+  // LOAD DATA
+  // =====================================================
 
-  if (user?.role === "buyer") {
-    fetchWishlist();
-  }
-}, [user]);
+  useEffect(() => {
+    fetchProperties();
+  }, []);
+
+  useEffect(() => {
+    if (user?.role === "buyer") {
+      fetchWishlist();
+    } else {
+      setWishlist([]);
+    }
+  }, [user]);
+
   // =====================================================
   // ADD WISHLIST
   // =====================================================
@@ -217,10 +231,10 @@ useEffect(() => {
 
       await fetchWishlist();
 
-      alert("Property added to wishlist ❤️");
+      alert("Property added to Favorites ❤️");
     } catch (error) {
       console.error(error);
-      alert("Unable to add property to wishlist.");
+      alert("Unable to add property to Favorites.");
     }
   };
 
@@ -231,6 +245,11 @@ useEffect(() => {
   const removeFromWishlist = async (propertyId) => {
     try {
       const token = localStorage.getItem("token");
+
+      if (!token) {
+        alert("Please login first.");
+        return;
+      }
 
       const response = await fetch(
         `${API_URL}/wishlist/${propertyId}`,
@@ -263,14 +282,18 @@ useEffect(() => {
   // =====================================================
 
   const isWishlisted = (propertyId) => {
-    return wishlist.some(
-      (item) => item.property?._id === propertyId
-    );
+    return wishlist.some((item) => {
+      const wishlistPropertyId =
+        item.property?._id ||
+        item.property ||
+        item.propertyId;
+
+      return String(wishlistPropertyId) === String(propertyId);
+    });
   };
 
   // =====================================================
   // UPDATE PROPERTY STATUS
-  // ADMIN ONLY
   // =====================================================
 
   const updatePropertyStatus = async (
@@ -324,13 +347,6 @@ useEffect(() => {
         )
       );
 
-      if (
-        selectedProperty &&
-        selectedProperty._id === propertyId
-      ) {
-        setSelectedProperty(data.property);
-      }
-
       alert(`Property status changed to ${newStatus}`);
     } catch (error) {
       console.error(error);
@@ -347,33 +363,195 @@ useEffect(() => {
     localStorage.removeItem("user");
 
     setUser(null);
-    setProperties([]);
     setWishlist([]);
-    setSelectedProperty(null);
     setEditingId(null);
-    setFormData(emptyForm);
+    setFormData({ ...emptyForm });
+
+    // Keep properties visible after logout
+    fetchProperties();
   };
 
   // =====================================================
   // FORM CHANGE
   // =====================================================
 
-  const handleChange = (e) => {
-    const { name, value } = e.target;
+const handleChange = async (e) => {
+  const { name, value } = e.target;
 
+  // ===================================================
+  // GOOGLE MAPS LOCATION
+  // ===================================================
+
+  if (name === "map_location") {
+    // First save the URL
     setFormData((previous) => ({
       ...previous,
-      [name]: value,
+      map_location: value,
     }));
-  };
+
+    // Empty URL
+    if (!value.trim()) {
+      setFormData((previous) => ({
+        ...previous,
+        map_location: "",
+        latitude: "",
+        longitude: "",
+      }));
+
+      return;
+    }
+
+    // =================================================
+    // TRY FRONTEND EXTRACTION FIRST
+    // =================================================
+
+    const coordinates = extractCoordinates(value);
+
+    if (
+      coordinates.latitude !== "" &&
+      coordinates.longitude !== ""
+    ) {
+      setFormData((previous) => ({
+        ...previous,
+        map_location: value,
+        latitude: coordinates.latitude,
+        longitude: coordinates.longitude,
+      }));
+
+      return;
+    }
+
+    // =================================================
+    // TRY BACKEND FOR SHORT GOOGLE MAPS URL
+    // =================================================
+
+    if (
+      value.includes("maps.app.goo.gl") ||
+      value.includes("goo.gl/maps")
+    ) {
+      try {
+        const response = await fetch(
+          `${API_URL}/map/coordinates`,
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              url: value,
+            }),
+          }
+        );
+
+        const data = await response.json();
+
+        if (response.ok && data.success) {
+          setFormData((previous) => ({
+            ...previous,
+            map_location: value,
+            latitude: data.latitude,
+            longitude: data.longitude,
+          }));
+
+          console.log(
+            "Coordinates found:",
+            data.latitude,
+            data.longitude
+          );
+        } else {
+          console.log(
+            "Coordinates not found:",
+            data.message
+          );
+        }
+      } catch (error) {
+        console.error(
+          "Map coordinate request failed:",
+          error
+        );
+      }
+    }
+
+    return;
+  }
+
+  // ===================================================
+  // NORMAL FORM FIELDS
+  // ===================================================
+
+  setFormData((previous) => ({
+    ...previous,
+    [name]: value,
+  }));
+};
 
   // =====================================================
   // RESET FORM
   // =====================================================
 
   const resetForm = () => {
-    setFormData(emptyForm);
+    setFormData({ ...emptyForm });
     setEditingId(null);
+  };
+
+  // =====================================================
+  // UPLOAD FILE
+  // =====================================================
+
+  const uploadFile = async (file, fieldName) => {
+    if (!(file instanceof File)) {
+      return "";
+    }
+
+    const uploadFormData = new FormData();
+
+    uploadFormData.append(fieldName, file);
+
+    console.log(
+      `Uploading ${fieldName}:`,
+      file.name,
+      file.type,
+      file.size
+    );
+
+    const response = await fetch(
+      `${SERVER_URL}/api/upload`,
+      {
+        method: "POST",
+        body: uploadFormData,
+      }
+    );
+
+    let data;
+
+    try {
+      data = await response.json();
+    } catch {
+      data = {};
+    }
+
+    console.log(
+      `Upload response for ${fieldName}:`,
+      data
+    );
+
+    if (!response.ok) {
+      throw new Error(
+        data.message ||
+          data.error ||
+          `${fieldName} upload failed.`
+      );
+    }
+
+    return (
+      data[fieldName] ||
+      data.image ||
+      data.video ||
+      data.url ||
+      data.imageUrl ||
+      data.videoUrl ||
+      ""
+    );
   };
 
   // =====================================================
@@ -396,87 +574,151 @@ useEffect(() => {
     }
 
     try {
-      let imageUrl = "";
+      // MAIN IMAGE
 
-      // =================================================
-      // IMAGE UPLOAD
-      // =================================================
+      let imageUrl =
+        typeof formData.image === "string"
+          ? formData.image
+          : "";
 
       if (formData.image instanceof File) {
-        const imageFormData = new FormData();
-
-        imageFormData.append(
-          "image",
-          formData.image
+        imageUrl = await uploadFile(
+          formData.image,
+          "image"
         );
-
-        const uploadResponse = await fetch(
-          `${API_URL.replace("/api", "")}/api/upload`,
-          {
-            method: "POST",
-            body: imageFormData,
-          }
-        );
-
-        const uploadData =
-          await uploadResponse.json();
-
-        if (!uploadResponse.ok) {
-          alert(
-            uploadData.message ||
-              "Image upload failed."
-          );
-          return;
-        }
-
-        imageUrl = uploadData.image;
-      } else if (
-        typeof formData.image === "string"
-      ) {
-        imageUrl = formData.image;
       }
 
-      // =================================================
+      // ADDITIONAL IMAGES
+
+      let imageUrls = [];
+
+      if (
+        editingId &&
+        Array.isArray(formData.images)
+      ) {
+        imageUrls = formData.images.filter(
+          (image) => typeof image === "string"
+        );
+      }
+
+      const newImageFiles = Array.isArray(
+        formData.images
+      )
+        ? formData.images.filter(
+            (image) => image instanceof File
+          )
+        : [];
+
+      for (const file of newImageFiles) {
+        const uploadedUrl = await uploadFile(
+          file,
+          "image"
+        );
+
+        if (uploadedUrl) {
+          imageUrls.push(uploadedUrl);
+        }
+      }
+
+      // VIDEO
+
+      let videoUrl =
+        typeof formData.video === "string"
+          ? formData.video
+          : "";
+
+      if (formData.video instanceof File) {
+        videoUrl = await uploadFile(
+          formData.video,
+          "video"
+        );
+      }
+
       // PROPERTY DATA
-      // =================================================
 
       const propertyData = {
         title: formData.title.trim(),
+
         property_type: formData.property_type,
+
         location: formData.location.trim(),
+
         price: Number(formData.price),
+
         bedrooms: Number(formData.bedrooms),
+
         bathrooms: Number(formData.bathrooms),
-        area_sqft: Number(formData.area_sqft || 0),
+
+        area_sqft: Number(
+          formData.area_sqft || 0
+        ),
+
         description:
           formData.description.trim(),
+
         image: imageUrl,
+
+        images: imageUrls,
+
+        video: videoUrl,
+
+        map_location:
+          formData.map_location || "",
+
+        latitude:
+          formData.latitude !== "" &&
+          formData.latitude !== null
+            ? Number(formData.latitude)
+            : null,
+
+        longitude:
+          formData.longitude !== "" &&
+          formData.longitude !== null
+            ? Number(formData.longitude)
+            : null,
       };
 
-      // =================================================
-      // ADD / UPDATE
-      // =================================================
+      console.log(
+        "Property data being sent:",
+        propertyData
+      );
+
+      // URL
 
       const url = editingId
         ? `${API_URL}/properties/${editingId}`
         : `${API_URL}/properties`;
 
+      // REQUEST
+
       const response = await fetch(url, {
         method: editingId ? "PUT" : "POST",
+
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,
         },
+
         body: JSON.stringify(propertyData),
       });
 
-      const data = await response.json();
+      let data;
+
+      try {
+        data = await response.json();
+      } catch {
+        data = {};
+      }
+
+      // SESSION
 
       if (response.status === 401) {
         alert("Session expired.");
         handleLogout();
         return;
       }
+
+      // ERROR
 
       if (!response.ok) {
         alert(
@@ -487,6 +729,8 @@ useEffect(() => {
         return;
       }
 
+      // SUCCESS
+
       alert(
         editingId
           ? "Property updated successfully."
@@ -494,6 +738,7 @@ useEffect(() => {
       );
 
       resetForm();
+
       await fetchProperties();
 
       setTimeout(() => {
@@ -504,8 +749,15 @@ useEffect(() => {
           });
       }, 200);
     } catch (error) {
-      console.error(error);
-      alert("Backend connection failed.");
+      console.error(
+        "Property submit error:",
+        error
+      );
+
+      alert(
+        error.message ||
+          "Backend connection failed."
+      );
     }
   };
 
@@ -513,35 +765,62 @@ useEffect(() => {
   // EDIT PROPERTY
   // =====================================================
 
-  const handleEdit = (property) => {
-    if (user?.role !== "admin") {
-      alert("Only admin can edit properties.");
-      return;
-    }
+ const handleEdit = (property) => {
+  if (user?.role !== "admin") {
+    alert("Only admin can edit properties.");
+    return;
+  }
 
-    setEditingId(property._id);
+  setEditingId(property._id);
 
-    setFormData({
-      title: property.title || "",
-      property_type:
-        property.property_type || "House",
-      location: property.location || "",
-      price: property.price ?? "",
-      bedrooms: property.bedrooms ?? "",
-      bathrooms: property.bathrooms ?? "",
-      area_sqft: property.area_sqft ?? "",
-      description: property.description || "",
-      image: property.image || "",
-    });
+  setFormData({
+    title: property.title || "",
 
-    setTimeout(() => {
-      document
-        .getElementById("add-property")
-        ?.scrollIntoView({
-          behavior: "smooth",
-        });
-    }, 100);
-  };
+    property_type:
+      property.property_type || "House",
+
+    location: property.location || "",
+
+    price: property.price ?? "",
+
+    bedrooms: property.bedrooms ?? "",
+
+    bathrooms: property.bathrooms ?? "",
+
+    area_sqft: property.area_sqft ?? "",
+
+    description:
+      property.description || "",
+
+    image:
+      property.image || "",
+
+    images:
+      Array.isArray(property.images)
+        ? property.images
+        : [],
+
+    video:
+      property.video || "",
+
+    latitude:
+      property.latitude ?? "",
+
+    longitude:
+      property.longitude ?? "",
+
+    map_location:
+      property.map_location || "",
+  });
+
+  setTimeout(() => {
+    document
+      .getElementById("add-property")
+      ?.scrollIntoView({
+        behavior: "smooth",
+      });
+  }, 100);
+};
 
   // =====================================================
   // DELETE PROPERTY
@@ -591,15 +870,12 @@ useEffect(() => {
         return;
       }
 
-      if (selectedProperty?._id === id) {
-        setSelectedProperty(null);
-      }
-
       await fetchProperties();
 
       alert("Property deleted successfully.");
     } catch (error) {
       console.error(error);
+
       alert("Backend connection failed.");
     }
   };
@@ -619,10 +895,15 @@ useEffect(() => {
       const location =
         property.location?.toLowerCase() || "";
 
+      const propertyTypeText =
+        property.property_type?.toLowerCase() ||
+        "";
+
       const matchesSearch =
         searchText === "" ||
         title.includes(searchText) ||
-        location.includes(searchText);
+        location.includes(searchText) ||
+        propertyTypeText.includes(searchText);
 
       const matchesType =
         propertyType === "All" ||
@@ -650,175 +931,8 @@ useEffect(() => {
   // =====================================================
 
   const handleViewDetails = (property) => {
-    setSelectedProperty(property);
-
-    setTimeout(() => {
-      document
-        .getElementById("property-details")
-        ?.scrollIntoView({
-          behavior: "smooth",
-        });
-    }, 100);
+    navigate(`/property/${property._id}`);
   };
-
-  // =====================================================
-  // CONTACT
-  // =====================================================
-
-  const handleContact = () => {
-    setSelectedProperty(null);
-
-    setTimeout(() => {
-      document
-        .getElementById("contact")
-        ?.scrollIntoView({
-          behavior: "smooth",
-        });
-    }, 100);
-  };
-// =====================================================
-// INQUIRY FORM CHANGE
-// =====================================================
-
-const handleInquiryChange = (e) => {
-  const { name, value } = e.target;
-
-  setInquiryData((previous) => ({
-    ...previous,
-    [name]: value,
-  }));
-};
-
-// =====================================================
-// OPEN INQUIRY FORM
-// =====================================================
-
-const openInquiryForm = (property) => {
-  setInquiryProperty(property);
-
-  setInquiryData({
-    name: user?.name || "",
-    email: user?.email || "",
-    phone: "",
-    message: "",
-  });
-
-  setShowInquiryForm(true);
-
-  setTimeout(() => {
-    document
-      .getElementById("inquiry-form")
-      ?.scrollIntoView({
-        behavior: "smooth",
-      });
-  }, 100);
-};
-
-// =====================================================
-// SUBMIT INQUIRY
-// =====================================================
-
-const handleInquirySubmit = async (e) => {
-  e.preventDefault();
-
-  try {
-    setInquiryLoading(true);
-
-    const token =
-      localStorage.getItem("token");
-
-    if (!token) {
-      alert("Please login first.");
-      return;
-    }
-
-    if (!inquiryProperty) {
-      alert("Property not selected.");
-      return;
-    }
-
-    const response = await fetch(
-      `${API_URL}/inquiries`,
-      {
-        method: "POST",
-
-        headers: {
-          "Content-Type":
-            "application/json",
-
-          Authorization:
-            `Bearer ${token}`,
-        },
-
-        body: JSON.stringify({
-          propertyId:
-            inquiryProperty._id,
-
-          name:
-            inquiryData.name,
-
-          email:
-            inquiryData.email,
-
-          phone:
-            inquiryData.phone,
-
-          message:
-            inquiryData.message,
-        }),
-      }
-    );
-
-    const data =
-      await response.json();
-
-    if (response.status === 401) {
-      alert("Session expired.");
-      handleLogout();
-      return;
-    }
-
-    if (!response.ok) {
-      alert(
-        data.message ||
-        "Failed to submit inquiry."
-      );
-      return;
-    }
-
-    alert(
-      "Your inquiry has been submitted successfully! 🎉"
-    );
-
-    setShowInquiryForm(false);
-    setInquiryProperty(null);
-
-    setInquiryData({
-      name: user?.name || "",
-      email: user?.email || "",
-      phone: "",
-      message: "",
-    });
-  } catch (error) {
-    console.error(
-      "Inquiry submission error:",
-      error
-    );
-
-    alert(
-      "Unable to connect to backend."
-    );
-  } finally {
-    setInquiryLoading(false);
-  }
-};
-  // =====================================================
-  // LOGIN PAGE
-  // =====================================================
-
-  if (!user) {
-    return <Auth onLogin={setUser} />;
-  }
 
   // =====================================================
   // MAIN WEBSITE
@@ -828,80 +942,16 @@ const handleInquirySubmit = async (e) => {
     <div className="app">
 
       {/* =================================================
-          NAVBAR
-      ================================================= */}
-
-      <header className="navbar">
-
-        <a href="#home" className="logo">
-          <span className="logo-mark">SK</span>
-
-          <span>
-            SK
-            <span className="logo-accent">
-              Constructions
-            </span>
-          </span>
-        </a>
-
-        <nav className="nav-links">
-
-          <a href="#home">Home</a>
-
-          <a href="#properties">
-            Properties
-          </a>
-
-          <a href="#projects">
-            Projects
-          </a>
-
-          <a href="#services">
-            Services
-          </a>
-
-          <a href="#about">
-            About Us
-          </a>
-
-          <a href="#contact">
-            Contact
-          </a>
-
-          {user.role === "buyer" && (
-            <a href="#wishlist">
-              Wishlist ❤️
-            </a>
-          )}
-
-          {user.role === "admin" && (
-            <a href="#add-property">
-              Add Property
-            </a>
-          )}
-
-          <button
-            className="logout-button"
-            onClick={handleLogout}
-          >
-            Logout
-          </button>
-
-        </nav>
-
-      </header>
-
-      {/* =================================================
           ADMIN DASHBOARD
       ================================================= */}
 
-      {user.role === "admin" && (
-
+      {user?.role === "admin" && (
         <section className="admin-header">
 
           <div className="section-container">
 
             <div>
+
               <span className="section-label">
                 ADMINISTRATION
               </span>
@@ -911,9 +961,11 @@ const handleInquirySubmit = async (e) => {
               </h1>
 
               <p>
-                Manage properties and maintain
-                the HomeFinder platform.
+                Manage properties and
+                maintain the HomeFinder
+                platform.
               </p>
+
             </div>
 
             <div className="admin-stats">
@@ -922,6 +974,7 @@ const handleInquirySubmit = async (e) => {
                 <strong>
                   {properties.length}
                 </strong>
+
                 <span>
                   Total Properties
                 </span>
@@ -937,7 +990,10 @@ const handleInquirySubmit = async (e) => {
                     ).length
                   }
                 </strong>
-                <span>Houses</span>
+
+                <span>
+                  Houses
+                </span>
               </div>
 
               <div className="stat-card">
@@ -950,7 +1006,10 @@ const handleInquirySubmit = async (e) => {
                     ).length
                   }
                 </strong>
-                <span>Villas</span>
+
+                <span>
+                  Villas
+                </span>
               </div>
 
               <div className="stat-card">
@@ -963,7 +1022,10 @@ const handleInquirySubmit = async (e) => {
                     ).length
                   }
                 </strong>
-                <span>Plots</span>
+
+                <span>
+                  Plots
+                </span>
               </div>
 
               <div className="stat-card">
@@ -976,7 +1038,10 @@ const handleInquirySubmit = async (e) => {
                     ).length
                   }
                 </strong>
-                <span>Available</span>
+
+                <span>
+                  Available
+                </span>
               </div>
 
               <div className="stat-card">
@@ -989,7 +1054,10 @@ const handleInquirySubmit = async (e) => {
                     ).length
                   }
                 </strong>
-                <span>Sold</span>
+
+                <span>
+                  Sold
+                </span>
               </div>
 
             </div>
@@ -997,7 +1065,6 @@ const handleInquirySubmit = async (e) => {
           </div>
 
         </section>
-
       )}
 
       {/* =================================================
@@ -1024,9 +1091,10 @@ const handleInquirySubmit = async (e) => {
           </h1>
 
           <p>
-            Explore carefully selected homes,
-            villas, apartments and plots in
-            desirable locations.
+            Explore carefully selected
+            homes, villas, apartments
+            and plots in desirable
+            locations.
           </p>
 
           <div className="hero-buttons">
@@ -1039,7 +1107,7 @@ const handleInquirySubmit = async (e) => {
             </a>
 
             <a
-              href="#contact"
+              href="/contact"
               className="hero-outline-button"
             >
               Contact Us
@@ -1157,11 +1225,10 @@ const handleInquirySubmit = async (e) => {
               <select
                 value={propertyType}
                 onChange={(e) =>
-                  setPropertyType(
-                    e.target.value
-                  )
+                  setPropertyType(e.target.value)
                 }
               >
+
                 <option value="All">
                   All Types
                 </option>
@@ -1185,6 +1252,7 @@ const handleInquirySubmit = async (e) => {
                 <option value="Commercial">
                   Commercial
                 </option>
+
               </select>
 
             </div>
@@ -1207,8 +1275,7 @@ const handleInquirySubmit = async (e) => {
 
             </div>
 
-            {user.role === "admin" && (
-
+            {user?.role === "admin" && (
               <div className="search-field">
 
                 <label>
@@ -1218,9 +1285,7 @@ const handleInquirySubmit = async (e) => {
                 <select
                   value={statusFilter}
                   onChange={(e) =>
-                    setStatusFilter(
-                      e.target.value
-                    )
+                    setStatusFilter(e.target.value)
                   }
                 >
 
@@ -1247,7 +1312,6 @@ const handleInquirySubmit = async (e) => {
                 </select>
 
               </div>
-
             )}
 
             <button
@@ -1265,15 +1329,11 @@ const handleInquirySubmit = async (e) => {
           </div>
 
           <p className="property-count">
-
             Showing{" "}
-
             <strong>
               {filteredProperties.length}
             </strong>{" "}
-
             properties
-
           </p>
 
           {/* PROPERTY GRID */}
@@ -1281,7 +1341,6 @@ const handleInquirySubmit = async (e) => {
           <div className="property-container">
 
             {filteredProperties.length === 0 ? (
-
               <div className="no-properties">
 
                 <h3>
@@ -1294,9 +1353,7 @@ const handleInquirySubmit = async (e) => {
                 </p>
 
               </div>
-
             ) : (
-
               filteredProperties.map(
                 (property) => (
 
@@ -1310,9 +1367,20 @@ const handleInquirySubmit = async (e) => {
                     <div className="property-image-wrapper">
 
                       {property.image ? (
-
                         <img
-                          src={property.image}
+                          src={
+                            property.image.startsWith(
+                              "http"
+                            )
+                              ? property.image
+                              : `${SERVER_URL}${
+                                  property.image.startsWith(
+                                    "/"
+                                  )
+                                    ? ""
+                                    : "/"
+                                }${property.image}`
+                          }
                           alt={property.title}
                           className="property-image"
                           onError={(e) => {
@@ -1329,7 +1397,6 @@ const handleInquirySubmit = async (e) => {
                             }
                           }}
                         />
-
                       ) : null}
 
                       <div
@@ -1344,13 +1411,9 @@ const handleInquirySubmit = async (e) => {
                         Property Image
                       </div>
 
-                      {/* PROPERTY TYPE */}
-
                       <span className="property-badge-static">
                         {property.property_type}
                       </span>
-
-                      {/* STATUS */}
 
                       <span
                         className={`property-status ${
@@ -1366,7 +1429,7 @@ const handleInquirySubmit = async (e) => {
 
                     </div>
 
-                    {/* PROPERTY INFO */}
+                    {/* PROPERTY INFORMATION */}
 
                     <div className="property-info">
 
@@ -1390,38 +1453,111 @@ const handleInquirySubmit = async (e) => {
                       <div className="property-meta">
 
                         <span>
-                          {property.bedrooms ||
-                            0}{" "}
+                          {property.bedrooms || 0}{" "}
                           Bedrooms
                         </span>
 
                         <span>
-                          {property.bathrooms ||
-                            0}{" "}
+                          {property.bathrooms || 0}{" "}
                           Bathrooms
                         </span>
 
                         <span>
-                          {property.area_sqft ||
-                            0}{" "}
+                          {property.area_sqft || 0}{" "}
                           sq.ft
                         </span>
 
                       </div>
 
                       {property.description && (
-
                         <p className="property-description">
                           {property.description}
                         </p>
+                      )}
+
+                      {/* =================================
+                          BUYER / PUBLIC ACTIONS
+                      ================================= */}
+
+                      {user?.role === "buyer" ? (
+
+                        <div className="buyer-property-actions">
+
+                          {/* VIEW DETAILS */}
+
+                          <button
+                            className="view-button"
+                            onClick={() =>
+                              handleViewDetails(
+                                property
+                              )
+                            }
+                          >
+                            View Details
+                          </button>
+
+                          {/* WISHLIST */}
+
+                          <button
+                            className={
+                              isWishlisted(
+                                property._id
+                              )
+                                ? "wishlist-button active"
+                                : "wishlist-button"
+                            }
+                            onClick={() => {
+                              if (
+                                isWishlisted(
+                                  property._id
+                                )
+                              ) {
+                                removeFromWishlist(
+                                  property._id
+                                );
+                              } else {
+                                addToWishlist(
+                                  property._id
+                                );
+                              }
+                            }}
+                          >
+                            {isWishlisted(
+                              property._id
+                            )
+                              ? "♥ Saved"
+                              : "♡ Wishlist"}
+                          </button>
+
+                        </div>
+
+                      ) : (
+
+                        /* LOGGED OUT / ADMIN */
+
+                        <div className="public-property-actions">
+
+                          <button
+                            className="view-button"
+                            onClick={() =>
+                              handleViewDetails(
+                                property
+                              )
+                            }
+                          >
+                            View Details
+                          </button>
+
+                        </div>
 
                       )}
 
-                      {/* ADMIN */}
+                      {/* =================================
+                          ADMIN ACTIONS
+                      ================================= */}
 
-                      {user.role === "admin" && (
-
-                        <div className="property-actions">
+                      {user?.role === "admin" && (
+                        <div className="admin-property-actions">
 
                           <div className="status-control">
 
@@ -1485,67 +1621,6 @@ const handleInquirySubmit = async (e) => {
                           </button>
 
                         </div>
-
-                      )}
-
-                      {/* BUYER */}
-
-                      {user.role === "buyer" && (
-
-                        <div className="buyer-property-actions">
-
-                          <button
-                            className="view-button"
-                            onClick={() =>
-                              handleViewDetails(
-                                property
-                              )
-                            }
-                          >
-                            View Details
-                          </button>
-
-                          <button
-                            className={
-                              isWishlisted(
-                                property._id
-                              )
-                                ? "wishlist-button active"
-                                : "wishlist-button"
-                            }
-                            onClick={() => {
-
-                              if (
-                                isWishlisted(
-                                  property._id
-                                )
-                              ) {
-
-                                removeFromWishlist(
-                                  property._id
-                                );
-
-                              } else {
-
-                                addToWishlist(
-                                  property._id
-                                );
-
-                              }
-
-                            }}
-                          >
-
-                            {isWishlisted(
-                              property._id
-                            )
-                              ? "♥ Saved"
-                              : "♡ Wishlist"}
-
-                          </button>
-
-                        </div>
-
                       )}
 
                     </div>
@@ -1554,7 +1629,6 @@ const handleInquirySubmit = async (e) => {
 
                 )
               )
-
             )}
 
           </div>
@@ -1564,312 +1638,10 @@ const handleInquirySubmit = async (e) => {
       </section>
 
       {/* =================================================
-          PROPERTY DETAILS
-      ================================================= */}
-
-      {selectedProperty && (
-
-        <section
-          className="property-details-section"
-          id="property-details"
-        >
-
-          <div className="property-details-container">
-
-            <button
-              className="close-details-button"
-              onClick={() =>
-                setSelectedProperty(null)
-              }
-            >
-              Close
-            </button>
-
-            <div className="details-image-container">
-
-              {selectedProperty.image ? (
-
-                <img
-                  src={selectedProperty.image}
-                  alt={selectedProperty.title}
-                  className="details-property-image"
-                />
-
-              ) : (
-
-                <div className="details-no-image">
-                  Property Image
-                </div>
-
-              )}
-
-            </div>
-
-            <div className="details-content">
-
-              <span className="property-badge-static">
-                {
-                  selectedProperty.property_type
-                }
-              </span>
-
-              <h1>
-                {selectedProperty.title}
-              </h1>
-
-              <p className="details-location">
-                {selectedProperty.location}
-              </p>
-
-              <p className="details-price">
-                ₹
-                {Number(
-                  selectedProperty.price
-                ).toLocaleString("en-IN")}
-              </p>
-
-              <h2>
-                Property Information
-              </h2>
-
-              <div className="features-grid">
-
-                <div className="feature-card">
-                  <strong>
-                    {selectedProperty.bedrooms ||
-                      0}
-                  </strong>
-                  <p>Bedrooms</p>
-                </div>
-
-                <div className="feature-card">
-                  <strong>
-                    {selectedProperty.bathrooms ||
-                      0}
-                  </strong>
-                  <p>Bathrooms</p>
-                </div>
-
-                <div className="feature-card">
-                  <strong>
-                    {selectedProperty.area_sqft ||
-                      0}
-                  </strong>
-                  <p>Square Feet</p>
-                </div>
-
-                <div className="feature-card">
-                  <strong>
-                    {
-                      selectedProperty.property_type
-                    }
-                  </strong>
-                  <p>Property Type</p>
-                </div>
-
-              </div>
-
-              <h2>
-                Property Description
-              </h2>
-
-              <p className="details-description">
-                {selectedProperty.description ||
-                  "Detailed property information is currently unavailable."}
-              </p>
-
-              {user.role === "buyer" && (
-
-                <div className="contact-owner">
-
-                  <h2>
-                    Interested in This Property?
-                  </h2>
-
-                  <p>
-                    Contact our team for
-                    additional information,
-                    property visits and
-                    enquiries.
-                  </p>
-<button
-  className="contact-owner-button"
-  onClick={() =>
-    openInquiryForm(selectedProperty)
-  }
->
-  Send an Enquiry
-</button>
-                </div>
-
-              )}
-
-            </div>
-
-          </div>
-
-        </section>
-
-      )}
-{/* =====================================================
-    INQUIRY FORM
-===================================================== */}
-
-{showInquiryForm &&
-  inquiryProperty && (
-    <section
-      className="inquiry-section"
-      id="inquiry-form"
-    >
-      <div className="inquiry-container">
-
-        <div className="section-heading centered">
-
-          <span className="section-label">
-            PROPERTY ENQUIRY
-          </span>
-
-          <h2>
-            Enquire About This Property
-          </h2>
-
-          <p>
-            Send your enquiry and our team
-            will contact you.
-          </p>
-
-        </div>
-
-        <div className="inquiry-property">
-
-          <h3>
-            {inquiryProperty.title}
-          </h3>
-
-          <p>
-            {inquiryProperty.location}
-          </p>
-
-          <strong>
-            ₹
-            {Number(
-              inquiryProperty.price
-            ).toLocaleString("en-IN")}
-          </strong>
-
-        </div>
-
-        <form
-          className="inquiry-form"
-          onSubmit={handleInquirySubmit}
-        >
-
-          <div className="inquiry-grid">
-
-            <div className="form-group">
-
-              <label>
-                Name
-              </label>
-
-              <input
-                type="text"
-                name="name"
-                value={inquiryData.name}
-                onChange={handleInquiryChange}
-                required
-              />
-
-            </div>
-
-            <div className="form-group">
-
-              <label>
-                Email
-              </label>
-
-              <input
-                type="email"
-                name="email"
-                value={inquiryData.email}
-                onChange={handleInquiryChange}
-                required
-              />
-
-            </div>
-
-            <div className="form-group">
-
-              <label>
-                Phone
-              </label>
-
-              <input
-                type="tel"
-                name="phone"
-                placeholder="Enter phone number"
-                value={inquiryData.phone}
-                onChange={handleInquiryChange}
-                required
-              />
-
-            </div>
-
-            <div className="form-group full">
-
-              <label>
-                Message
-              </label>
-
-              <textarea
-                name="message"
-                rows="5"
-                placeholder="I am interested in this property..."
-                value={inquiryData.message}
-                onChange={handleInquiryChange}
-                required
-              />
-
-            </div>
-
-          </div>
-
-          <div className="form-actions">
-
-            <button
-              type="submit"
-              className="primary-button"
-              disabled={inquiryLoading}
-            >
-              {inquiryLoading
-                ? "Sending..."
-                : "Send Inquiry"}
-            </button>
-
-            <button
-              type="button"
-              className="secondary-button"
-              onClick={() => {
-                setShowInquiryForm(false);
-                setInquiryProperty(null);
-              }}
-            >
-              Cancel
-            </button>
-
-          </div>
-
-        </form>
-
-      </div>
-    </section>
-  )}
-      {/* =================================================
           WISHLIST
       ================================================= */}
 
-      {user.role === "buyer" && (
-
+      {user?.role === "buyer" && (
         <section
           className="wishlist-section"
           id="wishlist"
@@ -1881,12 +1653,8 @@ const handleInquirySubmit = async (e) => {
 
               <div>
 
-                <span className="section-label">
-                  MY FAVORITES
-                </span>
-
                 <h2>
-                  My Wishlist ❤️
+                  My Favorites
                 </h2>
 
               </div>
@@ -1945,8 +1713,22 @@ const handleInquirySubmit = async (e) => {
                         {property.image ? (
 
                           <img
-                            src={property.image}
-                            alt={property.title}
+                            src={
+                              property.image.startsWith(
+                                "http"
+                              )
+                                ? property.image
+                                : `${SERVER_URL}${
+                                    property.image.startsWith(
+                                      "/"
+                                    )
+                                      ? ""
+                                      : "/"
+                                  }${property.image}`
+                            }
+                            alt={
+                              property.title
+                            }
                             className="property-image"
                           />
 
@@ -2016,7 +1798,6 @@ const handleInquirySubmit = async (e) => {
                     </article>
 
                   );
-
                 })}
 
               </div>
@@ -2026,15 +1807,13 @@ const handleInquirySubmit = async (e) => {
           </div>
 
         </section>
-
       )}
 
       {/* =================================================
           ADMIN PROPERTY FORM
       ================================================= */}
 
-      {user.role === "admin" && (
-
+      {user?.role === "admin" && (
         <section
           className="form-section"
           id="add-property"
@@ -2065,6 +1844,8 @@ const handleInquirySubmit = async (e) => {
 
               <div className="form-grid">
 
+                {/* TITLE */}
+
                 <div className="form-group full">
 
                   <label>
@@ -2082,44 +1863,179 @@ const handleInquirySubmit = async (e) => {
 
                 </div>
 
+                {/* MAIN PROPERTY PHOTO */}
+
                 <div className="form-group full">
 
                   <label>
-                    Property Photo
+                    Main Property Photo
                   </label>
 
                   <input
                     type="file"
                     accept="image/png,image/jpeg,image/jpg,image/webp"
                     onChange={(e) => {
-
                       const file =
-                        e.target.files[0];
+                        e.target.files?.[0];
 
                       if (file) {
-
                         setFormData(
                           (previous) => ({
                             ...previous,
                             image: file,
                           })
                         );
-
                       }
-
                     }}
                   />
 
                   {formData.image instanceof File && (
-
                     <small>
                       Selected image:{" "}
                       {formData.image.name}
                     </small>
+                  )}
 
+                  {typeof formData.image ===
+                    "string" &&
+                    formData.image && (
+                      <small>
+                        Existing main image selected
+                      </small>
+                    )}
+
+                </div>
+
+                {/* MORE PHOTOS */}
+
+                <div className="form-group full">
+
+                  <label>
+                    More Property Photos
+                  </label>
+
+                  <input
+                    type="file"
+                    accept="image/png,image/jpeg,image/jpg,image/webp"
+                    multiple
+                    onChange={(e) => {
+                      const files = Array.from(
+                        e.target.files || []
+                      );
+
+                      if (files.length > 0) {
+                        setFormData(
+                          (previous) => ({
+                            ...previous,
+                            images: [
+                              ...previous.images.filter(
+                                (image) =>
+                                  typeof image ===
+                                  "string"
+                              ),
+                              ...files,
+                            ],
+                          })
+                        );
+                      }
+                    }}
+                  />
+
+                  {formData.images.length >
+                    0 && (
+                    <small>
+                      {formData.images.length}{" "}
+                      photo(s) available
+                    </small>
                   )}
 
                 </div>
+
+                {/* VIDEO */}
+
+                <div className="form-group full">
+
+                  <label>
+                    Property Video
+                  </label>
+
+                  <input
+                    type="file"
+                    accept="video/mp4,video/webm,video/ogg"
+                    onChange={(e) => {
+                      const file =
+                        e.target.files?.[0];
+
+                      if (file) {
+                        setFormData(
+                          (previous) => ({
+                            ...previous,
+                            video: file,
+                          })
+                        );
+                      }
+                    }}
+                  />
+
+                  {formData.video instanceof File && (
+                    <small>
+                      Selected video:{" "}
+                      {formData.video.name}
+                    </small>
+                  )}
+
+                  {typeof formData.video ===
+                    "string" &&
+                    formData.video && (
+                      <small>
+                        Existing video selected
+                      </small>
+                    )}
+
+                </div>
+
+                {/* GOOGLE MAP */}
+
+                <div className="form-group full">
+
+                  <label>
+                    Google Maps Location
+                  </label>
+
+                  <input
+                    type="text"
+                    name="map_location"
+                    placeholder="Paste Google Maps URL"
+                    value={
+                      formData.map_location
+                    }
+                    onChange={handleChange}
+                  />
+
+                  {/* SHOW EXTRACTED COORDINATES */}
+
+                  {formData.latitude !== "" &&
+                    formData.longitude !== "" && (
+                      <small>
+                        Location detected:{" "}
+                        {formData.latitude},{" "}
+                        {formData.longitude}
+                      </small>
+                    )}
+
+                  {formData.map_location &&
+                    formData.latitude === "" &&
+                    formData.longitude === "" && (
+                      <small>
+                        Please paste a Google Maps
+                        URL containing the location
+                        coordinates.
+                      </small>
+                    )}
+
+                </div>
+
+                {/* PROPERTY TYPE */}
 
                 <div className="form-group">
 
@@ -2160,6 +2076,8 @@ const handleInquirySubmit = async (e) => {
 
                 </div>
 
+                {/* LOCATION */}
+
                 <div className="form-group">
 
                   <label>
@@ -2170,12 +2088,16 @@ const handleInquirySubmit = async (e) => {
                     type="text"
                     name="location"
                     placeholder="Property location"
-                    value={formData.location}
+                    value={
+                      formData.location
+                    }
                     onChange={handleChange}
                     required
                   />
 
                 </div>
+
+                {/* PRICE */}
 
                 <div className="form-group">
 
@@ -2195,6 +2117,8 @@ const handleInquirySubmit = async (e) => {
 
                 </div>
 
+                {/* BEDROOMS */}
+
                 <div className="form-group">
 
                   <label>
@@ -2204,13 +2128,17 @@ const handleInquirySubmit = async (e) => {
                   <input
                     type="number"
                     name="bedrooms"
-                    value={formData.bedrooms}
+                    value={
+                      formData.bedrooms
+                    }
                     onChange={handleChange}
                     min="0"
                     required
                   />
 
                 </div>
+
+                {/* BATHROOMS */}
 
                 <div className="form-group">
 
@@ -2221,13 +2149,17 @@ const handleInquirySubmit = async (e) => {
                   <input
                     type="number"
                     name="bathrooms"
-                    value={formData.bathrooms}
+                    value={
+                      formData.bathrooms
+                    }
                     onChange={handleChange}
                     min="0"
                     required
                   />
 
                 </div>
+
+                {/* AREA */}
 
                 <div className="form-group">
 
@@ -2239,12 +2171,16 @@ const handleInquirySubmit = async (e) => {
                     type="number"
                     name="area_sqft"
                     placeholder="Area in sq.ft"
-                    value={formData.area_sqft}
+                    value={
+                      formData.area_sqft
+                    }
                     onChange={handleChange}
                     min="0"
                   />
 
                 </div>
+
+                {/* DESCRIPTION */}
 
                 <div className="form-group full">
 
@@ -2266,6 +2202,8 @@ const handleInquirySubmit = async (e) => {
 
               </div>
 
+              {/* FORM BUTTONS */}
+
               <div className="form-actions">
 
                 <button
@@ -2278,7 +2216,6 @@ const handleInquirySubmit = async (e) => {
                 </button>
 
                 {editingId && (
-
                   <button
                     type="button"
                     className="secondary-button"
@@ -2286,7 +2223,6 @@ const handleInquirySubmit = async (e) => {
                   >
                     Cancel
                   </button>
-
                 )}
 
               </div>
@@ -2296,7 +2232,6 @@ const handleInquirySubmit = async (e) => {
           </div>
 
         </section>
-
       )}
 
       {/* =================================================
@@ -2322,7 +2257,8 @@ const handleInquirySubmit = async (e) => {
 
             <p>
               Discover our ongoing and
-              completed construction projects.
+              completed construction
+              projects.
             </p>
 
           </div>
@@ -2349,7 +2285,7 @@ const handleInquirySubmit = async (e) => {
                   construction.
                 </p>
 
-                <a href="#contact">
+                <a href="/contact">
                   Enquire About Project
                 </a>
 
@@ -2377,7 +2313,7 @@ const handleInquirySubmit = async (e) => {
                   with modern architecture.
                 </p>
 
-                <a href="#contact">
+                <a href="/contact">
                   View Project Information
                 </a>
 
@@ -2405,7 +2341,7 @@ const handleInquirySubmit = async (e) => {
                   are being planned.
                 </p>
 
-                <a href="#contact">
+                <a href="/contact">
                   Request Information
                 </a>
 
@@ -2450,55 +2386,71 @@ const handleInquirySubmit = async (e) => {
           <div className="services-grid">
 
             <div className="service-card">
+
               <div className="service-number">
                 01
               </div>
+
               <h3>
                 Property Development
               </h3>
+
               <p>
                 Development of thoughtfully
                 planned properties.
               </p>
+
             </div>
 
             <div className="service-card">
+
               <div className="service-number">
                 02
               </div>
+
               <h3>
                 Property Sales
               </h3>
+
               <p>
                 Find properties based on
                 location and budget.
               </p>
+
             </div>
 
             <div className="service-card">
+
               <div className="service-number">
                 03
               </div>
+
               <h3>
                 Construction Services
               </h3>
+
               <p>
                 Quality construction solutions
                 focused on durability.
               </p>
+
             </div>
 
             <div className="service-card">
+
               <div className="service-number">
                 04
               </div>
+
               <h3>
                 Customer Support
               </h3>
+
               <p>
                 Customer assistance with
                 property enquiries.
               </p>
+
             </div>
 
           </div>
@@ -2539,16 +2491,17 @@ const handleInquirySubmit = async (e) => {
             </p>
 
             <p>
-              From residential properties to
-              construction projects, customers
-              can find useful property
-              information before making an
-              enquiry.
+              From residential properties
+              to construction projects,
+              customers can find useful
+              property information before
+              making an enquiry.
             </p>
 
             <div className="about-points">
 
               <div>
+
                 <strong>
                   Quality
                 </strong>
@@ -2556,9 +2509,11 @@ const handleInquirySubmit = async (e) => {
                 <span>
                   Carefully presented properties
                 </span>
+
               </div>
 
               <div>
+
                 <strong>
                   Transparency
                 </strong>
@@ -2566,9 +2521,11 @@ const handleInquirySubmit = async (e) => {
                 <span>
                   Clear property information
                 </span>
+
               </div>
 
               <div>
+
                 <strong>
                   Support
                 </strong>
@@ -2576,6 +2533,7 @@ const handleInquirySubmit = async (e) => {
                 <span>
                   Customer-focused assistance
                 </span>
+
               </div>
 
             </div>
@@ -2585,102 +2543,6 @@ const handleInquirySubmit = async (e) => {
         </div>
 
       </section>
-
-      {/* =================================================
-          CONTACT
-      ================================================= */}
-
-      <section id="contact">
-        <Contact />
-      </section>
-
-      {/* =================================================
-          FOOTER
-      ================================================= */}
-
-      <footer>
-
-        <div className="footer-container">
-
-          <div className="footer-brand">
-
-            <h2>
-              Home<span>Finder</span>
-            </h2>
-
-            <p>
-              A simple and professional
-              platform for discovering
-              properties and construction
-              projects.
-            </p>
-
-          </div>
-
-          <div className="footer-links">
-
-            <h3>
-              Quick Links
-            </h3>
-
-            <a href="#home">
-              Home
-            </a>
-
-            <a href="#properties">
-              Properties
-            </a>
-
-            <a href="#projects">
-              Projects
-            </a>
-
-            <a href="#services">
-              Services
-            </a>
-
-            <a href="#about">
-              About Us
-            </a>
-
-            <a href="#contact">
-              Contact
-            </a>
-
-          </div>
-
-          <div className="footer-contact">
-
-            <h3>
-              Contact
-            </h3>
-
-            <p>
-              Kopargaon, Maharashtra, India
-            </p>
-
-            <p>
-              +91 98765 43210
-            </p>
-
-            <p>
-              homefinder@gmail.com
-            </p>
-
-          </div>
-
-        </div>
-
-        <div className="footer-bottom">
-
-          <p>
-            © 2026 HomeFinder.
-            All rights reserved.
-          </p>
-
-        </div>
-
-      </footer>
 
     </div>
   );

@@ -1,8 +1,14 @@
 import { useState } from "react";
+import { useLocation, useNavigate } from "react-router-dom";
 import "./App.css";
 
-function Auth({ onLogin }) {
-  const [isRegister, setIsRegister] = useState(false);
+function Auth({ onLogin, initialMode = "login" }) {
+  const location = useLocation();
+  const navigate = useNavigate();
+
+  const [isRegister, setIsRegister] = useState(
+    location.pathname === "/signup" || initialMode === "register"
+  );
 
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
@@ -31,14 +37,12 @@ function Auth({ onLogin }) {
         "http://localhost:5000/api/auth/login",
         {
           method: "POST",
-
           headers: {
             "Content-Type": "application/json",
           },
-
           body: JSON.stringify({
             email: email.trim(),
-            password: password,
+            password,
           }),
         }
       );
@@ -53,7 +57,6 @@ function Auth({ onLogin }) {
             data.error ||
             "Login failed."
         );
-
         return;
       }
 
@@ -66,7 +69,7 @@ function Auth({ onLogin }) {
         JSON.stringify(data.user)
       );
 
-      // Remember email if selected
+      // Remember email
       if (rememberMe) {
         localStorage.setItem(
           "rememberedEmail",
@@ -76,9 +79,27 @@ function Auth({ onLogin }) {
         localStorage.removeItem("rememberedEmail");
       }
 
-      // Send user to App.jsx
+      // Send user to parent if required
       if (onLogin) {
         onLogin(data.user);
+      }
+
+      // =================================================
+      // IMPORTANT:
+      // If login came from Add to Cart,
+      // go to Contact page.
+      // =================================================
+
+      if (location.state?.fromCart) {
+        navigate("/contact", {
+          state: {
+            property: location.state.property,
+            fromCart: true,
+          },
+        });
+      } else {
+        // Normal login
+        navigate("/");
       }
 
     } catch (error) {
@@ -122,25 +143,20 @@ function Auth({ onLogin }) {
         "http://localhost:5000/api/auth/register",
         {
           method: "POST",
-
           headers: {
             "Content-Type": "application/json",
           },
-
           body: JSON.stringify({
             name: name.trim(),
             email: email.trim(),
-            password: password,
+            password,
           }),
         }
       );
 
       const data = await response.json();
 
-      console.log(
-        "Register response:",
-        data
-      );
+      console.log("Register response:", data);
 
       if (!response.ok) {
         alert(
@@ -161,8 +177,20 @@ function Auth({ onLogin }) {
       setEmail("");
       setPassword("");
 
-      // Switch to login
+      // Change to login
       setIsRegister(false);
+
+      // Keep the cart information when going to login
+      if (location.state?.fromCart) {
+        navigate("/login", {
+          state: {
+            fromCart: true,
+            property: location.state.property,
+          },
+        });
+      } else {
+        navigate("/login");
+      }
 
     } catch (error) {
       console.error(
@@ -183,12 +211,24 @@ function Auth({ onLogin }) {
   // =====================================================
 
   const switchMode = () => {
-    setIsRegister((previous) => !previous);
+    const newMode = !isRegister;
+
+    setIsRegister(newMode);
 
     setName("");
     setEmail("");
     setPassword("");
     setShowPassword(false);
+
+    if (newMode) {
+      navigate("/signup", {
+        state: location.state,
+      });
+    } else {
+      navigate("/login", {
+        state: location.state,
+      });
+    }
   };
 
   // =====================================================
@@ -197,7 +237,7 @@ function Auth({ onLogin }) {
 
   const handleForgotPassword = () => {
     alert(
-      "Please contact HomeFinder support to reset your password."
+      "Please contact Shree Krishna Constructions support to reset your password."
     );
   };
 
@@ -215,20 +255,18 @@ function Auth({ onLogin }) {
   return (
     <div className="auth-page">
 
-      {/* =================================================
-          LEFT BRAND SECTION
-      ================================================= */}
+      {/* LEFT BRAND SECTION */}
 
       <section className="auth-brand">
 
         <div className="brand-content">
 
           <div className="brand-logo">
-            HF
+            SK
           </div>
 
           <h1>
-            HomeFinder
+           Shree Krishna Constructions
           </h1>
 
           <div className="brand-line"></div>
@@ -297,20 +335,16 @@ function Auth({ onLogin }) {
 
       </section>
 
-      {/* =================================================
-          RIGHT AUTH SECTION
-      ================================================= */}
+      {/* RIGHT AUTH SECTION */}
 
       <section className="auth-section">
 
         <div className="auth-card">
 
-          {/* CARD HEADER */}
-
           <div className="auth-header">
 
             <div className="mobile-logo">
-              HF
+              SK
             </div>
 
             <h2>
@@ -326,8 +360,6 @@ function Auth({ onLogin }) {
             </p>
 
           </div>
-
-          {/* FORM */}
 
           <form
             className="auth-form"
@@ -520,6 +552,7 @@ function Auth({ onLogin }) {
             </p>
 
             <div>
+
               <button type="button">
                 Terms of Service
               </button>

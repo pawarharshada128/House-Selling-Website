@@ -89,18 +89,22 @@ router.post(
 
     try {
 
-      const {
-        title,
-        property_type,
-        location,
-        price,
-        bedrooms,
-        bathrooms,
-        area_sqft,
-        description,
-        image,
-      } = req.body;
-
+    const {
+  title,
+  property_type,
+  location,
+  price,
+  bedrooms,
+  bathrooms,
+  area_sqft,
+  description,
+  image,
+  images,
+  video,
+  latitude,
+  longitude,
+  map_location,
+} = req.body;
 
       if (!title || !title.trim()) {
         return res.status(400).json({
@@ -139,33 +143,53 @@ router.post(
       }
 
 
-      const property = new Property({
+    const property = new Property({
+  title: title.trim(),
 
-        title: title.trim(),
+  property_type,
 
-        property_type,
+  location: location.trim(),
 
-        location: location.trim(),
+  price: Number(price),
 
-        price: Number(price),
+  bedrooms: Number(bedrooms),
 
-        bedrooms: Number(bedrooms),
+  bathrooms: Number(bathrooms),
 
-        bathrooms: Number(bathrooms),
+  area_sqft: Number(area_sqft || 0),
 
-        area_sqft: Number(area_sqft || 0),
+  description: description || "",
 
-        description: description || "",
+  image: image || "",
 
-        image: image || "",
+  images: Array.isArray(images)
+    ? images
+    : [],
 
-        status: "Pending",
+  video: video || "",
 
-        owner:
-          req.user?.id ||
-          req.user?._id,
+  latitude:
+    latitude !== null &&
+    latitude !== undefined &&
+    latitude !== ""
+      ? Number(latitude)
+      : null,
 
-      });
+  longitude:
+    longitude !== null &&
+    longitude !== undefined &&
+    longitude !== ""
+      ? Number(longitude)
+      : null,
+
+  map_location: map_location || "",
+
+  status: "Pending",
+
+  owner:
+    req.user?.id ||
+    req.user?._id,
+});
 
 
       const savedProperty =
@@ -235,16 +259,21 @@ router.put(
 
 
       const {
-        title,
-        property_type,
-        location,
-        price,
-        bedrooms,
-        bathrooms,
-        area_sqft,
-        description,
-        image,
-      } = req.body;
+  title,
+  property_type,
+  location,
+  price,
+  bedrooms,
+  bathrooms,
+  area_sqft,
+  description,
+  image,
+  images,
+  video,
+  latitude,
+  longitude,
+  map_location,
+} = req.body;
 
 
       property.title =
@@ -285,7 +314,38 @@ router.put(
         image ??
         property.image;
 
+property.images =
+  Array.isArray(images)
+    ? images
+    : property.images;
 
+property.video =
+  video ??
+  property.video;
+
+property.latitude =
+  latitude !== undefined
+    ? (
+        latitude === null ||
+        latitude === ""
+          ? null
+          : Number(latitude)
+      )
+    : property.latitude;
+
+property.longitude =
+  longitude !== undefined
+    ? (
+        longitude === null ||
+        longitude === ""
+          ? null
+          : Number(longitude)
+      )
+    : property.longitude;
+
+property.map_location =
+  map_location ??
+  property.map_location;
       const updatedProperty =
         await property.save();
 

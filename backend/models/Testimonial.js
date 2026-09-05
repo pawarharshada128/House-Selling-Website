@@ -31,6 +31,30 @@ const testimonialSchema = new mongoose.Schema(
       type: String,
       default: "",
     },
+    images: {
+  type: [String],
+  default: []
+},
+
+video: {
+  type: String,
+  default: ""
+},
+
+map_location: {
+  type: String,
+  default: ""
+},
+
+latitude: {
+  type: Number,
+  default: null
+},
+
+longitude: {
+  type: Number,
+  default: null
+},
 
     approved: {
       type: Boolean,
