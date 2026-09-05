@@ -9,16 +9,10 @@ const router = express.Router();
 // UPLOAD DIRECTORY
 // =====================================================
 
-const uploadDirectory = path.join(
-  __dirname,
-  "../uploads"
-);
+const uploadDir = path.join(__dirname, "../uploads");
 
-// Create uploads folder if it does not exist
-if (!fs.existsSync(uploadDirectory)) {
-  fs.mkdirSync(uploadDirectory, {
-    recursive: true,
-  });
+if (!fs.existsSync(uploadDir)) {
+  fs.mkdirSync(uploadDir, { recursive: true });
 }
 
 // =====================================================
@@ -26,20 +20,18 @@ if (!fs.existsSync(uploadDirectory)) {
 // =====================================================
 
 const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    cb(null, uploadDirectory);
+  destination: function (req, file, cb) {
+    cb(null, uploadDir);
   },
 
-  filename: (req, file, cb) => {
-    const extension =
+  filename: function (req, file, cb) {
+    const uniqueName =
+      Date.now() +
+      "-" +
+      Math.round(Math.random() * 1e9) +
       path.extname(file.originalname);
 
-    const fileName =
-      `${Date.now()}-${Math.round(
-        Math.random() * 1e9
-      )}${extension}`;
-
-    cb(null, fileName);
+    cb(null, uniqueName);
   },
 });
 
@@ -47,20 +39,29 @@ const storage = multer.diskStorage({
 // FILE FILTER
 // =====================================================
 
-const fileFilter = (req, file, cb) => {
-  const allowedTypes = [
+const fileFilter = function (req, file, cb) {
+  const allowedImages = [
     "image/jpeg",
     "image/jpg",
     "image/png",
     "image/webp",
   ];
 
-  if (allowedTypes.includes(file.mimetype)) {
+  const allowedVideos = [
+    "video/mp4",
+    "video/webm",
+    "video/ogg",
+  ];
+
+  if (
+    allowedImages.includes(file.mimetype) ||
+    allowedVideos.includes(file.mimetype)
+  ) {
     cb(null, true);
   } else {
     cb(
       new Error(
-        "Only JPG, JPEG, PNG and WEBP images are allowed."
+        "Only JPG, JPEG, PNG, WEBP images and MP4, WEBM, OGG videos are allowed."
       ),
       false
     );
@@ -73,79 +74,85 @@ const fileFilter = (req, file, cb) => {
 
 const upload = multer({
   storage: storage,
-
   fileFilter: fileFilter,
 
   limits: {
-    fileSize: 5 * 1024 * 1024, // 5 MB
+    fileSize: 100 * 1024 * 1024,
   },
 });
 
 // =====================================================
+// UPLOAD IMAGE OR VIDEO
 // POST /api/upload
 // =====================================================
 
 router.post(
   "/",
-  upload.single("image"),
+  upload.fields([
+    {
+      name: "image",
+      maxCount: 1,
+    },
+    {
+      name: "video",
+      maxCount: 1,
+    },
+  ]),
   (req, res) => {
     try {
-      if (!req.file) {
-        return res.status(400).json({
-          message: "Please select an image.",
+      // ================================================
+      // IMAGE
+      // ================================================
+
+      if (req.files?.image?.[0]) {
+        const file = req.files.image[0];
+
+        const imageUrl =
+          `http://localhost:${process.env.PORT || 5000}` +
+          `/uploads/${file.filename}`;
+
+        return res.status(200).json({
+          message: "Image uploaded successfully.",
+          image: imageUrl,
+          url: imageUrl,
+          type: file.mimetype,
         });
       }
 
-      // URL returned to frontend
-      const imageUrl =
-        `http://localhost:${process.env.PORT || 5000}/uploads/${req.file.filename}`;
+      // ================================================
+      // VIDEO
+      // ================================================
 
-      res.status(200).json({
-        message: "Image uploaded successfully.",
-        image: imageUrl,
-        filename: req.file.filename,
+      if (req.files?.video?.[0]) {
+        const file = req.files.video[0];
+
+        const videoUrl =
+          `http://localhost:${process.env.PORT || 5000}` +
+          `/uploads/${file.filename}`;
+
+        return res.status(200).json({
+          message: "Video uploaded successfully.",
+          video: videoUrl,
+          url: videoUrl,
+          type: file.mimetype,
+        });
+      }
+
+      // ================================================
+      // NOTHING UPLOADED
+      // ================================================
+
+      return res.status(400).json({
+        message: "No image or video uploaded.",
       });
+
     } catch (error) {
-      console.error(
-        "Image upload error:",
-        error
-      );
+      console.error("Upload error:", error);
 
-      res.status(400).json({
-        message:
-          error.message ||
-          "Image upload failed.",
+      return res.status(500).json({
+        message: error.message || "File upload failed.",
       });
     }
-  }
-);
-
-// =====================================================
-// MULTER ERROR HANDLER
-// =====================================================
-
-router.use(
-  (error, req, res, next) => {
-    if (error instanceof multer.MulterError) {
-      if (error.code === "LIMIT_FILE_SIZE") {
-        return res.status(400).json({
-          message:
-            "Image size must be less than 5 MB.",
-        });
-      }
-
-      return res.status(400).json({
-        message: error.message,
-      });
-    }
-
-    if (error) {
-      return res.status(400).json({
-        message: error.message,
-      });
-    }
-
-    next();
   }
 );
 

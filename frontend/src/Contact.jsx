@@ -1,11 +1,16 @@
 import "./App.css";
+import { useLocation } from "react-router-dom";
 
 function Contact() {
+  const location = useLocation();
+
+  const property = location.state?.property;
+
   const handleSubmit = (e) => {
     e.preventDefault();
 
     alert(
-      "Thank you! Your message has been sent successfully."
+      "Thank you! Your enquiry has been sent successfully."
     );
 
     e.target.reset();
@@ -25,7 +30,7 @@ function Contact() {
             </span>
 
             <h2>
-              Contact HomeFinder
+              Contact Shree Krishna Constructions
             </h2>
 
             <p>
@@ -34,24 +39,48 @@ function Contact() {
               Our team is here to help you.
             </p>
 
-            <div className="contact-item">
+            {/* SELECTED PROPERTY */}
 
+            {property && (
+              <div className="selected-property">
+
+                <h3>
+                  🏠 Selected Property
+                </h3>
+
+                <p>
+                  <strong>Property:</strong>{" "}
+                  {property.title}
+                </p>
+
+                <p>
+                  <strong>Location:</strong>{" "}
+                  {property.location}
+                </p>
+
+                <p>
+                  <strong>Price:</strong>{" "}
+                  ₹{property.price}
+                </p>
+
+              </div>
+            )}
+
+            <div className="contact-item">
               <span></span>
 
               <div>
                 <h3>Address</h3>
 
                 <p>
-                  HomeFinder Office,
+                  Shree Krishna Constructions,
                   <br />
-                  Kopargaon, Maharashtra, India
+                 Manmad, Maharashtra, India
                 </p>
               </div>
-
             </div>
 
             <div className="contact-item">
-
               <span></span>
 
               <div>
@@ -61,25 +90,21 @@ function Contact() {
                   +91 98765 43210
                 </p>
               </div>
-
             </div>
 
             <div className="contact-item">
-
               <span></span>
 
               <div>
                 <h3>Email</h3>
 
                 <p>
-                  homefinder@gmail.com
+                  shree_krishna_constructions@gmail.com
                 </p>
               </div>
-
             </div>
 
             <div className="contact-item">
-
               <span></span>
 
               <div>
@@ -93,7 +118,6 @@ function Contact() {
                   9:00 AM - 6:00 PM
                 </p>
               </div>
-
             </div>
 
           </div>
@@ -133,7 +157,11 @@ function Contact() {
 
               <textarea
                 name="message"
-                placeholder="Tell us about the property or project you are interested in"
+                placeholder={
+                  property
+                    ? `I am interested in ${property.title}. Please provide more information.`
+                    : "Tell us about the property or project you are interested in"
+                }
                 rows="6"
                 required
               />

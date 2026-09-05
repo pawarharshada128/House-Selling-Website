@@ -3,7 +3,7 @@ const mongoose = require("mongoose");
 const cors = require("cors");
 const dotenv = require("dotenv");
 const path = require("path");
-
+const mapRoutes = require("./routes/mapRoutes");
 dotenv.config();
 
 const app = express();
@@ -21,7 +21,6 @@ app.use(
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
-
 // =====================================================
 // UPLOADS
 // =====================================================
@@ -35,6 +34,7 @@ app.use(
 // ROUTES
 // =====================================================
 
+const cartRoutes = require("./routes/cartRoutes");
 const authRoutes = require("./routes/authRoutes");
 const propertyRoutes = require("./routes/propertyRoutes");
 const wishlistRoutes = require("./routes/wishlistRoutes");
@@ -43,82 +43,21 @@ const projectRoutes = require("./routes/projectRoutes");
 const blogRoutes = require("./routes/blogRoutes");
 const testimonialRoutes = require("./routes/testimonialRoutes");
 const uploadRoutes = require("./routes/uploadRoutes");
+
 // =====================================================
 // API ROUTES
 // =====================================================
 
+app.use("/api/cart", cartRoutes);
 app.use("/api/auth", authRoutes);
-
 app.use("/api/properties", propertyRoutes);
-
 app.use("/api/wishlist", wishlistRoutes);
-
 app.use("/api/inquiries", inquiryRoutes);
-
 app.use("/api/projects", projectRoutes);
-
 app.use("/api/blog", blogRoutes);
-
 app.use("/api/testimonials", testimonialRoutes);
-app.use(
-  "/api/upload",
-  uploadRoutes
-);
-// =====================================================
-// IMAGE UPLOAD
-// =====================================================
-
-const multer = require("multer");
-
-const storage = multer.diskStorage({
-  destination: function (req, file, cb) {
-    cb(null, path.join(__dirname, "uploads"));
-  },
-
-  filename: function (req, file, cb) {
-    const uniqueName =
-      Date.now() +
-      "-" +
-      Math.round(Math.random() * 1e9) +
-      path.extname(file.originalname);
-
-    cb(null, uniqueName);
-  },
-});
-
-const upload = multer({
-  storage: storage,
-});
-
-app.post(
-  "/api/upload",
-  upload.single("image"),
-  (req, res) => {
-    try {
-      if (!req.file) {
-        return res.status(400).json({
-          message: "No image uploaded.",
-        });
-      }
-
-      const imageUrl =
-        `http://localhost:${process.env.PORT || 5000}/uploads/` +
-        req.file.filename;
-
-      res.status(200).json({
-        message: "Image uploaded successfully.",
-        image: imageUrl,
-      });
-    } catch (error) {
-      console.error("Upload error:", error);
-
-      res.status(500).json({
-        message: "Image upload failed.",
-      });
-    }
-  }
-);
-
+app.use("/api/map", mapRoutes);
+app.use("/api/upload", uploadRoutes);
 // =====================================================
 // HOME
 // =====================================================

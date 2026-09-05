@@ -82,6 +82,20 @@ const propertySchema = new mongoose.Schema(
       type: Boolean,
       default: false,
     },
+    latitude: {
+  type: Number,
+  default: null
+},
+
+longitude: {
+  type: Number,
+  default: null
+},
+
+map_location: {
+  type: String,
+  default: ""
+},
   },
   {
     timestamps: true,
