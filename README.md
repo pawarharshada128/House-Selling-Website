@@ -1,4 +1,4 @@
-# 🏠 House Selling Website
+House Selling Website
 
 A full-stack **House Selling Website** that allows users to explore properties, search and filter houses, view detailed property information, manage wishlists, and interact with an admin dashboard for property management.
 
