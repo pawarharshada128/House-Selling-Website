@@ -2,22 +2,22 @@ House Selling Website
 
 A full-stack **House Selling Website** that allows users to explore properties, search and filter houses, view detailed property information, manage wishlists, and interact with an admin dashboard for property management.
 
-## 📌 Project Overview
+ Project Overview
 
 The House Selling Website is a modern and responsive real-estate web application developed using **React, Node.js, Express.js, and MongoDB**.
 
 The system provides two main types of users:
 
-- 👤 **Buyer/User** – Can browse properties, search and filter properties, view property details, and manage wishlist.
-- 👨‍💼 **Admin** – Can add, update, delete, and manage properties through the admin dashboard.
+-  **Buyer/User** – Can browse properties, search and filter properties, view property details, and manage wishlist.
+-  **Admin** – Can add, update, delete, and manage properties through the admin dashboard.
 
 The application also provides property images/videos and map-based location features.
 
 ---
 
-## ✨ Features
+ Features
 
-### 👤 User Features
+ User Features
 
 - User Registration
 - User Login
@@ -33,7 +33,7 @@ The application also provides property images/videos and map-based location feat
 - View Property Videos
 - Responsive Design
 
-### 👨‍💼 Admin Features
+ Admin Features
 
 - Admin Login
 - Admin Dashboard
@@ -47,7 +47,7 @@ The application also provides property images/videos and map-based location feat
 - Add Property Location
 - View Property Statistics
 
-### 🗺️ Map Features
+ Map Features
 
 - Property location using latitude and longitude
 - Interactive map using Leaflet
@@ -57,7 +57,7 @@ The application also provides property images/videos and map-based location feat
 
 ---
 
-## 🛠️ Technologies Used
+ Technologies Used
 
 | Layer | Technology |
 |---|---|
@@ -77,7 +77,7 @@ The application also provides property images/videos and map-based location feat
 
 ---
 
-## 📂 Project Structure
+ Project Structure
 
 ```text
 House-Selling-Website/
@@ -120,7 +120,7 @@ House-Selling-Website/
 
 ---
 
-## ⚙️ Installation and Setup
+ Installation and Setup
 
 ### 1. Clone the Repository
 
@@ -178,7 +178,7 @@ http://localhost:5000
 
 ---
 
-## 💻 Frontend Setup
+ Frontend Setup
 
 Open a new terminal and navigate to the frontend:
 
@@ -206,7 +206,7 @@ http://localhost:5173
 
 ---
 
-## 🔗 API Endpoints
+ API Endpoints
 
 ### Authentication
 
@@ -243,7 +243,7 @@ http://localhost:5173
 
 ---
 
-## 🏡 Property Types
+ Property Types
 
 The application supports different property types:
 
@@ -255,7 +255,7 @@ The application supports different property types:
 
 ---
 
-## 🔐 Authentication
+ Authentication
 
 The application uses **JWT (JSON Web Token)** for authentication.
 
@@ -268,7 +268,7 @@ Role-based authorization is used to provide different permissions to:
 
 ---
 
-## 🗄️ Database
+ Database
 
 The project uses **MongoDB** as the database.
 
@@ -302,7 +302,7 @@ Featured
 
 ---
 
-## 🗺️ Map Integration
+ Map Integration
 
 The website uses **Leaflet and OpenStreetMap** to display property locations.
 
@@ -315,18 +315,7 @@ Users can:
 
 ---
 
-## 📱 Responsive Design
-
-The website is designed to work across:
-
-- 💻 Desktop
-- 💻 Laptop
-- 📱 Mobile
-- 📟 Tablet
-
----
-
-## 🚀 Future Improvements
+ Future Improvements
 
 The following features can be added in future versions:
 
@@ -345,7 +334,7 @@ The following features can be added in future versions:
 
 ---
 
-## 🎯 Project Objectives
+ Project Objectives
 
 - To develop a user-friendly online property selling platform.
 - To provide an easy property search and filtering system.
@@ -391,15 +380,15 @@ Manage Property Media
 
 ---
 
-## 📊 Project Status
+ Project Status
 
-**Status:** 🚧 Core Features Implemented
+**Status:**  Core Features Implemented
 
 The major modules including authentication, property management, search/filtering, wishlist, media upload, admin dashboard, and map integration have been developed. Final UI refinement, testing, and deployment can be completed as the next stage.
 
 ---
 
-## 👩‍💻 Development
+ Development
 
 This project was developed as a **Full-Stack Web Development project** using modern web technologies and REST APIs.
 
