@@ -417,14 +417,5 @@ This project was developed as a **Full-Stack Web Development project** using mod
 - Map integration
 - Git/GitHub project management
 
----
 
-## 📄 License
 
-This project is developed for **educational and academic purposes**.
-
----
-
-## ⭐ Support
-
-If you find this project useful, consider giving the repository a ⭐ on GitHub.
