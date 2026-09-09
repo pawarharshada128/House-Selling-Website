@@ -8,49 +8,48 @@ const Property = require("../models/Property");
 const authMiddleware = require("../middleware/authMiddleware");
 const adminMiddleware = require("../middleware/adminMiddleware");
 
-// =====================================================
-// HELPER - CHECK VALID OBJECT ID
-// =====================================================
-
-const isValidObjectId = (id) => {
-  return mongoose.Types.ObjectId.isValid(id);
-};
 
 // =====================================================
 // GET ALL PROPERTIES
-// AUTHENTICATED USERS
 // GET /api/properties
+// PUBLIC
 // =====================================================
 
-router.get("/", authMiddleware, async (req, res) => {
+router.get("/", async (req, res) => {
   try {
     const properties = await Property.find()
       .sort({ createdAt: -1 });
 
+    console.log("Properties fetched from MongoDB:");
+    console.log(properties);
+
     res.status(200).json(properties);
+
   } catch (error) {
-    console.error("Get properties error:", error);
+    console.error("GET PROPERTIES ERROR:", error);
 
     res.status(500).json({
-      message: "Failed to fetch properties.",
+      message: "Failed to fetch properties",
+      error: error.message,
     });
   }
 });
 
+
 // =====================================================
 // GET PROPERTY BY ID
-// AUTHENTICATED USERS
 // GET /api/properties/:id
+// PUBLIC
 // =====================================================
 
-router.get("/:id", authMiddleware, async (req, res) => {
+router.get("/:id", async (req, res) => {
   try {
+
     const { id } = req.params;
 
-    // Check ObjectId before querying MongoDB
-    if (!isValidObjectId(id)) {
+    if (!mongoose.Types.ObjectId.isValid(id)) {
       return res.status(400).json({
-        message: "Invalid property ID.",
+        message: "Invalid property ID",
       });
     }
 
@@ -58,24 +57,28 @@ router.get("/:id", authMiddleware, async (req, res) => {
 
     if (!property) {
       return res.status(404).json({
-        message: "Property not found.",
+        message: "Property not found",
       });
     }
 
     res.status(200).json(property);
+
   } catch (error) {
-    console.error("Get property error:", error);
+
+    console.error("GET PROPERTY ERROR:", error);
 
     res.status(500).json({
-      message: "Failed to fetch property.",
+      message: "Failed to fetch property",
+      error: error.message,
     });
   }
 });
 
+
 // =====================================================
-// ADD NEW PROPERTY
-// ADMIN ONLY
+// ADD PROPERTY
 // POST /api/properties
+// ADMIN ONLY
 // =====================================================
 
 router.post(
@@ -83,189 +86,148 @@ router.post(
   authMiddleware,
   adminMiddleware,
   async (req, res) => {
-    try {
-      const {
-        title,
-        property_type,
-        location,
-        price,
-        bedrooms,
-        bathrooms,
-        area_sqft,
-        description,
-        image,
-      } = req.body;
 
-      // ---------------------------------------------
-      // VALIDATION
-      // ---------------------------------------------
+    try {
+
+    const {
+  title,
+  property_type,
+  location,
+  price,
+  bedrooms,
+  bathrooms,
+  area_sqft,
+  description,
+  image,
+  images,
+  video,
+  latitude,
+  longitude,
+  map_location,
+} = req.body;
 
       if (!title || !title.trim()) {
         return res.status(400).json({
-          message: "Property title is required.",
+          message: "Property title is required",
         });
       }
 
       if (!property_type) {
         return res.status(400).json({
-          message: "Property type is required.",
+          message: "Property type is required",
         });
       }
 
       if (!location || !location.trim()) {
         return res.status(400).json({
-          message: "Property location is required.",
+          message: "Location is required",
         });
       }
 
-      if (
-        price === undefined ||
-        price === null ||
-        price === ""
-      ) {
+      if (price === undefined || price === "") {
         return res.status(400).json({
-          message: "Property price is required.",
+          message: "Price is required",
         });
       }
 
-      if (
-        bedrooms === undefined ||
-        bedrooms === null ||
-        bedrooms === ""
-      ) {
+      if (bedrooms === undefined || bedrooms === "") {
         return res.status(400).json({
-          message: "Number of bedrooms is required.",
+          message: "Bedrooms are required",
         });
       }
 
-      if (
-        bathrooms === undefined ||
-        bathrooms === null ||
-        bathrooms === ""
-      ) {
+      if (bathrooms === undefined || bathrooms === "") {
         return res.status(400).json({
-          message: "Number of bathrooms is required.",
+          message: "Bathrooms are required",
         });
       }
 
-      // ---------------------------------------------
-      // NUMBER VALIDATION
-      // ---------------------------------------------
 
-      const numericPrice = Number(price);
-      const numericBedrooms = Number(bedrooms);
-      const numericBathrooms = Number(bathrooms);
-      const numericArea = Number(area_sqft || 0);
+    const property = new Property({
+  title: title.trim(),
 
-      if (Number.isNaN(numericPrice) || numericPrice < 0) {
-        return res.status(400).json({
-          message: "Please enter a valid price.",
-        });
-      }
+  property_type,
 
-      if (
-        Number.isNaN(numericBedrooms) ||
-        numericBedrooms < 0
-      ) {
-        return res.status(400).json({
-          message: "Please enter valid bedrooms.",
-        });
-      }
+  location: location.trim(),
 
-      if (
-        Number.isNaN(numericBathrooms) ||
-        numericBathrooms < 0
-      ) {
-        return res.status(400).json({
-          message: "Please enter valid bathrooms.",
-        });
-      }
+  price: Number(price),
 
-      if (
-        Number.isNaN(numericArea) ||
-        numericArea < 0
-      ) {
-        return res.status(400).json({
-          message: "Please enter a valid area.",
-        });
-      }
+  bedrooms: Number(bedrooms),
 
-      // ---------------------------------------------
-      // CREATE PROPERTY
-      // ---------------------------------------------
+  bathrooms: Number(bathrooms),
 
-      const propertyData = {
-        title: title.trim(),
+  area_sqft: Number(area_sqft || 0),
 
-        property_type,
+  description: description || "",
 
-        location: location.trim(),
+  image: image || "",
 
-        price: numericPrice,
+  images: Array.isArray(images)
+    ? images
+    : [],
 
-        bedrooms: numericBedrooms,
+  video: video || "",
 
-        bathrooms: numericBathrooms,
+  latitude:
+    latitude !== null &&
+    latitude !== undefined &&
+    latitude !== ""
+      ? Number(latitude)
+      : null,
 
-        area_sqft: numericArea,
+  longitude:
+    longitude !== null &&
+    longitude !== undefined &&
+    longitude !== ""
+      ? Number(longitude)
+      : null,
 
-        description:
-          typeof description === "string"
-            ? description.trim()
-            : "",
+  map_location: map_location || "",
 
-        image: image || "",
+  status: "Pending",
 
-        // New property starts as Pending
-        status: "Pending",
-      };
+  owner:
+    req.user?.id ||
+    req.user?._id,
+});
 
-      // ---------------------------------------------
-      // ADD OWNER IF USER ID EXISTS
-      // ---------------------------------------------
-
-      const userId = req.user.id || req.user._id;
-
-      if (
-        userId &&
-        isValidObjectId(userId)
-      ) {
-        propertyData.owner = userId;
-      }
-
-      // ---------------------------------------------
-      // SAVE
-      // ---------------------------------------------
-
-      const property = new Property(propertyData);
 
       const savedProperty =
         await property.save();
 
+
+      console.log(
+        "Property added:",
+        savedProperty
+      );
+
+
       res.status(201).json({
-        message:
-          "Property added successfully.",
+        message: "Property added successfully",
         property: savedProperty,
       });
+
+
     } catch (error) {
+
       console.error(
-        "Add property error:",
+        "ADD PROPERTY ERROR:",
         error
       );
 
-      res.status(400).json({
-        message:
-          error.message ||
-          "Failed to add property.",
+      res.status(500).json({
+        message: "Failed to add property",
+        error: error.message,
       });
     }
   }
 );
 
+
 // =====================================================
 // UPDATE PROPERTY
-// ADMIN ONLY
 // PUT /api/properties/:id
+// ADMIN ONLY
 // =====================================================
 
 router.put(
@@ -273,226 +235,148 @@ router.put(
   authMiddleware,
   adminMiddleware,
   async (req, res) => {
+
     try {
+
       const { id } = req.params;
 
-      // ---------------------------------------------
-      // CHECK ID
-      // ---------------------------------------------
-
-      if (!isValidObjectId(id)) {
+      if (!mongoose.Types.ObjectId.isValid(id)) {
         return res.status(400).json({
-          message: "Invalid property ID.",
+          message: "Invalid property ID",
         });
       }
 
-      // ---------------------------------------------
-      // FIND PROPERTY
-      // ---------------------------------------------
 
       const property =
         await Property.findById(id);
 
+
       if (!property) {
         return res.status(404).json({
-          message: "Property not found.",
+          message: "Property not found",
         });
       }
 
+
       const {
-        title,
-        property_type,
-        location,
-        price,
-        bedrooms,
-        bathrooms,
-        area_sqft,
-        description,
-        image,
-      } = req.body;
+  title,
+  property_type,
+  location,
+  price,
+  bedrooms,
+  bathrooms,
+  area_sqft,
+  description,
+  image,
+  images,
+  video,
+  latitude,
+  longitude,
+  map_location,
+} = req.body;
 
-      // ---------------------------------------------
-      // UPDATE TITLE
-      // ---------------------------------------------
 
-      if (title !== undefined) {
-        if (
-          typeof title !== "string" ||
-          !title.trim()
-        ) {
-          return res.status(400).json({
-            message:
-              "Property title cannot be empty.",
-          });
-        }
+      property.title =
+        title ?? property.title;
 
-        property.title = title.trim();
-      }
+      property.property_type =
+        property_type ??
+        property.property_type;
 
-      // ---------------------------------------------
-      // PROPERTY TYPE
-      // ---------------------------------------------
+      property.location =
+        location ?? property.location;
 
-      if (property_type !== undefined) {
-        property.property_type =
-          property_type;
-      }
+      property.price =
+        price !== undefined
+          ? Number(price)
+          : property.price;
 
-      // ---------------------------------------------
-      // LOCATION
-      // ---------------------------------------------
+      property.bedrooms =
+        bedrooms !== undefined
+          ? Number(bedrooms)
+          : property.bedrooms;
 
-      if (location !== undefined) {
-        if (
-          typeof location !== "string" ||
-          !location.trim()
-        ) {
-          return res.status(400).json({
-            message:
-              "Property location cannot be empty.",
-          });
-        }
+      property.bathrooms =
+        bathrooms !== undefined
+          ? Number(bathrooms)
+          : property.bathrooms;
 
-        property.location =
-          location.trim();
-      }
+      property.area_sqft =
+        area_sqft !== undefined
+          ? Number(area_sqft)
+          : property.area_sqft;
 
-      // ---------------------------------------------
-      // PRICE
-      // ---------------------------------------------
+      property.description =
+        description ??
+        property.description;
 
-      if (price !== undefined) {
-        const numericPrice = Number(price);
+      property.image =
+        image ??
+        property.image;
 
-        if (
-          Number.isNaN(numericPrice) ||
-          numericPrice < 0
-        ) {
-          return res.status(400).json({
-            message:
-              "Please enter a valid price.",
-          });
-        }
+property.images =
+  Array.isArray(images)
+    ? images
+    : property.images;
 
-        property.price = numericPrice;
-      }
+property.video =
+  video ??
+  property.video;
 
-      // ---------------------------------------------
-      // BEDROOMS
-      // ---------------------------------------------
+property.latitude =
+  latitude !== undefined
+    ? (
+        latitude === null ||
+        latitude === ""
+          ? null
+          : Number(latitude)
+      )
+    : property.latitude;
 
-      if (bedrooms !== undefined) {
-        const numericBedrooms =
-          Number(bedrooms);
+property.longitude =
+  longitude !== undefined
+    ? (
+        longitude === null ||
+        longitude === ""
+          ? null
+          : Number(longitude)
+      )
+    : property.longitude;
 
-        if (
-          Number.isNaN(numericBedrooms) ||
-          numericBedrooms < 0
-        ) {
-          return res.status(400).json({
-            message:
-              "Please enter valid bedrooms.",
-          });
-        }
-
-        property.bedrooms =
-          numericBedrooms;
-      }
-
-      // ---------------------------------------------
-      // BATHROOMS
-      // ---------------------------------------------
-
-      if (bathrooms !== undefined) {
-        const numericBathrooms =
-          Number(bathrooms);
-
-        if (
-          Number.isNaN(numericBathrooms) ||
-          numericBathrooms < 0
-        ) {
-          return res.status(400).json({
-            message:
-              "Please enter valid bathrooms.",
-          });
-        }
-
-        property.bathrooms =
-          numericBathrooms;
-      }
-
-      // ---------------------------------------------
-      // AREA
-      // ---------------------------------------------
-
-      if (area_sqft !== undefined) {
-        const numericArea =
-          Number(area_sqft);
-
-        if (
-          Number.isNaN(numericArea) ||
-          numericArea < 0
-        ) {
-          return res.status(400).json({
-            message:
-              "Please enter a valid area.",
-          });
-        }
-
-        property.area_sqft =
-          numericArea;
-      }
-
-      // ---------------------------------------------
-      // DESCRIPTION
-      // ---------------------------------------------
-
-      if (description !== undefined) {
-        property.description =
-          typeof description === "string"
-            ? description.trim()
-            : "";
-      }
-
-      // ---------------------------------------------
-      // IMAGE
-      // ---------------------------------------------
-
-      if (image !== undefined) {
-        property.image = image;
-      }
-
-      // ---------------------------------------------
-      // SAVE
-      // ---------------------------------------------
-
+property.map_location =
+  map_location ??
+  property.map_location;
       const updatedProperty =
         await property.save();
 
+
       res.status(200).json({
         message:
-          "Property updated successfully.",
+          "Property updated successfully",
         property: updatedProperty,
       });
+
+
     } catch (error) {
+
       console.error(
-        "Update property error:",
+        "UPDATE PROPERTY ERROR:",
         error
       );
 
-      res.status(400).json({
-        message:
-          error.message ||
-          "Failed to update property.",
+      res.status(500).json({
+        message: "Failed to update property",
+        error: error.message,
       });
     }
   }
 );
 
+
 // =====================================================
-// UPDATE PROPERTY STATUS
-// ADMIN ONLY
+// UPDATE STATUS
 // PUT /api/properties/:id/status
+// ADMIN ONLY
 // =====================================================
 
 router.put(
@@ -500,23 +384,12 @@ router.put(
   authMiddleware,
   adminMiddleware,
   async (req, res) => {
+
     try {
+
       const { id } = req.params;
       const { status } = req.body;
 
-      // ---------------------------------------------
-      // CHECK ID
-      // ---------------------------------------------
-
-      if (!isValidObjectId(id)) {
-        return res.status(400).json({
-          message: "Invalid property ID.",
-        });
-      }
-
-      // ---------------------------------------------
-      // VALID STATUS
-      // ---------------------------------------------
 
       const allowedStatuses = [
         "Pending",
@@ -525,59 +398,66 @@ router.put(
         "Rejected",
       ];
 
+
       if (!allowedStatuses.includes(status)) {
         return res.status(400).json({
-          message:
-            "Invalid property status. Allowed values: Pending, Available, Sold, Rejected.",
+          message: "Invalid status",
         });
       }
 
-      // ---------------------------------------------
-      // FIND PROPERTY
-      // ---------------------------------------------
+
+      if (!mongoose.Types.ObjectId.isValid(id)) {
+        return res.status(400).json({
+          message: "Invalid property ID",
+        });
+      }
+
 
       const property =
         await Property.findById(id);
 
+
       if (!property) {
         return res.status(404).json({
-          message: "Property not found.",
+          message: "Property not found",
         });
       }
 
-      // ---------------------------------------------
-      // UPDATE STATUS
-      // ---------------------------------------------
 
       property.status = status;
 
       const updatedProperty =
         await property.save();
 
+
       res.status(200).json({
         message:
-          "Property status updated successfully.",
+          "Property status updated successfully",
         property: updatedProperty,
       });
+
+
     } catch (error) {
+
       console.error(
-        "Update status error:",
+        "STATUS UPDATE ERROR:",
         error
       );
 
-      res.status(400).json({
+      res.status(500).json({
         message:
-          error.message ||
-          "Failed to update property status.",
+          "Failed to update property status",
+        error: error.message,
       });
     }
   }
 );
 
+
 // =====================================================
 // DELETE PROPERTY
-// ADMIN ONLY
 // DELETE /api/properties/:id
+// ADMIN ONLY
 // =====================================================
 
 router.delete(
@@ -585,55 +465,53 @@ router.delete(
   authMiddleware,
   adminMiddleware,
   async (req, res) => {
+
     try {
+
       const { id } = req.params;
 
-      // ---------------------------------------------
-      // CHECK ID
-      // ---------------------------------------------
 
-      if (!isValidObjectId(id)) {
+      if (!mongoose.Types.ObjectId.isValid(id)) {
         return res.status(400).json({
-          message: "Invalid property ID.",
+          message: "Invalid property ID",
         });
       }
 
-      // ---------------------------------------------
-      // FIND PROPERTY
-      // ---------------------------------------------
 
       const property =
         await Property.findById(id);
 
+
       if (!property) {
         return res.status(404).json({
-          message: "Property not found.",
+          message: "Property not found",
         });
       }
 
-      // ---------------------------------------------
-      // DELETE
-      // ---------------------------------------------
 
       await Property.findByIdAndDelete(id);
 
+
       res.status(200).json({
         message:
-          "Property deleted successfully.",
+          "Property deleted successfully",
       });
+
+
     } catch (error) {
+
       console.error(
-        "Delete property error:",
+        "DELETE PROPERTY ERROR:",
         error
       );
 
-      res.status(400).json({
-        message:
-          error.message ||
-          "Failed to delete property.",
+      res.status(500).json({
+        message: "Failed to delete property",
+        error: error.message,
       });
     }
   }
 );
+
 
 module.exports = router;
