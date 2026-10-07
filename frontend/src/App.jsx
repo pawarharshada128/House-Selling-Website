@@ -1,6 +1,5 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-
 import "./App.css";
 
 const API_URL = "http://localhost:5000/api";
@@ -53,60 +52,6 @@ function HomePage() {
   const [search, setSearch] = useState("");
   const [propertyType, setPropertyType] = useState("All");
   const [maxPrice, setMaxPrice] = useState("");
-  const [statusFilter, setStatusFilter] = useState("All");
-
-  // =====================================================
-  // ADMIN FORM
-  // =====================================================
-
-  const emptyForm = {
-    title: "",
-    property_type: "House",
-    location: "",
-    price: "",
-    bedrooms: "",
-    bathrooms: "",
-    area_sqft: "",
-    description: "",
-    image: null,
-    images: [],
-    video: null,
-    latitude: "",
-    longitude: "",
-    map_location: "",
-  };
-
-  const [formData, setFormData] = useState(emptyForm);
-  const [editingId, setEditingId] = useState(null);
-
-  // =====================================================
-  // EXTRACT LATITUDE & LONGITUDE FROM GOOGLE MAPS URL
-  // =====================================================
-
-const extractCoordinates = (url) => {
-  if (!url) {
-    return {
-      latitude: "",
-      longitude: "",
-    };
-  }
-
-  const match = url.match(
-    /@(-?\d+(?:\.\d+)?),(-?\d+(?:\.\d+)?)/
-  );
-
-  if (match) {
-    return {
-      latitude: Number(match[1]),
-      longitude: Number(match[2]),
-    };
-  }
-
-  return {
-    latitude: "",
-    longitude: "",
-  };
-};
 
   // =====================================================
   // FETCH PROPERTIES
@@ -117,7 +62,6 @@ const extractCoordinates = (url) => {
       console.log("Fetching properties...");
 
       const response = await fetch(`${API_URL}/properties`);
-
       const data = await response.json();
 
       console.log("Properties received:", data);
@@ -293,638 +237,40 @@ const extractCoordinates = (url) => {
   };
 
   // =====================================================
-  // UPDATE PROPERTY STATUS
+  // FILTER PROPERTIES
   // =====================================================
 
-  const updatePropertyStatus = async (
-    propertyId,
-    newStatus
-  ) => {
-    if (user?.role !== "admin") {
-      alert("Only admin can change property status.");
-      return;
-    }
+  const filteredProperties = properties.filter((property) => {
+    const searchText = search.toLowerCase().trim();
 
-    try {
-      const token = localStorage.getItem("token");
+    const title = property.title?.toLowerCase() || "";
 
-      const response = await fetch(
-        `${API_URL}/properties/${propertyId}/status`,
-        {
-          method: "PUT",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-          body: JSON.stringify({
-            status: newStatus,
-          }),
-        }
-      );
+    const location =
+      property.location?.toLowerCase() || "";
 
-      const data = await response.json();
+    const propertyTypeText =
+      property.property_type?.toLowerCase() || "";
 
-      if (response.status === 401) {
-        alert("Session expired.");
-        handleLogout();
-        return;
-      }
+    const matchesSearch =
+      searchText === "" ||
+      title.includes(searchText) ||
+      location.includes(searchText) ||
+      propertyTypeText.includes(searchText);
 
-      if (!response.ok) {
-        alert(
-          data.message ||
-            data.error ||
-            "Failed to update status."
-        );
-        return;
-      }
+    const matchesType =
+      propertyType === "All" ||
+      property.property_type === propertyType;
 
-      setProperties((previous) =>
-        previous.map((property) =>
-          property._id === propertyId
-            ? data.property
-            : property
-        )
-      );
-
-      alert(`Property status changed to ${newStatus}`);
-    } catch (error) {
-      console.error(error);
-      alert("Backend connection failed.");
-    }
-  };
-
-  // =====================================================
-  // LOGOUT
-  // =====================================================
-
-  const handleLogout = () => {
-    localStorage.removeItem("token");
-    localStorage.removeItem("user");
-
-    setUser(null);
-    setWishlist([]);
-    setEditingId(null);
-    setFormData({ ...emptyForm });
-
-    // Keep properties visible after logout
-    fetchProperties();
-  };
-
-  // =====================================================
-  // FORM CHANGE
-  // =====================================================
-
-const handleChange = async (e) => {
-  const { name, value } = e.target;
-
-  // ===================================================
-  // GOOGLE MAPS LOCATION
-  // ===================================================
-
-  if (name === "map_location") {
-    // First save the URL
-    setFormData((previous) => ({
-      ...previous,
-      map_location: value,
-    }));
-
-    // Empty URL
-    if (!value.trim()) {
-      setFormData((previous) => ({
-        ...previous,
-        map_location: "",
-        latitude: "",
-        longitude: "",
-      }));
-
-      return;
-    }
-
-    // =================================================
-    // TRY FRONTEND EXTRACTION FIRST
-    // =================================================
-
-    const coordinates = extractCoordinates(value);
-
-    if (
-      coordinates.latitude !== "" &&
-      coordinates.longitude !== ""
-    ) {
-      setFormData((previous) => ({
-        ...previous,
-        map_location: value,
-        latitude: coordinates.latitude,
-        longitude: coordinates.longitude,
-      }));
-
-      return;
-    }
-
-    // =================================================
-    // TRY BACKEND FOR SHORT GOOGLE MAPS URL
-    // =================================================
-
-    if (
-      value.includes("maps.app.goo.gl") ||
-      value.includes("goo.gl/maps")
-    ) {
-      try {
-        const response = await fetch(
-          `${API_URL}/map/coordinates`,
-          {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify({
-              url: value,
-            }),
-          }
-        );
-
-        const data = await response.json();
-
-        if (response.ok && data.success) {
-          setFormData((previous) => ({
-            ...previous,
-            map_location: value,
-            latitude: data.latitude,
-            longitude: data.longitude,
-          }));
-
-          console.log(
-            "Coordinates found:",
-            data.latitude,
-            data.longitude
-          );
-        } else {
-          console.log(
-            "Coordinates not found:",
-            data.message
-          );
-        }
-      } catch (error) {
-        console.error(
-          "Map coordinate request failed:",
-          error
-        );
-      }
-    }
-
-    return;
-  }
-
-  // ===================================================
-  // NORMAL FORM FIELDS
-  // ===================================================
-
-  setFormData((previous) => ({
-    ...previous,
-    [name]: value,
-  }));
-};
-
-  // =====================================================
-  // RESET FORM
-  // =====================================================
-
-  const resetForm = () => {
-    setFormData({ ...emptyForm });
-    setEditingId(null);
-  };
-
-  // =====================================================
-  // UPLOAD FILE
-  // =====================================================
-
-  const uploadFile = async (file, fieldName) => {
-    if (!(file instanceof File)) {
-      return "";
-    }
-
-    const uploadFormData = new FormData();
-
-    uploadFormData.append(fieldName, file);
-
-    console.log(
-      `Uploading ${fieldName}:`,
-      file.name,
-      file.type,
-      file.size
-    );
-
-    const response = await fetch(
-      `${SERVER_URL}/api/upload`,
-      {
-        method: "POST",
-        body: uploadFormData,
-      }
-    );
-
-    let data;
-
-    try {
-      data = await response.json();
-    } catch {
-      data = {};
-    }
-
-    console.log(
-      `Upload response for ${fieldName}:`,
-      data
-    );
-
-    if (!response.ok) {
-      throw new Error(
-        data.message ||
-          data.error ||
-          `${fieldName} upload failed.`
-      );
-    }
+    const matchesPrice =
+      maxPrice === "" ||
+      Number(property.price) <= Number(maxPrice);
 
     return (
-      data[fieldName] ||
-      data.image ||
-      data.video ||
-      data.url ||
-      data.imageUrl ||
-      data.videoUrl ||
-      ""
+      matchesSearch &&
+      matchesType &&
+      matchesPrice
     );
-  };
-
-  // =====================================================
-  // ADD / UPDATE PROPERTY
-  // =====================================================
-
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-
-    if (user?.role !== "admin") {
-      alert("Only admin can manage properties.");
-      return;
-    }
-
-    const token = localStorage.getItem("token");
-
-    if (!token) {
-      alert("Please login first.");
-      return;
-    }
-
-    try {
-      // MAIN IMAGE
-
-      let imageUrl =
-        typeof formData.image === "string"
-          ? formData.image
-          : "";
-
-      if (formData.image instanceof File) {
-        imageUrl = await uploadFile(
-          formData.image,
-          "image"
-        );
-      }
-
-      // ADDITIONAL IMAGES
-
-      let imageUrls = [];
-
-      if (
-        editingId &&
-        Array.isArray(formData.images)
-      ) {
-        imageUrls = formData.images.filter(
-          (image) => typeof image === "string"
-        );
-      }
-
-      const newImageFiles = Array.isArray(
-        formData.images
-      )
-        ? formData.images.filter(
-            (image) => image instanceof File
-          )
-        : [];
-
-      for (const file of newImageFiles) {
-        const uploadedUrl = await uploadFile(
-          file,
-          "image"
-        );
-
-        if (uploadedUrl) {
-          imageUrls.push(uploadedUrl);
-        }
-      }
-
-      // VIDEO
-
-      let videoUrl =
-        typeof formData.video === "string"
-          ? formData.video
-          : "";
-
-      if (formData.video instanceof File) {
-        videoUrl = await uploadFile(
-          formData.video,
-          "video"
-        );
-      }
-
-      // PROPERTY DATA
-
-      const propertyData = {
-        title: formData.title.trim(),
-
-        property_type: formData.property_type,
-
-        location: formData.location.trim(),
-
-        price: Number(formData.price),
-
-        bedrooms: Number(formData.bedrooms),
-
-        bathrooms: Number(formData.bathrooms),
-
-        area_sqft: Number(
-          formData.area_sqft || 0
-        ),
-
-        description:
-          formData.description.trim(),
-
-        image: imageUrl,
-
-        images: imageUrls,
-
-        video: videoUrl,
-
-        map_location:
-          formData.map_location || "",
-
-        latitude:
-          formData.latitude !== "" &&
-          formData.latitude !== null
-            ? Number(formData.latitude)
-            : null,
-
-        longitude:
-          formData.longitude !== "" &&
-          formData.longitude !== null
-            ? Number(formData.longitude)
-            : null,
-      };
-
-      console.log(
-        "Property data being sent:",
-        propertyData
-      );
-
-      // URL
-
-      const url = editingId
-        ? `${API_URL}/properties/${editingId}`
-        : `${API_URL}/properties`;
-
-      // REQUEST
-
-      const response = await fetch(url, {
-        method: editingId ? "PUT" : "POST",
-
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-
-        body: JSON.stringify(propertyData),
-      });
-
-      let data;
-
-      try {
-        data = await response.json();
-      } catch {
-        data = {};
-      }
-
-      // SESSION
-
-      if (response.status === 401) {
-        alert("Session expired.");
-        handleLogout();
-        return;
-      }
-
-      // ERROR
-
-      if (!response.ok) {
-        alert(
-          data.error ||
-            data.message ||
-            "Property operation failed."
-        );
-        return;
-      }
-
-      // SUCCESS
-
-      alert(
-        editingId
-          ? "Property updated successfully."
-          : "Property added successfully."
-      );
-
-      resetForm();
-
-      await fetchProperties();
-
-      setTimeout(() => {
-        document
-          .getElementById("properties")
-          ?.scrollIntoView({
-            behavior: "smooth",
-          });
-      }, 200);
-    } catch (error) {
-      console.error(
-        "Property submit error:",
-        error
-      );
-
-      alert(
-        error.message ||
-          "Backend connection failed."
-      );
-    }
-  };
-
-  // =====================================================
-  // EDIT PROPERTY
-  // =====================================================
-
- const handleEdit = (property) => {
-  if (user?.role !== "admin") {
-    alert("Only admin can edit properties.");
-    return;
-  }
-
-  setEditingId(property._id);
-
-  setFormData({
-    title: property.title || "",
-
-    property_type:
-      property.property_type || "House",
-
-    location: property.location || "",
-
-    price: property.price ?? "",
-
-    bedrooms: property.bedrooms ?? "",
-
-    bathrooms: property.bathrooms ?? "",
-
-    area_sqft: property.area_sqft ?? "",
-
-    description:
-      property.description || "",
-
-    image:
-      property.image || "",
-
-    images:
-      Array.isArray(property.images)
-        ? property.images
-        : [],
-
-    video:
-      property.video || "",
-
-    latitude:
-      property.latitude ?? "",
-
-    longitude:
-      property.longitude ?? "",
-
-    map_location:
-      property.map_location || "",
   });
-
-  setTimeout(() => {
-    document
-      .getElementById("add-property")
-      ?.scrollIntoView({
-        behavior: "smooth",
-      });
-  }, 100);
-};
-
-  // =====================================================
-  // DELETE PROPERTY
-  // =====================================================
-
-  const handleDelete = async (id) => {
-    if (user?.role !== "admin") {
-      alert("Only admin can delete properties.");
-      return;
-    }
-
-    const confirmDelete = window.confirm(
-      "Are you sure you want to delete this property?"
-    );
-
-    if (!confirmDelete) {
-      return;
-    }
-
-    try {
-      const token = localStorage.getItem("token");
-
-      const response = await fetch(
-        `${API_URL}/properties/${id}`,
-        {
-          method: "DELETE",
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
-
-      const data = await response.json();
-
-      if (response.status === 401) {
-        alert("Session expired.");
-        handleLogout();
-        return;
-      }
-
-      if (!response.ok) {
-        alert(
-          data.error ||
-            data.message ||
-            "Failed to delete property."
-        );
-        return;
-      }
-
-      await fetchProperties();
-
-      alert("Property deleted successfully.");
-    } catch (error) {
-      console.error(error);
-
-      alert("Backend connection failed.");
-    }
-  };
-
-  // =====================================================
-  // FILTER
-  // =====================================================
-
-  const filteredProperties =
-    properties.filter((property) => {
-      const searchText =
-        search.toLowerCase().trim();
-
-      const title =
-        property.title?.toLowerCase() || "";
-
-      const location =
-        property.location?.toLowerCase() || "";
-
-      const propertyTypeText =
-        property.property_type?.toLowerCase() ||
-        "";
-
-      const matchesSearch =
-        searchText === "" ||
-        title.includes(searchText) ||
-        location.includes(searchText) ||
-        propertyTypeText.includes(searchText);
-
-      const matchesType =
-        propertyType === "All" ||
-        property.property_type === propertyType;
-
-      const matchesPrice =
-        maxPrice === "" ||
-        Number(property.price) <=
-          Number(maxPrice);
-
-      const matchesStatus =
-        statusFilter === "All" ||
-        property.status === statusFilter;
-
-      return (
-        matchesSearch &&
-        matchesType &&
-        matchesPrice &&
-        matchesStatus
-      );
-    });
 
   // =====================================================
   // VIEW DETAILS
@@ -935,137 +281,29 @@ const handleChange = async (e) => {
   };
 
   // =====================================================
+  // IMAGE URL
+  // =====================================================
+
+  const getImageUrl = (image) => {
+    if (!image) {
+      return "";
+    }
+
+    if (image.startsWith("http")) {
+      return image;
+    }
+
+    return `${SERVER_URL}${
+      image.startsWith("/") ? "" : "/"
+    }${image}`;
+  };
+
+  // =====================================================
   // MAIN WEBSITE
   // =====================================================
 
   return (
     <div className="app">
-
-      {/* =================================================
-          ADMIN DASHBOARD
-      ================================================= */}
-
-      {user?.role === "admin" && (
-        <section className="admin-header">
-
-          <div className="section-container">
-
-            <div>
-
-              <span className="section-label">
-                ADMINISTRATION
-              </span>
-
-              <h1>
-                Admin Dashboard
-              </h1>
-
-              <p>
-                Manage properties and
-                maintain the HomeFinder
-                platform.
-              </p>
-
-            </div>
-
-            <div className="admin-stats">
-
-              <div className="stat-card">
-                <strong>
-                  {properties.length}
-                </strong>
-
-                <span>
-                  Total Properties
-                </span>
-              </div>
-
-              <div className="stat-card">
-                <strong>
-                  {
-                    properties.filter(
-                      (p) =>
-                        p.property_type ===
-                        "House"
-                    ).length
-                  }
-                </strong>
-
-                <span>
-                  Houses
-                </span>
-              </div>
-
-              <div className="stat-card">
-                <strong>
-                  {
-                    properties.filter(
-                      (p) =>
-                        p.property_type ===
-                        "Villa"
-                    ).length
-                  }
-                </strong>
-
-                <span>
-                  Villas
-                </span>
-              </div>
-
-              <div className="stat-card">
-                <strong>
-                  {
-                    properties.filter(
-                      (p) =>
-                        p.property_type ===
-                        "Plot"
-                    ).length
-                  }
-                </strong>
-
-                <span>
-                  Plots
-                </span>
-              </div>
-
-              <div className="stat-card">
-                <strong>
-                  {
-                    properties.filter(
-                      (p) =>
-                        p.status ===
-                        "Available"
-                    ).length
-                  }
-                </strong>
-
-                <span>
-                  Available
-                </span>
-              </div>
-
-              <div className="stat-card">
-                <strong>
-                  {
-                    properties.filter(
-                      (p) =>
-                        p.status ===
-                        "Sold"
-                    ).length
-                  }
-                </strong>
-
-                <span>
-                  Sold
-                </span>
-              </div>
-
-            </div>
-
-          </div>
-
-        </section>
-      )}
 
       {/* =================================================
           HERO
@@ -1075,7 +313,6 @@ const handleChange = async (e) => {
         className="hero"
         id="home"
       >
-
         <div className="hero-overlay"></div>
 
         <div className="hero-content">
@@ -1116,7 +353,6 @@ const handleChange = async (e) => {
           </div>
 
         </div>
-
       </section>
 
       {/* =================================================
@@ -1275,52 +511,12 @@ const handleChange = async (e) => {
 
             </div>
 
-            {user?.role === "admin" && (
-              <div className="search-field">
-
-                <label>
-                  Status
-                </label>
-
-                <select
-                  value={statusFilter}
-                  onChange={(e) =>
-                    setStatusFilter(e.target.value)
-                  }
-                >
-
-                  <option value="All">
-                    All Status
-                  </option>
-
-                  <option value="Pending">
-                    Pending
-                  </option>
-
-                  <option value="Available">
-                    Available
-                  </option>
-
-                  <option value="Sold">
-                    Sold
-                  </option>
-
-                  <option value="Rejected">
-                    Rejected
-                  </option>
-
-                </select>
-
-              </div>
-            )}
-
             <button
               className="clear-button"
               onClick={() => {
                 setSearch("");
                 setPropertyType("All");
                 setMaxPrice("");
-                setStatusFilter("All");
               }}
             >
               Clear Filters
@@ -1341,6 +537,7 @@ const handleChange = async (e) => {
           <div className="property-container">
 
             {filteredProperties.length === 0 ? (
+
               <div className="no-properties">
 
                 <h3>
@@ -1353,282 +550,191 @@ const handleChange = async (e) => {
                 </p>
 
               </div>
+
             ) : (
-              filteredProperties.map(
-                (property) => (
 
-                  <article
-                    className="property-card"
-                    key={property._id}
-                  >
+              filteredProperties.map((property) => (
 
-                    {/* IMAGE */}
+                <article
+                  className="property-card"
+                  key={property._id}
+                >
 
-                    <div className="property-image-wrapper">
+                  {/* IMAGE */}
 
-                      {property.image ? (
-                        <img
-                          src={
-                            property.image.startsWith(
-                              "http"
-                            )
-                              ? property.image
-                              : `${SERVER_URL}${
-                                  property.image.startsWith(
-                                    "/"
-                                  )
-                                    ? ""
-                                    : "/"
-                                }${property.image}`
+                  <div className="property-image-wrapper">
+
+                    {property.image ? (
+
+                      <img
+                        src={getImageUrl(property.image)}
+                        alt={property.title}
+                        className="property-image"
+                        onError={(e) => {
+                          e.currentTarget.style.display =
+                            "none";
+
+                          const fallback =
+                            e.currentTarget
+                              .nextElementSibling;
+
+                          if (fallback) {
+                            fallback.style.display =
+                              "flex";
                           }
-                          alt={property.title}
-                          className="property-image"
-                          onError={(e) => {
-                            e.currentTarget.style.display =
-                              "none";
-
-                            const fallback =
-                              e.currentTarget
-                                .nextElementSibling;
-
-                            if (fallback) {
-                              fallback.style.display =
-                                "flex";
-                            }
-                          }}
-                        />
-                      ) : null}
-
-                      <div
-                        className="no-image"
-                        style={{
-                          display:
-                            property.image
-                              ? "none"
-                              : "flex",
                         }}
-                      >
-                        Property Image
-                      </div>
+                      />
 
-                      <span className="property-badge-static">
-                        {property.property_type}
+                    ) : null}
+
+                    <div
+                      className="no-image"
+                      style={{
+                        display: property.image
+                          ? "none"
+                          : "flex",
+                      }}
+                    >
+                      Property Image
+                    </div>
+
+                    <span className="property-badge-static">
+                      {property.property_type}
+                    </span>
+
+                    <span
+                      className={`property-status ${
+                        (
+                          property.status ||
+                          "Pending"
+                        ).toLowerCase()
+                      }`}
+                    >
+                      {property.status ||
+                        "Pending"}
+                    </span>
+
+                  </div>
+
+                  {/* PROPERTY INFORMATION */}
+
+                  <div className="property-info">
+
+                    <p className="property-location">
+                      {property.location}
+                    </p>
+
+                    <h3>
+                      {property.title}
+                    </h3>
+
+                    <p className="property-price">
+                      ₹
+                      {Number(
+                        property.price
+                      ).toLocaleString("en-IN")}
+                    </p>
+
+                    <div className="property-meta">
+
+                      <span>
+                        {property.bedrooms || 0}{" "}
+                        Bedrooms
                       </span>
 
-                      <span
-                        className={`property-status ${
-                          (
-                            property.status ||
-                            "Pending"
-                          ).toLowerCase()
-                        }`}
-                      >
-                        {property.status ||
-                          "Pending"}
+                      <span>
+                        {property.bathrooms || 0}{" "}
+                        Bathrooms
+                      </span>
+
+                      <span>
+                        {property.area_sqft || 0}{" "}
+                        sq.ft
                       </span>
 
                     </div>
 
-                    {/* PROPERTY INFORMATION */}
+                    {property.description && (
 
-                    <div className="property-info">
-
-                      <p className="property-location">
-                        {property.location}
+                      <p className="property-description">
+                        {property.description}
                       </p>
 
-                      <h3>
-                        {property.title}
-                      </h3>
+                    )}
 
-                      <p className="property-price">
-                        ₹
-                        {Number(
-                          property.price
-                        ).toLocaleString(
-                          "en-IN"
-                        )}
-                      </p>
+                    {/* BUYER ACTIONS */}
 
-                      <div className="property-meta">
+                    {user?.role === "buyer" ? (
 
-                        <span>
-                          {property.bedrooms || 0}{" "}
-                          Bedrooms
-                        </span>
+                      <div className="buyer-property-actions">
 
-                        <span>
-                          {property.bathrooms || 0}{" "}
-                          Bathrooms
-                        </span>
+                        <button
+                          className="view-button"
+                          onClick={() =>
+                            handleViewDetails(property)
+                          }
+                        >
+                          View Details
+                        </button>
 
-                        <span>
-                          {property.area_sqft || 0}{" "}
-                          sq.ft
-                        </span>
+                        <button
+                          className={
+                            isWishlisted(property._id)
+                              ? "wishlist-button active"
+                              : "wishlist-button"
+                          }
+                          onClick={() => {
 
-                      </div>
-
-                      {property.description && (
-                        <p className="property-description">
-                          {property.description}
-                        </p>
-                      )}
-
-                      {/* =================================
-                          BUYER / PUBLIC ACTIONS
-                      ================================= */}
-
-                      {user?.role === "buyer" ? (
-
-                        <div className="buyer-property-actions">
-
-                          {/* VIEW DETAILS */}
-
-                          <button
-                            className="view-button"
-                            onClick={() =>
-                              handleViewDetails(
-                                property
-                              )
-                            }
-                          >
-                            View Details
-                          </button>
-
-                          {/* WISHLIST */}
-
-                          <button
-                            className={
+                            if (
                               isWishlisted(
                                 property._id
                               )
-                                ? "wishlist-button active"
-                                : "wishlist-button"
-                            }
-                            onClick={() => {
-                              if (
-                                isWishlisted(
-                                  property._id
-                                )
-                              ) {
-                                removeFromWishlist(
-                                  property._id
-                                );
-                              } else {
-                                addToWishlist(
-                                  property._id
-                                );
-                              }
-                            }}
-                          >
-                            {isWishlisted(
-                              property._id
-                            )
-                              ? "♥ Saved"
-                              : "♡ Wishlist"}
-                          </button>
+                            ) {
 
-                        </div>
-
-                      ) : (
-
-                        /* LOGGED OUT / ADMIN */
-
-                        <div className="public-property-actions">
-
-                          <button
-                            className="view-button"
-                            onClick={() =>
-                              handleViewDetails(
-                                property
-                              )
-                            }
-                          >
-                            View Details
-                          </button>
-
-                        </div>
-
-                      )}
-
-                      {/* =================================
-                          ADMIN ACTIONS
-                      ================================= */}
-
-                      {user?.role === "admin" && (
-                        <div className="admin-property-actions">
-
-                          <div className="status-control">
-
-                            <label>
-                              Status
-                            </label>
-
-                            <select
-                              value={
-                                property.status ||
-                                "Pending"
-                              }
-                              onChange={(e) =>
-                                updatePropertyStatus(
-                                  property._id,
-                                  e.target.value
-                                )
-                              }
-                            >
-
-                              <option value="Pending">
-                                Pending
-                              </option>
-
-                              <option value="Available">
-                                Available
-                              </option>
-
-                              <option value="Sold">
-                                Sold
-                              </option>
-
-                              <option value="Rejected">
-                                Rejected
-                              </option>
-
-                            </select>
-
-                          </div>
-
-                          <button
-                            className="edit-button"
-                            onClick={() =>
-                              handleEdit(
-                                property
-                              )
-                            }
-                          >
-                            Edit
-                          </button>
-
-                          <button
-                            className="delete-button"
-                            onClick={() =>
-                              handleDelete(
+                              removeFromWishlist(
                                 property._id
-                              )
+                              );
+
+                            } else {
+
+                              addToWishlist(
+                                property._id
+                              );
+
                             }
-                          >
-                            Delete
-                          </button>
 
-                        </div>
-                      )}
+                          }}
+                        >
+                          {isWishlisted(property._id)
+                            ? "♥ Saved"
+                            : "♡ Wishlist"}
+                        </button>
 
-                    </div>
+                      </div>
 
-                  </article>
+                    ) : (
 
-                )
-              )
+                      <div className="public-property-actions">
+
+                        <button
+                          className="view-button"
+                          onClick={() =>
+                            handleViewDetails(property)
+                          }
+                        >
+                          View Details
+                        </button>
+
+                      </div>
+
+                    )}
+
+                  </div>
+
+                </article>
+
+              ))
+
             )}
 
           </div>
@@ -1642,6 +748,7 @@ const handleChange = async (e) => {
       ================================================= */}
 
       {user?.role === "buyer" && (
+
         <section
           className="wishlist-section"
           id="wishlist"
@@ -1713,22 +820,10 @@ const handleChange = async (e) => {
                         {property.image ? (
 
                           <img
-                            src={
-                              property.image.startsWith(
-                                "http"
-                              )
-                                ? property.image
-                                : `${SERVER_URL}${
-                                    property.image.startsWith(
-                                      "/"
-                                    )
-                                      ? ""
-                                      : "/"
-                                  }${property.image}`
-                            }
-                            alt={
-                              property.title
-                            }
+                            src={getImageUrl(
+                              property.image
+                            )}
+                            alt={property.title}
                             className="property-image"
                           />
 
@@ -1741,9 +836,7 @@ const handleChange = async (e) => {
                         )}
 
                         <span className="property-badge-static">
-                          {
-                            property.property_type
-                          }
+                          {property.property_type}
                         </span>
 
                       </div>
@@ -1762,9 +855,7 @@ const handleChange = async (e) => {
                           ₹
                           {Number(
                             property.price
-                          ).toLocaleString(
-                            "en-IN"
-                          )}
+                          ).toLocaleString("en-IN")}
                         </p>
 
                         <div className="buyer-property-actions">
@@ -1798,6 +889,7 @@ const handleChange = async (e) => {
                     </article>
 
                   );
+
                 })}
 
               </div>
@@ -1807,431 +899,7 @@ const handleChange = async (e) => {
           </div>
 
         </section>
-      )}
 
-      {/* =================================================
-          ADMIN PROPERTY FORM
-      ================================================= */}
-
-      {user?.role === "admin" && (
-        <section
-          className="form-section"
-          id="add-property"
-        >
-
-          <div className="form-container">
-
-            <div className="section-heading centered">
-
-              <span className="section-label">
-                PROPERTY MANAGEMENT
-              </span>
-
-              <h2>
-                {editingId
-                  ? "Update Property"
-                  : "Add New Property"}
-              </h2>
-
-              <p>
-                Enter complete property
-                information.
-              </p>
-
-            </div>
-
-            <form onSubmit={handleSubmit}>
-
-              <div className="form-grid">
-
-                {/* TITLE */}
-
-                <div className="form-group full">
-
-                  <label>
-                    Property Title
-                  </label>
-
-                  <input
-                    type="text"
-                    name="title"
-                    placeholder="Enter property title"
-                    value={formData.title}
-                    onChange={handleChange}
-                    required
-                  />
-
-                </div>
-
-                {/* MAIN PROPERTY PHOTO */}
-
-                <div className="form-group full">
-
-                  <label>
-                    Main Property Photo
-                  </label>
-
-                  <input
-                    type="file"
-                    accept="image/png,image/jpeg,image/jpg,image/webp"
-                    onChange={(e) => {
-                      const file =
-                        e.target.files?.[0];
-
-                      if (file) {
-                        setFormData(
-                          (previous) => ({
-                            ...previous,
-                            image: file,
-                          })
-                        );
-                      }
-                    }}
-                  />
-
-                  {formData.image instanceof File && (
-                    <small>
-                      Selected image:{" "}
-                      {formData.image.name}
-                    </small>
-                  )}
-
-                  {typeof formData.image ===
-                    "string" &&
-                    formData.image && (
-                      <small>
-                        Existing main image selected
-                      </small>
-                    )}
-
-                </div>
-
-                {/* MORE PHOTOS */}
-
-                <div className="form-group full">
-
-                  <label>
-                    More Property Photos
-                  </label>
-
-                  <input
-                    type="file"
-                    accept="image/png,image/jpeg,image/jpg,image/webp"
-                    multiple
-                    onChange={(e) => {
-                      const files = Array.from(
-                        e.target.files || []
-                      );
-
-                      if (files.length > 0) {
-                        setFormData(
-                          (previous) => ({
-                            ...previous,
-                            images: [
-                              ...previous.images.filter(
-                                (image) =>
-                                  typeof image ===
-                                  "string"
-                              ),
-                              ...files,
-                            ],
-                          })
-                        );
-                      }
-                    }}
-                  />
-
-                  {formData.images.length >
-                    0 && (
-                    <small>
-                      {formData.images.length}{" "}
-                      photo(s) available
-                    </small>
-                  )}
-
-                </div>
-
-                {/* VIDEO */}
-
-                <div className="form-group full">
-
-                  <label>
-                    Property Video
-                  </label>
-
-                  <input
-                    type="file"
-                    accept="video/mp4,video/webm,video/ogg"
-                    onChange={(e) => {
-                      const file =
-                        e.target.files?.[0];
-
-                      if (file) {
-                        setFormData(
-                          (previous) => ({
-                            ...previous,
-                            video: file,
-                          })
-                        );
-                      }
-                    }}
-                  />
-
-                  {formData.video instanceof File && (
-                    <small>
-                      Selected video:{" "}
-                      {formData.video.name}
-                    </small>
-                  )}
-
-                  {typeof formData.video ===
-                    "string" &&
-                    formData.video && (
-                      <small>
-                        Existing video selected
-                      </small>
-                    )}
-
-                </div>
-
-                {/* GOOGLE MAP */}
-
-                <div className="form-group full">
-
-                  <label>
-                    Google Maps Location
-                  </label>
-
-                  <input
-                    type="text"
-                    name="map_location"
-                    placeholder="Paste Google Maps URL"
-                    value={
-                      formData.map_location
-                    }
-                    onChange={handleChange}
-                  />
-
-                  {/* SHOW EXTRACTED COORDINATES */}
-
-                  {formData.latitude !== "" &&
-                    formData.longitude !== "" && (
-                      <small>
-                        Location detected:{" "}
-                        {formData.latitude},{" "}
-                        {formData.longitude}
-                      </small>
-                    )}
-
-                  {formData.map_location &&
-                    formData.latitude === "" &&
-                    formData.longitude === "" && (
-                      <small>
-                        Please paste a Google Maps
-                        URL containing the location
-                        coordinates.
-                      </small>
-                    )}
-
-                </div>
-
-                {/* PROPERTY TYPE */}
-
-                <div className="form-group">
-
-                  <label>
-                    Property Type
-                  </label>
-
-                  <select
-                    name="property_type"
-                    value={
-                      formData.property_type
-                    }
-                    onChange={handleChange}
-                    required
-                  >
-
-                    <option value="House">
-                      House
-                    </option>
-
-                    <option value="Penthouse">
-                      Penthouse
-                    </option>
-
-                    <option value="Villa">
-                      Villa
-                    </option>
-
-                    <option value="Plot">
-                      Plot
-                    </option>
-
-                    <option value="Commercial">
-                      Commercial
-                    </option>
-
-                  </select>
-
-                </div>
-
-                {/* LOCATION */}
-
-                <div className="form-group">
-
-                  <label>
-                    Location
-                  </label>
-
-                  <input
-                    type="text"
-                    name="location"
-                    placeholder="Property location"
-                    value={
-                      formData.location
-                    }
-                    onChange={handleChange}
-                    required
-                  />
-
-                </div>
-
-                {/* PRICE */}
-
-                <div className="form-group">
-
-                  <label>
-                    Price
-                  </label>
-
-                  <input
-                    type="number"
-                    name="price"
-                    placeholder="Property price"
-                    value={formData.price}
-                    onChange={handleChange}
-                    min="0"
-                    required
-                  />
-
-                </div>
-
-                {/* BEDROOMS */}
-
-                <div className="form-group">
-
-                  <label>
-                    Bedrooms
-                  </label>
-
-                  <input
-                    type="number"
-                    name="bedrooms"
-                    value={
-                      formData.bedrooms
-                    }
-                    onChange={handleChange}
-                    min="0"
-                    required
-                  />
-
-                </div>
-
-                {/* BATHROOMS */}
-
-                <div className="form-group">
-
-                  <label>
-                    Bathrooms
-                  </label>
-
-                  <input
-                    type="number"
-                    name="bathrooms"
-                    value={
-                      formData.bathrooms
-                    }
-                    onChange={handleChange}
-                    min="0"
-                    required
-                  />
-
-                </div>
-
-                {/* AREA */}
-
-                <div className="form-group">
-
-                  <label>
-                    Area
-                  </label>
-
-                  <input
-                    type="number"
-                    name="area_sqft"
-                    placeholder="Area in sq.ft"
-                    value={
-                      formData.area_sqft
-                    }
-                    onChange={handleChange}
-                    min="0"
-                  />
-
-                </div>
-
-                {/* DESCRIPTION */}
-
-                <div className="form-group full">
-
-                  <label>
-                    Description
-                  </label>
-
-                  <textarea
-                    name="description"
-                    placeholder="Write property description"
-                    value={
-                      formData.description
-                    }
-                    onChange={handleChange}
-                    rows="5"
-                  />
-
-                </div>
-
-              </div>
-
-              {/* FORM BUTTONS */}
-
-              <div className="form-actions">
-
-                <button
-                  type="submit"
-                  className="primary-button"
-                >
-                  {editingId
-                    ? "Update Property"
-                    : "Publish Property"}
-                </button>
-
-                {editingId && (
-                  <button
-                    type="button"
-                    className="secondary-button"
-                    onClick={resetForm}
-                  >
-                    Cancel
-                  </button>
-                )}
-
-              </div>
-
-            </form>
-
-          </div>
-
-        </section>
       )}
 
       {/* =================================================
@@ -2268,9 +936,11 @@ const handleChange = async (e) => {
             <article className="project-card">
 
               <div className="project-image project-one">
+
                 <span>
                   ONGOING PROJECT
                 </span>
+
               </div>
 
               <div className="project-content">
@@ -2296,9 +966,11 @@ const handleChange = async (e) => {
             <article className="project-card">
 
               <div className="project-image project-two">
+
                 <span>
                   COMPLETED PROJECT
                 </span>
+
               </div>
 
               <div className="project-content">
@@ -2324,9 +996,11 @@ const handleChange = async (e) => {
             <article className="project-card">
 
               <div className="project-image project-three">
+
                 <span>
                   UPCOMING PROJECT
                 </span>
+
               </div>
 
               <div className="project-content">

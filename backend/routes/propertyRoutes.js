@@ -1,3 +1,4 @@
+// nextconst express = require("express");
 const express = require("express");
 const mongoose = require("mongoose");
 
@@ -15,13 +16,31 @@ const adminMiddleware = require("../middleware/adminMiddleware");
 // PUBLIC
 // =====================================================
 
+// router.get("/", async (req, res) => {
+//   try {
+//     const properties = await Property.find()
+//       .sort({ createdAt: -1 });
+
+//     console.log("Properties fetched from MongoDB:");
+//     console.log(properties);
+
+//     res.status(200).json(properties);
+
+//   } catch (error) {
+//     console.error("GET PROPERTIES ERROR:", error);
+
+//     res.status(500).json({
+//       message: "Failed to fetch properties",
+//       error: error.message,
+//     });
+//   }
+// });
 router.get("/", async (req, res) => {
   try {
-    const properties = await Property.find()
+    const properties = await Property.find({})
       .sort({ createdAt: -1 });
 
-    console.log("Properties fetched from MongoDB:");
-    console.log(properties);
+    console.log("Properties fetched from MongoDB:", properties.length);
 
     res.status(200).json(properties);
 
@@ -30,7 +49,7 @@ router.get("/", async (req, res) => {
 
     res.status(500).json({
       message: "Failed to fetch properties",
-      error: error.message,
+      error: error.message
     });
   }
 });

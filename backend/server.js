@@ -5,6 +5,9 @@ const dotenv = require("dotenv");
 const path = require("path");
 const mapRoutes = require("./routes/mapRoutes");
 dotenv.config();
+const dns = require("dns");
+
+dns.setServers(["8.8.8.8", "1.1.1.1"]);
 
 const app = express();
 
@@ -38,21 +41,21 @@ const cartRoutes = require("./routes/cartRoutes");
 const authRoutes = require("./routes/authRoutes");
 const propertyRoutes = require("./routes/propertyRoutes");
 const wishlistRoutes = require("./routes/wishlistRoutes");
-const inquiryRoutes = require("./routes/inquiryRoutes");
+const enquiryRoutes = require("./routes/enquiry");
 const projectRoutes = require("./routes/projectRoutes");
 const blogRoutes = require("./routes/blogRoutes");
 const testimonialRoutes = require("./routes/testimonialRoutes");
 const uploadRoutes = require("./routes/uploadRoutes");
-
+const adminRoutes = require("./routes/admin");
 // =====================================================
 // API ROUTES
 // =====================================================
-
+app.use("/api/admin", adminRoutes);
 app.use("/api/cart", cartRoutes);
 app.use("/api/auth", authRoutes);
 app.use("/api/properties", propertyRoutes);
 app.use("/api/wishlist", wishlistRoutes);
-app.use("/api/inquiries", inquiryRoutes);
+app.use("/api/enquiries", enquiryRoutes);
 app.use("/api/projects", projectRoutes);
 app.use("/api/blog", blogRoutes);
 app.use("/api/testimonials", testimonialRoutes);

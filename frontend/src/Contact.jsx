@@ -1,19 +1,85 @@
 import "./App.css";
 import { useLocation } from "react-router-dom";
+import { useState } from "react";
+
+const API_URL = "http://localhost:5000/api";
 
 function Contact() {
   const location = useLocation();
 
   const property = location.state?.property;
 
-  const handleSubmit = (e) => {
+  const [loading, setLoading] = useState(false);
+  const [successMessage, setSuccessMessage] = useState("");
+  const [errorMessage, setErrorMessage] = useState("");
+
+  // =====================================================
+  // SUBMIT ENQUIRY
+  // =====================================================
+
+  const handleSubmit = async (e) => {
     e.preventDefault();
 
-    alert(
-      "Thank you! Your enquiry has been sent successfully."
-    );
+    setLoading(true);
+    setSuccessMessage("");
+    setErrorMessage("");
 
-    e.target.reset();
+    const form = e.target;
+
+    const formData = {
+      name: form.name.value,
+      email: form.email.value,
+      phone: form.phone.value,
+      message: form.message.value,
+
+      propertyId: property?._id || null,
+
+      propertyTitle:
+        property?.title || "",
+    };
+
+    try {
+      const response = await fetch(
+        `${API_URL}/enquiries`,
+        {
+          method: "POST",
+
+          headers: {
+            "Content-Type": "application/json",
+          },
+
+          body: JSON.stringify(formData),
+        }
+      );
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(
+          data.message ||
+            "Failed to send enquiry."
+        );
+      }
+
+      setSuccessMessage(
+        "Thank you. Your enquiry has been sent successfully."
+      );
+
+      form.reset();
+
+    } catch (error) {
+      console.error(
+        "Enquiry error:",
+        error
+      );
+
+      setErrorMessage(
+        error.message ||
+          "Failed to send enquiry."
+      );
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -22,6 +88,10 @@ function Contact() {
       <section className="contact-section">
 
         <div className="contact-container">
+
+          {/* =================================================
+              CONTACT INFORMATION
+          ================================================= */}
 
           <div className="contact-info">
 
@@ -45,70 +115,109 @@ function Contact() {
               <div className="selected-property">
 
                 <h3>
-                  🏠 Selected Property
+                  Selected Property
                 </h3>
 
                 <p>
-                  <strong>Property:</strong>{" "}
+                  <strong>
+                    Property:
+                  </strong>{" "}
                   {property.title}
                 </p>
 
                 <p>
-                  <strong>Location:</strong>{" "}
+                  <strong>
+                    Location:
+                  </strong>{" "}
                   {property.location}
                 </p>
 
                 <p>
-                  <strong>Price:</strong>{" "}
-                  ₹{property.price}
+                  <strong>
+                    Price:
+                  </strong>{" "}
+                  ₹
+                  {Number(
+                    property.price || 0
+                  ).toLocaleString("en-IN")}
                 </p>
 
               </div>
             )}
 
+            {/* ADDRESS */}
+
             <div className="contact-item">
+
               <span></span>
 
               <div>
-                <h3>Address</h3>
+
+                <h3>
+                  Address
+                </h3>
 
                 <p>
                   Shree Krishna Constructions,
                   <br />
-                 Manmad, Maharashtra, India
+                  Manmad, Maharashtra, India
                 </p>
+
               </div>
+
             </div>
 
+            {/* PHONE */}
+
             <div className="contact-item">
+
               <span></span>
 
               <div>
-                <h3>Phone</h3>
+
+                <h3>
+                  Phone
+                </h3>
 
                 <p>
                   +91 98765 43210
                 </p>
+
               </div>
+
             </div>
 
+            {/* EMAIL */}
+
             <div className="contact-item">
+
               <span></span>
 
               <div>
-                <h3>Email</h3>
+
+                <h3>
+                  Email
+                </h3>
 
                 <p>
                   shree_krishna_constructions@gmail.com
                 </p>
+
               </div>
+
             </div>
 
+            {/* WORKING HOURS */}
+
             <div className="contact-item">
+
               <span></span>
 
               <div>
-                <h3>Working Hours</h3>
+
+                <h3>
+                  Working Hours
+                </h3>
 
                 <p>
                   Monday - Saturday
@@ -117,10 +226,16 @@ function Contact() {
                 <p>
                   9:00 AM - 6:00 PM
                 </p>
+
               </div>
+
             </div>
 
           </div>
+
+          {/* =================================================
+              ENQUIRY FORM
+          ================================================= */}
 
           <div className="contact-form-container">
 
@@ -131,6 +246,22 @@ function Contact() {
             <h2>
               Send Us a Message
             </h2>
+
+            {/* SUCCESS */}
+
+            {successMessage && (
+              <div className="contact-success">
+                {successMessage}
+              </div>
+            )}
+
+            {/* ERROR */}
+
+            {errorMessage && (
+              <div className="contact-error">
+                {errorMessage}
+              </div>
+            )}
 
             <form onSubmit={handleSubmit}>
 
@@ -169,8 +300,11 @@ function Contact() {
               <button
                 type="submit"
                 className="primary-button"
+                disabled={loading}
               >
-                Send Enquiry
+                {loading
+                  ? "Sending..."
+                  : "Send Enquiry"}
               </button>
 
             </form>
