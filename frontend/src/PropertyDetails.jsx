@@ -21,9 +21,10 @@ import "./App.css";
 // API URL
 // ==============================
 
-const API_URL = "http://localhost:5000/api";
-const SERVER_URL = "http://localhost:5000";
-
+// const API_URL = "http://localhost:5000/api";
+// const SERVER_URL = "http://localhost:5000";
+const API_URL = "https://house-selling-website.onrender.com/api/properties";
+const SERVER_URL = "https://house-selling-website.onrender.com";
 // ==============================
 // LEAFLET MARKER ICON FIX
 // ==============================

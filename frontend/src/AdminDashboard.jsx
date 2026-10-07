@@ -5,9 +5,10 @@ import PropertyForm from "./PropertyForm";
 import ProjectForm from "./ProjectForm";
 import "./AdminDashboard.css";
 
-const API_URL = "http://localhost:5000/api";
-const SERVER_URL = "http://localhost:5000";
-
+// const API_URL = "http://localhost:5000/api";
+// const SERVER_URL = "http://localhost:5000";
+const API_URL = "https://house-selling-website.onrender.com/api/properties";
+const SERVER_URL = "https://house-selling-website.onrender.com";
 function AdminDashboard() {
   const navigate = useNavigate();
 
