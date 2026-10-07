@@ -34,7 +34,7 @@ function Auth({ onLogin, initialMode = "login" }) {
 
     try {
       const response = await fetch(
-        "http://localhost:5000/api/auth/login",
+        "https://house-selling-website.onrender.com/api/auth/login",
         {
           method: "POST",
           headers: {
@@ -140,7 +140,7 @@ function Auth({ onLogin, initialMode = "login" }) {
 
     try {
       const response = await fetch(
-        "http://localhost:5000/api/auth/register",
+        "https://house-selling-website.onrender.com/api/auth/register",
         {
           method: "POST",
           headers: {

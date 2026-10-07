@@ -2,7 +2,7 @@ import React, { useState } from "react";
 
 // const API_URL = "http://localhost:5000/api";
 // const SERVER_URL = "http://localhost:5000";
-const API_URL = "https://house-selling-website.onrender.com/api/properties";
+const API_URL = "https://house-selling-website.onrender.com/api";
 const SERVER_URL = "https://house-selling-website.onrender.com";
 function PropertyForm({ property, onClose, onSuccess }) {
   const isEditing = Boolean(property);

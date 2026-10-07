@@ -4,7 +4,7 @@ import "./App.css";
 
 // const API_URL = "http://localhost:5000/api";
 // const SERVER_URL = "http://localhost:5000";
-const API_URL = "https://house-selling-website.onrender.com/api/properties";
+const API_URL = "https://house-selling-website.onrender.com/api";
 const SERVER_URL = "https://house-selling-website.onrender.com";
 function App() {
   return <HomePage />;

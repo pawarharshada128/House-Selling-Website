@@ -2,8 +2,9 @@ import "./App.css";
 import { useLocation } from "react-router-dom";
 import { useState } from "react";
 
-const API_URL = "http://localhost:5000/api";
-
+// const API_URL = "http://localhost:5000/api";
+const API_URL = "https://house-selling-website.onrender.com/api";
+// const SERVER_URL = "https://house-selling-website.onrender.com";
 function Contact() {
   const location = useLocation();
 

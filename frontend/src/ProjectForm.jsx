@@ -2,8 +2,10 @@ import React, {
   useState,
 } from "react";
 
-const API_URL =
-  "http://localhost:5000/api";
+// const API_URL =
+//   "http://localhost:5000/api";
+const API_URL = "https://house-selling-website.onrender.com/api";
+// const SERVER_URL = "https://house-selling-website.onrender.com";
 
 function ProjectForm({
   onClose,
