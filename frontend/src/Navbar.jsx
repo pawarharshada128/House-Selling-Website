@@ -5,41 +5,27 @@ function Navbar() {
   const navigate = useNavigate();
 
   const token = localStorage.getItem("token");
-  const user = JSON.parse(localStorage.getItem("user") || "null");
 
+  const user = JSON.parse(
+    localStorage.getItem("user") || "null"
+  );
+
+  const isAdmin =
+    token && user?.role === "admin";
+
+  const isBuyer =
+    token && user?.role === "buyer";
+
+  // Logout
   const handleLogout = () => {
     localStorage.removeItem("token");
     localStorage.removeItem("user");
+
     navigate("/login");
   };
 
-  return (
-    <nav className="navbar">
-
-      {/* LOGO */}
-      <div
-        className="navbar-logo"
-        onClick={() => navigate("/")}
-      >
-        <img
-          src="/logo.jpeg"
-          alt="Shree Krishna Constructions Logo"
-          className="navbar-logo-image"
-        />
-
-        <span>Shree Krishna Constructions</span>
-      </div>
-
-      {/* NAVIGATION */}
-      <div className="navbar-links">
-
-        <Link to="/">
-          Home
-        </Link>
-
-       <button
-  className="properties-nav-button"
-  onClick={() => {
+  // Properties
+  const handleProperties = () => {
     navigate("/");
 
     setTimeout(() => {
@@ -49,56 +35,131 @@ function Navbar() {
           behavior: "smooth",
         });
     }, 100);
-  }}
->
-  Properties
-</button>
+  };
 
-        <Link to="/contact">
-          Contact
-        </Link>
+  // Favorites
+  const handleFavorites = () => {
+    navigate("/");
 
-        {/* FAVORITES - BUYER ONLY */}
-        {token && user?.role === "buyer" && (
-          <button
-            className="favorites-nav-button"
-            onClick={() => {
-              navigate("/#wishlist");
+    setTimeout(() => {
+      document
+        .getElementById("wishlist")
+        ?.scrollIntoView({
+          behavior: "smooth",
+        });
+    }, 300);
+  };
 
-              setTimeout(() => {
-                document
-                  .getElementById("wishlist")
-                  ?.scrollIntoView({
-                    behavior: "smooth",
-                  });
-              }, 300);
-            }}
-          >
-            ♥ Favorites
-          </button>
-        )}
+  return (
+    <nav className="navbar">
 
-        {/* LOGIN / SIGNUP */}
-        {!token ? (
+      {/* LOGO */}
+      <div
+        className="navbar-logo"
+        onClick={() =>
+          navigate(
+            isAdmin
+              ? "/admin-dashboard"
+              : "/"
+          )
+        }
+      >
+        <img
+          src="/logo.jpeg"
+          alt="Shree Krishna Constructions Logo"
+          className="navbar-logo-image"
+        />
+
+        <span>
+          Shree Krishna Constructions
+        </span>
+      </div>
+
+      {/* NAVIGATION */}
+      <div className="navbar-links">
+
+        {/* =========================
+            ADMIN NAVIGATION
+        ========================== */}
+
+        {isAdmin ? (
           <>
-            <Link to="/login">
-              Login
-            </Link>
-
-            <Link
-              to="/signup"
-              className="signup-link"
+            <button
+              type="button"
+              className="admin-dashboard-button"
+              onClick={() =>
+                navigate("/admin-dashboard")
+              }
             >
-              Sign Up
-            </Link>
+              Admin Dashboard
+            </button>
           </>
         ) : (
+          <>
+            {/* =========================
+                PUBLIC NAVIGATION
+            ========================== */}
+
+            {/* HOME */}
+            <Link to="/">
+              Home
+            </Link>
+
+            {/* PROPERTIES */}
+            <button
+              type="button"
+              className="properties-nav-button"
+              onClick={handleProperties}
+            >
+              Properties
+            </button>
+
+            {/* CONTACT */}
+            <Link to="/contact">
+              Contact
+            </Link>
+
+            {/* FAVORITES - BUYER ONLY */}
+            {isBuyer && (
+              <button
+                type="button"
+                className="favorites-nav-button"
+                onClick={handleFavorites}
+              >
+                Favorites
+              </button>
+            )}
+
+            {/* LOGIN / SIGNUP */}
+            {!token && (
+              <>
+                <Link to="/login">
+                  Login
+                </Link>
+
+                <Link
+                  to="/signup"
+                  className="signup-link"
+                >
+                  Sign Up
+                </Link>
+              </>
+            )}
+          </>
+        )}
+
+        {/* =========================
+            LOGGED-IN USER
+        ========================== */}
+
+        {token && (
           <>
             <span className="navbar-user">
               Hi, {user?.name || "User"}
             </span>
 
             <button
+              type="button"
               className="logout-button"
               onClick={handleLogout}
             >

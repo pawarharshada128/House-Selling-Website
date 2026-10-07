@@ -49,6 +49,14 @@ function PropertyDetails() {
   const [selectedImage, setSelectedImage] = useState("");
 
   // ==============================
+  // BOOKING POPUP STATES
+  // ==============================
+
+  const [showBookingPopup, setShowBookingPopup] = useState(false);
+  const [enquiryLoading, setEnquiryLoading] = useState(false);
+  const [enquiryMessage, setEnquiryMessage] = useState("");
+
+  // ==============================
   // FETCH PROPERTY DETAILS
   // ==============================
 
@@ -56,7 +64,12 @@ function PropertyDetails() {
     const fetchProperty = async () => {
       try {
         setLoading(true);
-        console.log("Fetching property with ID:", `${API_URL}/properties/${id}`);
+
+        console.log(
+          "Fetching property with ID:",
+          `${API_URL}/properties/${id}`
+        );
+
         const response = await fetch(
           `${API_URL}/properties/${id}`
         );
@@ -70,7 +83,9 @@ function PropertyDetails() {
           setProperty(null);
           return;
         }
+
         console.log("Fetched property:", data);
+
         setProperty(data);
 
         // Set main image
@@ -122,81 +137,117 @@ function PropertyDetails() {
   // BOOK HOME
   // ==============================
 
-  const handleBookHome = async () => {
+  const handleBookHome = () => {
     const token = localStorage.getItem("token");
 
     if (!token) {
-      alert("Please login first.");
+      navigate("/login", {
+        state: {
+          fromBooking: true,
+          property: property,
+        },
+      });
+
       return;
     }
 
-    if (!property) {
-      return;
-    }
+    setEnquiryMessage("");
+    setShowBookingPopup(true);
+  };
+
+  // ==============================
+  // BOOKING ENQUIRY SUBMIT
+  // ==============================
+
+  const handleBookingEnquiry = async (e) => {
+    e.preventDefault();
+
+    setEnquiryLoading(true);
+    setEnquiryMessage("");
+
+    const form = e.target;
+
+    const enquiryData = {
+      name: form.name.value,
+      email: form.email.value,
+      phone: form.phone.value,
+      message: form.message.value,
+      propertyId: property._id,
+      propertyTitle: property.title,
+    };
 
     try {
       const response = await fetch(
-        `${API_URL}/bookings`,
+        `${API_URL}/enquiries`,
         {
           method: "POST",
 
           headers: {
             "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
           },
 
-          body: JSON.stringify({
-            propertyId: property._id,
-          }),
+          body: JSON.stringify(enquiryData),
         }
       );
 
       const data = await response.json();
 
       if (!response.ok) {
-        alert(
-          data.message || "Booking failed."
+        throw new Error(
+          data.message ||
+            "Failed to send enquiry."
         );
-        return;
       }
 
-      alert("Home booked successfully!");
+      setEnquiryMessage(
+        "Your enquiry has been submitted successfully."
+      );
+
+      form.reset();
+
     } catch (error) {
       console.error(
-        "Booking error:",
+        "Enquiry error:",
         error
       );
 
-      alert("Backend connection failed.");
+      setEnquiryMessage(
+        error.message ||
+          "Failed to submit enquiry."
+      );
+    } finally {
+      setEnquiryLoading(false);
     }
   };
 
   // ==============================
   // ADD TO CART
   // ==============================
-const handleAddToCart = () => {
-  const token = localStorage.getItem("token");
 
-  // User is NOT logged in
-  if (!token) {
-    navigate("/login", {
+  const handleAddToCart = () => {
+    const token = localStorage.getItem("token");
+
+    // User is NOT logged in
+    if (!token) {
+      navigate("/login", {
+        state: {
+          fromCart: true,
+          property: property,
+        },
+      });
+
+      return;
+    }
+
+    // User is already logged in
+    navigate("/contact", {
       state: {
-        fromCart: true,
         property: property,
+        fromCart: true,
       },
     });
+  };
 
-    return;
-  }
-
-  // User is already logged in
-  navigate("/contact", {
-    state: {
-      property: property,
-      fromCart: true,
-    },
-  });
-};
   // ==============================
   // SHORTLIST
   // ==============================
@@ -239,6 +290,7 @@ const handleAddToCart = () => {
       alert(
         "Property added to shortlist!"
       );
+
     } catch (error) {
       console.error(
         "Shortlist error:",
@@ -268,7 +320,10 @@ const handleAddToCart = () => {
   if (!property) {
     return (
       <div className="no-properties">
-        <h2>Property Not Found</h2>
+
+        <h2>
+          Property Not Found
+        </h2>
 
         <button
           className="view-button"
@@ -276,6 +331,7 @@ const handleAddToCart = () => {
         >
           ← Back to Properties
         </button>
+
       </div>
     );
   }
@@ -385,7 +441,9 @@ const handleAddToCart = () => {
               "Property"}
           </span>
 
-          <h1>{property.title}</h1>
+          <h1>
+            {property.title}
+          </h1>
 
           <p className="location">
             📍 {property.location}
@@ -438,8 +496,10 @@ const handleAddToCart = () => {
                 flexWrap: "wrap",
               }}
             >
+
               {allImages.map(
                 (image, index) => {
+
                   const imageUrl =
                     getImageUrl(image);
 
@@ -472,6 +532,7 @@ const handleAddToCart = () => {
                   );
                 }
               )}
+
             </div>
           )}
 
@@ -559,93 +620,21 @@ const handleAddToCart = () => {
           </div>
 
           {/* ==============================
-              PAYMENT DETAILS
-          ============================== */}
-
-          <div className="payment-section">
-
-            <h2>
-              Payment Details
-            </h2>
-
-            <div className="payment-box">
-
-              {/* TOTAL */}
-
-              <div className="payment-row">
-
-                <span>
-                  Total Payment
-                </span>
-
-                <strong>
-                  ₹
-                  {totalPayment.toLocaleString(
-                    "en-IN"
-                  )}
-                </strong>
-
-              </div>
-
-              {/* ADVANCE */}
-
-              <div className="payment-row">
-
-                <span>
-                  Advance Payment (10%)
-                </span>
-
-                <strong>
-                  ₹
-                  {advancePayment.toLocaleString(
-                    "en-IN"
-                  )}
-                </strong>
-
-              </div>
-
-              {/* REMAINING */}
-
-              <div className="payment-row">
-
-                <span>
-                  Remaining Payment
-                </span>
-
-                <strong>
-                  ₹
-                  {remainingPayment.toLocaleString(
-                    "en-IN"
-                  )}
-                </strong>
-
-              </div>
-
-            </div>
-
-          </div>
-
-          {/* ==============================
               ACTION BUTTONS
           ============================== */}
 
           <div className="property-details-actions">
 
-           
             <button
               className="shortlist-btn"
-              onClick={
-                handleAddToCart
-              }
+              onClick={handleBookHome}
             >
               Book Home
             </button>
 
             <button
               className="shortlist-btn"
-              onClick={
-                handleShortlist
-              }
+              onClick={handleShortlist}
             >
               ❤️ Shortlist
             </button>
@@ -682,6 +671,7 @@ const handleAddToCart = () => {
               marginTop: "15px",
             }}
           >
+
             <source
               src={videoUrl}
               type="video/mp4"
@@ -712,56 +702,11 @@ const handleAddToCart = () => {
             📍 Property Location
           </h2>
 
-          {/* <MapContainer
-            center={[
-              latitude,
-              longitude
-            ]}
-            zoom={15}
-            scrollWheelZoom={true}
-            style={{
-              height: "400px",
-              width: "100%",
-              borderRadius: "12px",
-              marginTop: "15px",
-            }}
-          >
-
-            <TileLayer
-              attribution='&copy; OpenStreetMap contributors'
-             url="https://{s}.tile.openstreetmap.de/{z}/{x}/{y}.png"
-            />
-
-            <Marker
-              position={[
-                latitude,
-                longitude
-              ]}
-            >
-
-              <Popup>
-
-                <b>
-                  {property.title}
-                </b>
-
-                <br />
-
-                {property.location}
-
-              </Popup>
-
-            </Marker>
-
-          </MapContainer> */}
-
           <MapContainer
             center={[
               latitude,
               longitude
             ]}
-
-            // center={[51.505, -0.09]} // London
             zoom={15}
             scrollWheelZoom={true}
             style={{
@@ -892,6 +837,255 @@ const handleAddToCart = () => {
             </strong>{" "}
             {longitude}
           </p>
+
+        </div>
+      )}
+
+      {/* ==============================
+          BOOK HOME POPUP
+      ============================== */}
+
+      {showBookingPopup && (
+        <div className="booking-popup-overlay">
+
+          <div className="booking-popup">
+
+            {/* POPUP HEADER */}
+
+            <div className="booking-popup-header">
+
+              <div>
+
+                <span className="section-label">
+                  HOME BOOKING
+                </span>
+
+                <h2>
+                  Book This Property
+                </h2>
+
+              </div>
+
+              <button
+                className="booking-close-btn"
+                onClick={() =>
+                  setShowBookingPopup(false)
+                }
+              >
+                ×
+              </button>
+
+            </div>
+
+            {/* ==============================
+                PROPERTY INFORMATION
+            ============================== */}
+
+            <div className="booking-property-info">
+
+              <h3>
+                {property.title}
+              </h3>
+
+              <p>
+                <strong>
+                  Property Type:
+                </strong>{" "}
+                {property.property_type ||
+                  "Property"}
+              </p>
+
+              <p>
+                <strong>
+                  Location:
+                </strong>{" "}
+                {property.location}
+              </p>
+
+              <div className="booking-property-grid">
+
+                <div>
+
+                  <span>
+                    Bedrooms
+                  </span>
+
+                  <strong>
+                    {property.bedrooms ?? 0}
+                  </strong>
+
+                </div>
+
+                <div>
+
+                  <span>
+                    Bathrooms
+                  </span>
+
+                  <strong>
+                    {property.bathrooms ?? 0}
+                  </strong>
+
+                </div>
+
+                <div>
+
+                  <span>
+                    Area
+                  </span>
+
+                  <strong>
+                    {property.area_sqft ?? 0} Sq. Ft.
+                  </strong>
+
+                </div>
+
+              </div>
+
+            </div>
+
+            {/* ==============================
+                PAYMENT INFORMATION
+            ============================== */}
+
+            <div className="booking-payment">
+
+              <h3>
+                Payment Details
+              </h3>
+
+              <div className="booking-payment-row">
+
+                <span>
+                  Total Payment
+                </span>
+
+                <strong>
+                  ₹
+                  {totalPayment.toLocaleString(
+                    "en-IN"
+                  )}
+                </strong>
+
+              </div>
+
+              <div className="booking-payment-row">
+
+                <span>
+                  Advance Payment (10%)
+                </span>
+
+                <strong>
+                  ₹
+                  {advancePayment.toLocaleString(
+                    "en-IN"
+                  )}
+                </strong>
+
+              </div>
+
+              <div className="booking-payment-row remaining">
+
+                <span>
+                  Remaining Payment
+                </span>
+
+                <strong>
+                  ₹
+                  {remainingPayment.toLocaleString(
+                    "en-IN"
+                  )}
+                </strong>
+
+              </div>
+
+            </div>
+
+            {/* ==============================
+                CONTACT INFORMATION
+            ============================== */}
+
+            <div className="booking-contact">
+
+              <h3>
+                Contact Information
+              </h3>
+
+              <p>
+                Please provide your details.
+                Our team will contact you
+                regarding this property.
+              </p>
+
+              {enquiryMessage && (
+                <div className="booking-message">
+                  {enquiryMessage}
+                </div>
+              )}
+
+              <form
+                onSubmit={
+                  handleBookingEnquiry
+                }
+              >
+
+                <input
+                  type="text"
+                  name="name"
+                  placeholder="Your Name"
+                  required
+                />
+
+                <input
+                  type="email"
+                  name="email"
+                  placeholder="Your Email"
+                  required
+                />
+
+                <input
+                  type="tel"
+                  name="phone"
+                  placeholder="Your Phone"
+                  required
+                />
+
+                <textarea
+                  name="message"
+                  rows="4"
+                  required
+                  defaultValue={`I am interested in ${property.title}. I would like to know more about the booking process, payment options and availability.`}
+                />
+
+                <div className="booking-popup-actions">
+
+                  <button
+                    type="button"
+                    className="booking-cancel-btn"
+                    onClick={() =>
+                      setShowBookingPopup(false)
+                    }
+                  >
+                    Cancel
+                  </button>
+
+                  <button
+                    type="submit"
+                    className="booking-submit-btn"
+                    disabled={enquiryLoading}
+                  >
+                    {enquiryLoading
+                      ? "Submitting..."
+                      : "Submit Enquiry"}
+                  </button>
+
+                </div>
+
+              </form>
+
+            </div>
+
+          </div>
 
         </div>
       )}
