@@ -6297,3 +6297,763 @@ footer,
     height: 25px;
   }
 }}
+
+
+
+
+
+
+
+
+
+
+
+/* =====================================================
+   FINAL MOBILE FIX
+   360px / 375px / 390px / 414px
+===================================================== */
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  width: 100%;
+  max-width: 100%;
+  margin: 0;
+  padding: 0;
+  overflow-x: hidden;
+}
+
+body {
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  overflow-x: hidden !important;
+}
+
+#root {
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  overflow-x: hidden;
+}
+
+/* =====================================================
+   IMPORTANT:
+   REMOVE FIXED WIDTH / MAX WIDTH FROM MOBILE PAGE
+===================================================== */
+
+@media (max-width: 700px) {
+
+  .app,
+  .App,
+  main,
+  .main,
+  .page,
+  .page-container,
+  .home,
+  .home-page,
+  .properties-page,
+  .property-page,
+  .properties-section,
+  .properties-content,
+  .property-section,
+  .buyer-page,
+  .buyer-content,
+  .content,
+  .container {
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+
+    margin-left: 0 !important;
+    margin-right: 0 !important;
+
+    padding-left: 0;
+    padding-right: 0;
+
+    box-sizing: border-box;
+  }
+
+  /* =================================================
+     NAVBAR
+  ================================================= */
+
+  .navbar {
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+
+    margin: 0 !important;
+
+    padding: 10px 12px !important;
+
+    display: flex !important;
+    align-items: center;
+    justify-content: space-between;
+
+    overflow: visible !important;
+  }
+
+  .navbar-logo {
+    flex: 1 1 auto !important;
+    width: auto !important;
+    max-width: calc(100% - 52px) !important;
+    min-width: 0 !important;
+  }
+
+  .navbar-logo span {
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .mobile-menu-button {
+    flex: 0 0 40px !important;
+
+    width: 40px !important;
+    min-width: 40px !important;
+    height: 40px !important;
+
+    margin-left: 8px;
+  }
+
+  .navbar-links {
+    width: 100% !important;
+    max-width: 100% !important;
+
+    margin-top: 8px !important;
+
+    padding: 10px !important;
+
+    box-sizing: border-box;
+
+    overflow: hidden;
+  }
+
+  /* =================================================
+     PROPERTY AREA
+  ================================================= */
+
+  .property-container {
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+
+    margin: 0 !important;
+
+    padding: 8px !important;
+
+    display: grid !important;
+
+    grid-template-columns:
+      repeat(2, minmax(0, 1fr)) !important;
+
+    gap: 8px !important;
+
+    box-sizing: border-box;
+  }
+
+  /* =================================================
+     PROPERTY CARD
+  ================================================= */
+
+  .property-card {
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+
+    margin: 0 !important;
+
+    overflow: hidden !important;
+
+    border-radius: 9px !important;
+
+    box-sizing: border-box;
+  }
+
+  /* =================================================
+     PROPERTY IMAGE
+  ================================================= */
+
+  .property-image-wrapper {
+    width: 100% !important;
+    max-width: 100% !important;
+
+    height: 125px !important;
+
+    overflow: hidden !important;
+  }
+
+  .property-image {
+    width: 100% !important;
+    max-width: 100% !important;
+
+    height: 125px !important;
+
+    object-fit: cover !important;
+  }
+
+  /* =================================================
+     BADGES
+  ================================================= */
+
+  .property-badge-static,
+  .property-status {
+    top: 7px !important;
+
+    padding: 4px 7px !important;
+
+    font-size: 8px !important;
+
+    line-height: 1.2 !important;
+
+    border-radius: 12px !important;
+
+    white-space: nowrap !important;
+  }
+
+  .property-badge-static {
+    left: 7px !important;
+  }
+
+  .property-status {
+    right: 7px !important;
+  }
+
+  /* =================================================
+     PROPERTY INFORMATION
+  ================================================= */
+
+  .property-info {
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+
+    padding: 10px 7px 9px !important;
+
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
+
+    text-align: center !important;
+
+    box-sizing: border-box;
+  }
+
+  /* Location */
+
+  .property-location {
+    width: 100% !important;
+    max-width: 100% !important;
+
+    margin: 0 0 5px !important;
+
+    font-size: 8px !important;
+    line-height: 1.3 !important;
+
+    text-align: center !important;
+
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+  }
+
+  /* Property name */
+
+  .property-info h3 {
+    width: 100% !important;
+    max-width: 100% !important;
+
+    margin: 3px 0 7px !important;
+
+    font-family: "Playfair Display", Georgia, serif !important;
+
+    font-size: 14px !important;
+    line-height: 1.25 !important;
+
+    text-align: center !important;
+
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+  }
+
+  /* Price */
+
+  .property-price {
+    width: 100% !important;
+    max-width: 100% !important;
+
+    margin: 0 0 7px !important;
+
+    font-size: 13px !important;
+    font-weight: 700 !important;
+
+    line-height: 1.3 !important;
+
+    text-align: center !important;
+
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+  }
+
+  /* =================================================
+     BEDROOM / BATHROOM / AREA
+  ================================================= */
+
+  .property-meta {
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+
+    display: flex !important;
+
+    align-items: center !important;
+    justify-content: center !important;
+
+    gap: 4px !important;
+
+    margin: 0 0 8px !important;
+
+    overflow: hidden !important;
+  }
+
+  .property-meta span {
+    max-width: 33%;
+
+    font-size: 8px !important;
+
+    line-height: 1.2 !important;
+
+    text-align: center !important;
+
+    white-space: nowrap !important;
+
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+  }
+
+  /* =================================================
+     DESCRIPTION
+  ================================================= */
+
+  .property-description {
+    display: none !important;
+  }
+
+  /* =================================================
+     BUTTON AREA
+  ================================================= */
+
+  .buyer-property-actions,
+  .public-property-actions {
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+
+    display: flex !important;
+
+    align-items: center !important;
+    justify-content: center !important;
+
+    gap: 5px !important;
+
+    margin: 3px 0 0 !important;
+    padding: 0 !important;
+
+    flex-wrap: nowrap !important;
+
+    box-sizing: border-box;
+  }
+
+  /* =================================================
+     VIEW DETAILS
+  ================================================= */
+
+  .buyer-property-actions .view-button,
+  .public-property-actions .view-button {
+    width: auto !important;
+    max-width: calc(100% - 33px) !important;
+
+    min-width: 0 !important;
+
+    flex: 1 1 auto !important;
+
+    height: 29px !important;
+
+    padding: 5px 7px !important;
+
+    border-radius: 6px !important;
+
+    font-size: 8px !important;
+    font-weight: 600 !important;
+
+    line-height: 1 !important;
+
+    text-align: center !important;
+
+    white-space: nowrap !important;
+
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+  }
+
+  /* =================================================
+     WISHLIST
+  ================================================= */
+
+  .buyer-property-actions .wishlist-button {
+    width: 29px !important;
+    min-width: 29px !important;
+    max-width: 29px !important;
+
+    flex: 0 0 29px !important;
+
+    height: 29px !important;
+
+    padding: 0 !important;
+
+    display: flex !important;
+
+    align-items: center !important;
+    justify-content: center !important;
+
+    border-radius: 6px !important;
+
+    box-sizing: border-box;
+
+    overflow: hidden;
+  }
+
+  .buyer-property-actions .wishlist-button::before {
+    font-size: 17px !important;
+  }
+
+  /* =================================================
+     PROPERTY CARD - HOVER
+  ================================================= */
+
+  .property-card:hover {
+    transform: none !important;
+  }
+}
+
+/* =========================================================
+   FINAL MOBILE WIDTH FIX
+   IMPORTANT - KEEP THIS AT THE END OF app.css
+========================================================= */
+
+html,
+body,
+#root {
+  width: 100% !important;
+  max-width: 100% !important;
+  min-width: 0 !important;
+
+  margin: 0 !important;
+  padding: 0 !important;
+
+  overflow-x: hidden !important;
+}
+
+@media (max-width: 700px) {
+
+  /* ==============================================
+     MAIN APPLICATION
+  ============================================== */
+
+  #root,
+  #root > div,
+  .App,
+  .app {
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+
+    margin: 0 !important;
+    padding: 0 !important;
+
+    overflow-x: hidden !important;
+  }
+
+
+  /* ==============================================
+     COMMON PAGE WRAPPERS
+  ============================================== */
+
+  main,
+  section,
+  .main-content,
+  .page-content,
+  .content,
+  .container,
+  .page-container,
+  .home,
+  .home-page,
+  .properties-page,
+  .properties-section,
+  .properties-content,
+  .property-page {
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+
+    margin-left: 0 !important;
+    margin-right: 0 !important;
+
+    box-sizing: border-box !important;
+  }
+
+
+  /* ==============================================
+     NAVBAR
+  ============================================== */
+
+  .navbar {
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+
+    box-sizing: border-box !important;
+
+    padding: 10px 12px !important;
+  }
+
+
+  .navbar-logo {
+    min-width: 0 !important;
+    max-width: calc(100% - 50px) !important;
+  }
+
+
+  .navbar-logo span {
+    max-width: 100% !important;
+
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    white-space: nowrap !important;
+  }
+
+
+  .mobile-menu-button {
+    flex-shrink: 0 !important;
+  }
+
+
+  /* ==============================================
+     PROPERTY SECTION
+  ============================================== */
+
+  .property-container {
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+
+    margin: 0 !important;
+
+    padding: 8px !important;
+
+    display: grid !important;
+
+    grid-template-columns:
+      repeat(2, minmax(0, 1fr)) !important;
+
+    gap: 8px !important;
+
+    box-sizing: border-box !important;
+  }
+
+
+  /* ==============================================
+     PROPERTY CARD
+  ============================================== */
+
+  .property-card {
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+
+    margin: 0 !important;
+
+    box-sizing: border-box !important;
+
+    overflow: hidden !important;
+  }
+
+
+  /* ==============================================
+     IMAGE
+  ============================================== */
+
+  .property-image-wrapper {
+    width: 100% !important;
+    max-width: 100% !important;
+
+    height: 125px !important;
+
+    overflow: hidden !important;
+
+    box-sizing: border-box !important;
+  }
+
+
+  .property-image {
+    width: 100% !important;
+    max-width: 100% !important;
+
+    height: 125px !important;
+
+    object-fit: cover !important;
+  }
+
+
+  /* ==============================================
+     PROPERTY INFO
+  ============================================== */
+
+  .property-info {
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+
+    padding: 10px 7px !important;
+
+    box-sizing: border-box !important;
+
+    text-align: center !important;
+  }
+
+
+  .property-location {
+    width: 100% !important;
+    max-width: 100% !important;
+
+    font-size: 8px !important;
+
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+  }
+
+
+  .property-info h3 {
+    width: 100% !important;
+    max-width: 100% !important;
+
+    font-size: 14px !important;
+
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+  }
+
+
+  .property-price {
+    width: 100% !important;
+    max-width: 100% !important;
+
+    font-size: 13px !important;
+
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+  }
+
+
+  /* ==============================================
+     META
+  ============================================== */
+
+  .property-meta {
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+
+    display: flex !important;
+
+    justify-content: center !important;
+    align-items: center !important;
+
+    gap: 4px !important;
+
+    overflow: hidden !important;
+  }
+
+
+  .property-meta span {
+    min-width: 0 !important;
+    max-width: 33.33% !important;
+
+    font-size: 7px !important;
+
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+  }
+
+
+  /* ==============================================
+     BUTTONS
+  ============================================== */
+
+  .buyer-property-actions,
+  .public-property-actions {
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+
+    display: flex !important;
+
+    align-items: center !important;
+    justify-content: center !important;
+
+    gap: 4px !important;
+
+    box-sizing: border-box !important;
+  }
+
+
+  .buyer-property-actions .view-button,
+  .public-property-actions .view-button {
+    flex: 1 1 auto !important;
+
+    width: auto !important;
+    min-width: 0 !important;
+
+    max-width: calc(100% - 33px) !important;
+
+    height: 28px !important;
+
+    padding: 5px 6px !important;
+
+    font-size: 8px !important;
+
+    white-space: nowrap !important;
+
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+  }
+
+
+  .buyer-property-actions .wishlist-button {
+    flex: 0 0 29px !important;
+
+    width: 29px !important;
+    min-width: 29px !important;
+    max-width: 29px !important;
+
+    height: 28px !important;
+
+    padding: 0 !important;
+  }
+}
