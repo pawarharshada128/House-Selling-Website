@@ -1,8 +1,11 @@
-import React from "react";
+import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 
 function Navbar() {
   const navigate = useNavigate();
+
+  // Mobile menu state
+  const [menuOpen, setMenuOpen] = useState(false);
 
   const token = localStorage.getItem("token");
 
@@ -21,11 +24,15 @@ function Navbar() {
     localStorage.removeItem("token");
     localStorage.removeItem("user");
 
+    setMenuOpen(false);
+
     navigate("/login");
   };
 
   // Properties
   const handleProperties = () => {
+    setMenuOpen(false);
+
     navigate("/");
 
     setTimeout(() => {
@@ -39,6 +46,8 @@ function Navbar() {
 
   // Favorites
   const handleFavorites = () => {
+    setMenuOpen(false);
+
     navigate("/");
 
     setTimeout(() => {
@@ -56,13 +65,15 @@ function Navbar() {
       {/* LOGO */}
       <div
         className="navbar-logo"
-        onClick={() =>
+        onClick={() => {
+          setMenuOpen(false);
+
           navigate(
             isAdmin
               ? "/admin-dashboard"
               : "/"
-          )
-        }
+          );
+        }}
       >
         <img
           src="/logo.jpeg"
@@ -75,8 +86,27 @@ function Navbar() {
         </span>
       </div>
 
+
+      {/* MOBILE 3-LINE MENU BUTTON */}
+      <button
+        type="button"
+        className="mobile-menu-button"
+        onClick={() => setMenuOpen(!menuOpen)}
+        aria-label="Toggle navigation menu"
+        aria-expanded={menuOpen}
+      >
+        <span></span>
+        <span></span>
+        <span></span>
+      </button>
+
+
       {/* NAVIGATION */}
-      <div className="navbar-links">
+      <div
+        className={`navbar-links ${
+          menuOpen ? "active" : ""
+        }`}
+      >
 
         {/* =========================
             ADMIN NAVIGATION
@@ -87,23 +117,24 @@ function Navbar() {
             <button
               type="button"
               className="admin-dashboard-button"
-              onClick={() =>
-                navigate("/admin-dashboard")
-              }
+              onClick={() => {
+                setMenuOpen(false);
+                navigate("/admin-dashboard");
+              }}
             >
               Admin Dashboard
             </button>
           </>
         ) : (
           <>
-            {/* =========================
-                PUBLIC NAVIGATION
-            ========================== */}
-
             {/* HOME */}
-            <Link to="/">
+            <Link
+              to="/"
+              onClick={() => setMenuOpen(false)}
+            >
               Home
             </Link>
+
 
             {/* PROPERTIES */}
             <button
@@ -114,10 +145,15 @@ function Navbar() {
               Properties
             </button>
 
+
             {/* CONTACT */}
-            <Link to="/contact">
+            <Link
+              to="/contact"
+              onClick={() => setMenuOpen(false)}
+            >
               Contact
             </Link>
+
 
             {/* FAVORITES - BUYER ONLY */}
             {isBuyer && (
@@ -130,16 +166,21 @@ function Navbar() {
               </button>
             )}
 
+
             {/* LOGIN / SIGNUP */}
             {!token && (
               <>
-                <Link to="/login">
+                <Link
+                  to="/login"
+                  onClick={() => setMenuOpen(false)}
+                >
                   Login
                 </Link>
 
                 <Link
                   to="/signup"
                   className="signup-link"
+                  onClick={() => setMenuOpen(false)}
                 >
                   Sign Up
                 </Link>
@@ -147,6 +188,7 @@ function Navbar() {
             )}
           </>
         )}
+
 
         {/* =========================
             LOGGED-IN USER
@@ -169,8 +211,11 @@ function Navbar() {
         )}
 
       </div>
+
     </nav>
   );
 }
 
 export default Navbar;
+
+

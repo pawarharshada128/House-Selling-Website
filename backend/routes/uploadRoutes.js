@@ -82,6 +82,17 @@ const upload = multer({
 });
 
 // =====================================================
+// GET BACKEND URL
+// =====================================================
+
+function getBackendUrl(req) {
+  return (
+    process.env.BACKEND_URL ||
+    `${req.protocol}://${req.get("host")}`
+  );
+}
+
+// =====================================================
 // UPLOAD IMAGE OR VIDEO
 // POST /api/upload
 // =====================================================
@@ -98,8 +109,11 @@ router.post(
       maxCount: 1,
     },
   ]),
+
   (req, res) => {
     try {
+      const backendUrl = getBackendUrl(req);
+
       // ================================================
       // IMAGE
       // ================================================
@@ -108,8 +122,7 @@ router.post(
         const file = req.files.image[0];
 
         const imageUrl =
-          `http://localhost:${process.env.PORT || 5000}` +
-          `/uploads/${file.filename}`;
+          `${backendUrl}/uploads/${file.filename}`;
 
         return res.status(200).json({
           message: "Image uploaded successfully.",
@@ -127,8 +140,7 @@ router.post(
         const file = req.files.video[0];
 
         const videoUrl =
-          `http://localhost:${process.env.PORT || 5000}` +
-          `/uploads/${file.filename}`;
+          `${backendUrl}/uploads/${file.filename}`;
 
         return res.status(200).json({
           message: "Video uploaded successfully.",
@@ -150,7 +162,9 @@ router.post(
       console.error("Upload error:", error);
 
       return res.status(500).json({
-        message: error.message || "File upload failed.",
+        message:
+          error.message ||
+          "File upload failed.",
       });
     }
   }

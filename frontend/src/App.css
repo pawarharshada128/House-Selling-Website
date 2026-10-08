@@ -4943,3 +4943,1357 @@ footer,
     padding: 15px;
   }
 }
+
+/* =====================================================
+   MOBILE NAVBAR - HAMBURGER MENU
+===================================================== */
+
+@media (max-width: 700px) {
+
+  .navbar {
+    position: sticky;
+    top: 0;
+    z-index: 1000;
+
+    min-height: 65px;
+    padding: 10px 15px;
+
+    flex-direction: row;
+    flex-wrap: wrap;
+    gap: 0;
+  }
+
+  .navbar-logo,
+  .logo {
+    flex: 1;
+  }
+
+  /* Hamburger button */
+  .mobile-menu-button {
+    width: 42px;
+    height: 42px;
+
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+
+    gap: 5px;
+
+    border: none;
+    border-radius: 8px;
+
+    background: var(--brown);
+    cursor: pointer;
+  }
+
+  .mobile-menu-button span {
+    display: block;
+
+    width: 23px;
+    height: 2px;
+
+    background: white;
+    border-radius: 2px;
+
+    transition: 0.3s;
+  }
+
+  /* Dropdown menu */
+  .nav-links,
+  .navbar-links {
+    width: 100%;
+
+    display: none;
+
+    flex-direction: column;
+    align-items: stretch;
+
+    gap: 5px;
+
+    margin-top: 10px;
+    padding: 12px;
+
+    background: white;
+
+    border: 1px solid #eadfd6;
+    border-radius: 10px;
+
+    box-shadow: var(--shadow);
+  }
+
+  /* When your React adds "active" */
+  .nav-links.active,
+  .navbar-links.active {
+    display: flex;
+  }
+
+  .nav-links a,
+  .navbar-links a {
+    width: 100%;
+
+    padding: 11px 12px;
+
+    border-radius: 7px;
+
+    font-size: 14px;
+
+    text-align: left;
+  }
+
+  .nav-links a:hover,
+  .navbar-links a:hover {
+    background: var(--cream);
+  }
+
+  .nav-button,
+  .nav-signup-button,
+  .nav-login-button,
+  .signup-link,
+  .logout-button,
+  .favorites-nav-button,
+  .properties-nav-button {
+    width: 100%;
+
+    padding: 10px 12px;
+
+    text-align: left;
+  }
+}
+
+
+/* Small mobile */
+@media (max-width: 400px) {
+
+  .navbar {
+    padding: 9px 12px;
+  }
+
+  .mobile-menu-button {
+    width: 40px;
+    height: 40px;
+  }
+
+  .mobile-menu-button span {
+    width: 21px;
+  }
+
+  .nav-links,
+  .navbar-links {
+    padding: 10px;
+  }
+
+  .nav-links a,
+  .navbar-links a {
+    font-size: 13px;
+    padding: 10px;
+  }
+}/* =====================================================
+   MOBILE NAVBAR - 3 LINE MENU
+===================================================== */
+
+/* Hide hamburger on desktop */
+.mobile-menu-button {
+  display: none;
+}
+
+
+@media (max-width: 700px) {
+
+  .navbar {
+    position: sticky;
+    top: 0;
+    z-index: 1000;
+
+    min-height: 65px;
+
+    padding: 10px 15px;
+
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+
+    flex-wrap: wrap;
+
+    background: #ffffff;
+  }
+
+
+  /* LOGO */
+
+  .navbar-logo {
+    flex: 1;
+
+    min-width: 0;
+
+    display: flex;
+    align-items: center;
+
+    gap: 8px;
+
+    cursor: pointer;
+  }
+
+  .navbar-logo-image {
+    width: 40px;
+    height: 40px;
+
+    object-fit: cover;
+
+    flex-shrink: 0;
+  }
+
+  .navbar-logo span {
+    font-size: 15px;
+
+    font-weight: 600;
+
+    white-space: nowrap;
+
+    overflow: hidden;
+
+    text-overflow: ellipsis;
+  }
+
+
+  /* 3 LINE BUTTON */
+
+  .mobile-menu-button {
+    width: 42px;
+    height: 42px;
+
+    display: flex;
+
+    flex-direction: column;
+
+    justify-content: center;
+
+    align-items: center;
+
+    gap: 5px;
+
+    flex-shrink: 0;
+
+    border: none;
+
+    border-radius: 8px;
+
+    background: var(--brown);
+
+    cursor: pointer;
+
+    padding: 0;
+  }
+
+
+  .mobile-menu-button span {
+    width: 23px;
+    height: 2px;
+
+    display: block;
+
+    background: #ffffff;
+
+    border-radius: 2px;
+
+    transition: 0.3s;
+  }
+
+
+  /* NAVIGATION DROPDOWN */
+
+  .navbar-links {
+    width: 100%;
+
+    display: none;
+
+    flex-direction: column;
+
+    align-items: stretch;
+
+    gap: 5px;
+
+    margin-top: 10px;
+
+    padding: 12px;
+
+    background: #ffffff;
+
+    border: 1px solid #eadfd6;
+
+    border-radius: 10px;
+
+    box-shadow: var(--shadow);
+  }
+
+
+  /* OPEN MENU */
+
+  .navbar-links.active {
+    display: flex;
+  }
+
+
+  /* LINKS */
+
+  .navbar-links a,
+  .navbar-links button {
+    width: 100%;
+
+    min-height: 42px;
+
+    display: flex;
+
+    align-items: center;
+
+    padding: 10px 12px;
+
+    border-radius: 7px;
+
+    font-family: "Poppins", Arial, sans-serif;
+
+    font-size: 14px;
+
+    text-align: left;
+
+    box-sizing: border-box;
+  }
+
+
+  .navbar-links a:hover,
+  .navbar-links button:hover {
+    background: var(--cream);
+  }
+
+
+  /* USER */
+
+  .navbar-user {
+    width: 100%;
+
+    padding: 10px 12px;
+
+    color: var(--dark-brown);
+
+    font-size: 14px;
+
+    font-weight: 600;
+
+    border-bottom: 1px solid #eadfd6;
+  }
+
+
+  /* LOGOUT */
+
+  .navbar-links .logout-button {
+    width: 100%;
+
+    justify-content: flex-start;
+
+    background: transparent;
+
+    color: var(--dark-brown);
+
+    border: none;
+  }
+
+  .navbar-links .logout-button:hover {
+    background: #f8eaea;
+
+    color: var(--danger);
+  }
+
+
+  /* SIGN UP */
+
+  .navbar-links .signup-link {
+    background: var(--brown);
+
+    color: #ffffff;
+
+    justify-content: flex-start;
+  }
+
+  .navbar-links .signup-link:hover {
+    background: var(--dark-brown);
+
+    color: #ffffff;
+  }
+
+
+  /* ADMIN */
+
+  .navbar-links .admin-dashboard-button {
+    background: var(--brown);
+
+    color: #ffffff;
+
+    border: none;
+  }
+
+  .navbar-links .admin-dashboard-button:hover {
+    background: var(--dark-brown);
+  }
+
+}
+
+
+/* =====================================================
+   SMALL MOBILE
+===================================================== */
+
+@media (max-width: 400px) {
+
+  .navbar {
+    padding: 9px 12px;
+  }
+
+  .navbar-logo-image {
+    width: 36px;
+    height: 36px;
+  }
+
+  .navbar-logo span {
+    font-size: 13px;
+  }
+
+  .mobile-menu-button {
+    width: 39px;
+    height: 39px;
+  }
+
+  .mobile-menu-button span {
+    width: 21px;
+  }
+
+  .navbar-links {
+    padding: 10px;
+  }
+
+  .navbar-links a,
+  .navbar-links button {
+    min-height: 40px;
+
+    padding: 9px 10px;
+
+    font-size: 13px;
+  }
+}
+
+/* =====================================================
+   MOBILE LOGIN / SIGNUP
+===================================================== */
+
+@media (max-width: 700px) {
+
+  .auth-page {
+    min-height: 100vh;
+
+    display: flex;
+    flex-direction: column;
+  }
+
+  .auth-brand {
+    min-height: auto;
+
+    padding: 30px 20px;
+
+    text-align: center;
+  }
+
+  .brand-content {
+    max-width: 100%;
+  }
+
+  .brand-logo {
+    width: 48px;
+    height: 48px;
+
+    margin: 0 auto 14px;
+  }
+
+  .brand-content h1 {
+    font-size: 30px;
+    line-height: 1.2;
+  }
+
+  .brand-content h2 {
+    font-size: 21px;
+    line-height: 1.3;
+  }
+
+  .brand-content > p {
+    font-size: 14px;
+    line-height: 1.6;
+
+    margin-bottom: 20px;
+  }
+
+  .brand-features {
+    display: none;
+  }
+
+  .auth-section {
+    width: 100%;
+
+    min-height: auto;
+
+    padding: 25px 15px;
+
+    background: var(--cream);
+  }
+
+  .auth-card {
+    width: 100%;
+    max-width: 430px;
+
+    padding: 25px 20px;
+
+    border-radius: 12px;
+  }
+
+  .auth-header {
+    margin-bottom: 22px;
+  }
+
+  .mobile-logo {
+    width: 45px;
+    height: 45px;
+
+    margin-bottom: 12px;
+  }
+
+  .auth-header h2 {
+    font-size: 25px;
+  }
+
+  .auth-header p {
+    font-size: 13px;
+  }
+
+  .auth-form {
+    gap: 15px;
+  }
+
+  .auth-form .form-group input {
+    height: 46px;
+
+    padding: 10px 12px;
+
+    font-size: 14px;
+  }
+
+  .auth-form .form-group label {
+    font-size: 13px;
+
+    margin-bottom: 6px;
+  }
+
+  .auth-submit {
+    min-height: 46px;
+
+    font-size: 15px;
+  }
+
+  .login-options {
+    font-size: 13px;
+  }
+
+  .remember-option,
+  .forgot-button {
+    font-size: 13px !important;
+  }
+
+  .auth-switch {
+    margin-top: 20px;
+
+    font-size: 13px;
+  }
+
+  .auth-footer {
+    margin-top: 20px;
+    padding-top: 15px;
+  }
+}
+
+
+/* Small mobile login/signup */
+
+@media (max-width: 400px) {
+
+  .auth-brand {
+    padding: 25px 15px;
+  }
+
+  .brand-content h1 {
+    font-size: 26px;
+  }
+
+  .brand-content h2 {
+    font-size: 19px;
+  }
+
+  .auth-section {
+    padding: 18px 10px;
+  }
+
+  .auth-card {
+    padding: 20px 15px;
+  }
+
+  .auth-header h2 {
+    font-size: 23px;
+  }
+
+  .auth-form .form-group input {
+    height: 44px;
+  }
+
+  .auth-submit {
+    min-height: 44px;
+  }
+}
+/* =====================================================
+   PROPERTY CARDS
+   DESKTOP
+===================================================== */
+
+.property-container {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 18px;
+  width: 100%;
+}
+
+.property-card {
+  width: 100%;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  background: #ffffff;
+  border: 1px solid #e5d9d0;
+  border-radius: 12px;
+  box-shadow: 0 5px 18px rgba(62, 39, 35, 0.10);
+}
+
+.property-image-wrapper {
+  position: relative;
+  width: 100%;
+  height: 220px;
+  overflow: hidden;
+  background: #e9e1db;
+}
+
+.property-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.no-image {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #e9e1db;
+  color: var(--light-text);
+  font-size: 14px;
+}
+
+/* PROPERTY TYPE BADGE */
+
+.property-badge-static {
+  position: absolute;
+  top: 12px;
+  left: 12px;
+  z-index: 2;
+
+  padding: 6px 10px;
+  border-radius: 20px;
+
+  background: var(--gold);
+  color: #ffffff;
+
+  font-size: 11px;
+  font-weight: 600;
+}
+
+/* PROPERTY STATUS */
+
+.property-status {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  z-index: 2;
+
+  padding: 6px 10px;
+  border-radius: 20px;
+
+  color: #ffffff;
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.property-status.available {
+  background: var(--success);
+}
+
+.property-status.pending {
+  background: var(--warning);
+}
+
+.property-status.sold {
+  background: var(--danger);
+}
+
+.property-status.rejected {
+  background: #777;
+}
+
+/* =====================================================
+   PROPERTY INFORMATION
+===================================================== */
+
+.property-info {
+  width: 100%;
+  min-width: 0;
+
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+
+  padding: 18px 15px 15px;
+
+  text-align: center;
+}
+
+.property-location {
+  width: 100%;
+
+  margin: 0 0 7px;
+
+  color: var(--light-text);
+
+  font-size: 12px;
+  line-height: 1.3;
+
+  text-align: center;
+
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.property-info h3 {
+  width: 100%;
+
+  margin: 5px 0 10px;
+
+  color: var(--dark-brown);
+
+  font-family: "Playfair Display", Georgia, serif;
+  font-size: 21px;
+  line-height: 1.25;
+  font-weight: 600;
+
+  text-align: center;
+
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.property-price {
+  width: 100%;
+
+  margin: 0 0 12px;
+
+  color: var(--gold);
+
+  font-size: 18px;
+  font-weight: 700;
+  line-height: 1.3;
+
+  text-align: center;
+
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* =====================================================
+   PROPERTY META
+===================================================== */
+
+.property-meta {
+  width: 100%;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  gap: 7px;
+
+  margin: 0 0 12px;
+
+  overflow: hidden;
+}
+
+.property-meta span {
+  color: var(--light-text);
+
+  font-size: 10px;
+  line-height: 1.3;
+
+  text-align: center;
+
+  white-space: nowrap;
+}
+
+/* Don't show description on home cards */
+
+.property-description {
+  display: none;
+}
+
+/* =====================================================
+   PROPERTY ACTIONS
+===================================================== */
+
+.buyer-property-actions,
+.public-property-actions {
+  width: 100%;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  gap: 7px;
+
+  margin-top: auto;
+  padding-top: 5px;
+
+  flex-wrap: nowrap;
+}
+
+/* VIEW DETAILS */
+
+.buyer-property-actions .view-button,
+.public-property-actions .view-button {
+  flex: 1 1 auto;
+
+  width: auto;
+  min-width: 0;
+
+  height: 32px;
+
+  padding: 6px 12px;
+
+  border: none;
+  border-radius: 7px;
+
+  background: var(--brown);
+  color: #ffffff;
+
+  font-size: 10px;
+  font-weight: 600;
+
+  text-align: center;
+  white-space: nowrap;
+
+  cursor: pointer;
+}
+
+.buyer-property-actions .view-button:hover,
+.public-property-actions .view-button:hover {
+  background: var(--dark-brown);
+}
+
+/* =====================================================
+   WISHLIST
+===================================================== */
+
+.buyer-property-actions .wishlist-button {
+  flex: 0 0 34px;
+
+  width: 34px;
+  min-width: 34px;
+  height: 32px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  padding: 0;
+
+  border: 1px solid var(--border);
+  border-radius: 7px;
+
+  background: #ffffff;
+  color: var(--brown);
+
+  font-size: 0;
+
+  cursor: pointer;
+}
+
+.buyer-property-actions .wishlist-button::before {
+  content: "♡";
+
+  font-size: 19px;
+  line-height: 1;
+}
+
+.buyer-property-actions .wishlist-button.active {
+  color: var(--gold);
+}
+
+.buyer-property-actions .wishlist-button.active::before {
+  content: "♥";
+}
+
+/* =====================================================
+   TABLET / MOBILE
+   2 PROPERTIES PER ROW
+===================================================== */
+
+@media (max-width: 700px) {
+
+  .property-container {
+    width: 100%;
+
+    display: grid;
+
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+
+    gap: 8px;
+  }
+
+  .property-card {
+    width: 100%;
+    min-width: 0;
+
+    border-radius: 9px;
+
+    box-shadow: 0 3px 10px rgba(62, 39, 35, 0.10);
+  }
+
+  /* IMAGE */
+
+  .property-image-wrapper {
+    width: 100%;
+    height: 115px;
+  }
+
+  .property-image {
+    width: 100%;
+    height: 115px;
+    object-fit: cover;
+  }
+
+  /* BADGES */
+
+  .property-badge-static,
+  .property-status {
+    top: 7px;
+
+    padding: 4px 7px;
+
+    font-size: 8px;
+
+    border-radius: 15px;
+  }
+
+  .property-badge-static {
+    left: 7px;
+  }
+
+  .property-status {
+    right: 7px;
+  }
+/* =====================================================
+   MOBILE PROPERTY INFORMATION
+   TEXT CENTER ONLY
+===================================================== */
+
+@media (max-width: 700px) {
+
+  .property-info {
+    width: 100%;
+    padding: 9px 6px 8px;
+
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+
+    text-align: center;
+  }
+
+  /* Location */
+  .property-location {
+    width: 100%;
+    margin: 0 0 5px;
+
+    font-size: 8px;
+    line-height: 1.2;
+
+    text-align: center;
+
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  /* Property name */
+  .property-info h3 {
+    width: 100%;
+    margin: 4px 0 7px;
+
+    font-size: 14px;
+    line-height: 1.25;
+
+    text-align: center;
+
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  /* Price */
+  .property-price {
+    width: 100%;
+    margin: 0 0 8px;
+
+    font-size: 14px;
+    line-height: 1.2;
+
+    text-align: center;
+
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  /* Property details */
+  .property-meta {
+    width: 100%;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    gap: 3px;
+
+    margin: 0 auto 7px;
+
+    overflow: hidden;
+  }
+
+  .property-meta span {
+    font-size: 7px;
+    line-height: 1.2;
+
+    text-align: center;
+    white-space: nowrap;
+  }
+
+  /* Hide description */
+  .property-description {
+    display: none;
+  }
+
+
+  /* =================================================
+     ACTION BUTTONS
+     DO NOT SHIFT THE BUTTONS
+  ================================================= */
+
+  .buyer-property-actions,
+  .public-property-actions {
+    width: 100%;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    gap: 4px;
+
+    margin-top: 4px;
+    padding-top: 0;
+
+    flex-wrap: nowrap;
+  }
+
+
+  /* View Details */
+  .buyer-property-actions .view-button,
+  .public-property-actions .view-button {
+    flex: 0 1 115px;
+
+    width: 115px;
+    min-width: 0;
+
+    height: 27px;
+
+    padding: 4px 6px;
+
+    border-radius: 6px;
+
+    font-size: 8px;
+    font-weight: 600;
+
+    line-height: 1;
+
+    text-align: center;
+
+    white-space: nowrap;
+  }
+
+
+  /* =================================================
+     WISHLIST HEART
+  ================================================= */
+
+  .buyer-property-actions .wishlist-button {
+    flex: 0 0 29px;
+
+    width: 29px;
+    min-width: 29px;
+    height: 27px;
+
+    padding: 0;
+
+    border-radius: 6px;
+
+    display: flex !important;
+    align-items: center;
+    justify-content: center;
+
+    font-size: 0;
+
+    visibility: visible !important;
+    opacity: 1 !important;
+  }
+
+  .buyer-property-actions .wishlist-button::before {
+    content: "♡";
+
+    font-size: 16px;
+    line-height: 1;
+  }
+
+  .buyer-property-actions .wishlist-button.active::before {
+    content: "♥";
+
+    font-size: 15px;
+  }
+}
+/* =====================================================
+   MOBILE PROPERTY ACTIONS
+===================================================== */
+
+.buyer-property-actions,
+.public-property-actions {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  margin-top: 4px;
+  padding: 0;
+  flex-wrap: nowrap;
+  box-sizing: border-box;
+}
+
+/* View Details button */
+.buyer-property-actions .view-button,
+.public-property-actions .view-button {
+  width: auto;
+  max-width: 100%;
+  flex: 0 1 110px;
+
+  height: 26px;
+
+  padding: 4px 8px;
+
+  border-radius: 6px;
+
+  font-size: 7px;
+  font-weight: 600;
+
+  line-height: 1;
+  text-align: center;
+
+  white-space: nowrap;
+
+  box-sizing: border-box;
+}
+
+/* Wishlist */
+.buyer-property-actions .wishlist-button {
+  flex: 0 0 28px;
+
+  width: 28px;
+  min-width: 28px;
+  height: 26px;
+
+  padding: 0;
+
+  display: flex !important;
+  align-items: center;
+  justify-content: center;
+
+  border-radius: 6px;
+
+  box-sizing: border-box;
+}
+
+/* =====================================================
+   SMALL MOBILE
+===================================================== */
+
+@media (max-width: 480px) {
+
+  .property-info {
+    width: 100%;
+    padding: 8px 5px 7px;
+    text-align: center;
+    box-sizing: border-box;
+  }
+
+  .property-location {
+    width: 100%;
+    font-size: 7px;
+    text-align: center;
+  }
+
+  .property-info h3 {
+    width: 100%;
+    margin: 4px 0 6px;
+    font-size: 13px;
+    text-align: center;
+  }
+
+  .property-price {
+    width: 100%;
+    margin-bottom: 7px;
+    font-size: 13px;
+    text-align: center;
+  }
+
+  .property-meta {
+    width: 100%;
+    gap: 2px;
+    margin-bottom: 6px;
+    justify-content: center;
+  }
+
+  .property-meta span {
+    font-size: 6.5px;
+  }
+
+  /* ACTIONS */
+  .buyer-property-actions,
+  .public-property-actions {
+    width: 100%;
+    justify-content: center;
+    align-items: center;
+    gap: 4px;
+    margin-left: 0;
+    margin-right: 0;
+  }
+
+  /* VIEW DETAILS */
+  .buyer-property-actions .view-button,
+  .public-property-actions .view-button {
+    width: auto;
+    max-width: calc(100% - 32px);
+    flex: 0 1 110px;
+
+    height: 25px;
+
+    padding: 4px 6px;
+
+    font-size: 7px;
+
+    box-sizing: border-box;
+  }
+
+  /* WISHLIST */
+  .buyer-property-actions .wishlist-button {
+    flex: 0 0 28px;
+
+    width: 28px;
+    min-width: 28px;
+    height: 26px;
+  }
+
+  .buyer-property-actions .wishlist-button::before {
+    font-size: 15px;
+  }
+}
+
+
+/* =====================================================
+   VERY SMALL MOBILE
+===================================================== */
+
+@media (max-width: 360px) {
+
+  .property-info {
+    padding: 7px 4px 6px;
+  }
+
+  .property-location {
+    font-size: 6.5px;
+  }
+
+  .property-info h3 {
+    font-size: 12px;
+  }
+
+  .property-price {
+    font-size: 12px;
+  }
+
+  .property-meta {
+    gap: 2px;
+  }
+
+  .property-meta span {
+    font-size: 6px;
+  }
+
+  .buyer-property-actions,
+  .public-property-actions {
+    width: 100%;
+    justify-content: center;
+    gap: 3px;
+    margin-left: 0;
+  }
+
+  .buyer-property-actions .view-button,
+  .public-property-actions .view-button {
+    width: auto;
+    max-width: calc(100% - 31px);
+    flex: 0 1 100px;
+
+    height: 25px;
+
+    padding: 3px 5px;
+
+    font-size: 7px;
+
+    box-sizing: border-box;
+  }
+
+  .buyer-property-actions .wishlist-button {
+    flex: 0 0 27px;
+
+    width: 27px;
+    min-width: 27px;
+    height: 25px;
+  }
+}}
