@@ -1,29 +1,57 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, {
+  useEffect,
+  useMemo,
+  useState,
+} from "react";
+
 import { useNavigate } from "react-router-dom";
 
 import PropertyForm from "./PropertyForm";
 import ProjectForm from "./ProjectForm";
+import AdminNavbar from "./AdminNavbar";
+
 import "./AdminDashboard.css";
 
-// const API_URL = "http://localhost:5000/api";
-// const SERVER_URL = "http://localhost:5000";
-const API_URL = "https://house-selling-website.onrender.com/api";
-const SERVER_URL = "https://house-selling-website.onrender.com";
+
+/* =====================================================
+   API
+===================================================== */
+
+const API_URL =
+  "https://house-selling-website.onrender.com/api";
+
+const SERVER_URL =
+  "https://house-selling-website.onrender.com";
+
+
 function AdminDashboard() {
+
   const navigate = useNavigate();
 
-  // =====================================================
-  // STATE
-  // =====================================================
 
-  const [activeMenu, setActiveMenu] = useState("home");
+  /* =====================================================
+     STATE
+  ===================================================== */
 
-  const [showPropertyModal, setShowPropertyModal] = useState(false);
-  const [showProjectModal, setShowProjectModal] = useState(false);
+  const [activeMenu, setActiveMenu] =
+    useState("home");
 
-  const [selectedProperty, setSelectedProperty] = useState(null);
+  const [showPropertyModal, setShowPropertyModal] =
+    useState(false);
 
-  const [properties, setProperties] = useState([]);
+  const [showProjectModal, setShowProjectModal] =
+    useState(false);
+
+  const [selectedProperty, setSelectedProperty] =
+    useState(null);
+
+  const [properties, setProperties] =
+    useState([]);
+
+
+  /* =====================================================
+     STATS
+  ===================================================== */
 
   const [stats, setStats] = useState({
     properties: 0,
@@ -37,50 +65,74 @@ function AdminDashboard() {
     revenue: 0,
   });
 
-  // =====================================================
-  // ENQUIRY STATE
-  // =====================================================
 
-  const [enquiries, setEnquiries] = useState([]);
-  const [enquiryLoading, setEnquiryLoading] = useState(false);
+  /* =====================================================
+     ENQUIRIES
+  ===================================================== */
+
+  const [enquiries, setEnquiries] =
+    useState([]);
+
+  const [enquiryLoading, setEnquiryLoading] =
+    useState(false);
+
   const [enquiryStatusFilter, setEnquiryStatusFilter] =
     useState("All");
 
-  // =====================================================
-  // PROPERTY SEARCH / FILTER
-  // =====================================================
 
-  const [search, setSearch] = useState("");
-  const [statusFilter, setStatusFilter] = useState("All");
+  /* =====================================================
+     PROPERTY SEARCH
+  ===================================================== */
 
-  // =====================================================
-  // GENERAL STATE
-  // =====================================================
+  const [search, setSearch] =
+    useState("");
 
-  const [loading, setLoading] = useState(true);
-  const [refreshing, setRefreshing] = useState(false);
-  const [message, setMessage] = useState("");
+  const [statusFilter, setStatusFilter] =
+    useState("All");
 
-  // =====================================================
-  // LOGIN DATA
-  // =====================================================
 
-  const token = localStorage.getItem("token");
+  /* =====================================================
+     GENERAL
+  ===================================================== */
+
+  const [loading, setLoading] =
+    useState(true);
+
+  const [refreshing, setRefreshing] =
+    useState(false);
+
+  const [message, setMessage] =
+    useState("");
+
+
+  /* =====================================================
+     LOGIN DATA
+  ===================================================== */
+
+  const token =
+    localStorage.getItem("token");
 
   let user = null;
 
   try {
-    user = JSON.parse(localStorage.getItem("user") || "null");
+    user = JSON.parse(
+      localStorage.getItem("user") || "null"
+    );
   } catch {
     user = null;
   }
 
-  // =====================================================
-  // CHECK ADMIN + INITIAL LOAD
-  // =====================================================
+
+  /* =====================================================
+     ADMIN CHECK + INITIAL LOAD
+  ===================================================== */
 
   useEffect(() => {
-    if (!token || user?.role !== "admin") {
+
+    if (
+      !token ||
+      user?.role !== "admin"
+    ) {
       navigate("/login", {
         replace: true,
       });
@@ -91,67 +143,105 @@ function AdminDashboard() {
     loadDashboard();
     loadProperties();
     loadEnquiries();
+
   }, [token, user?.role]);
 
-  // =====================================================
-  // MESSAGE
-  // =====================================================
+
+  /* =====================================================
+     MESSAGE
+  ===================================================== */
 
   const showMessage = (text) => {
+
     setMessage(text);
 
     setTimeout(() => {
       setMessage("");
     }, 3000);
+
   };
 
-  // =====================================================
-  // LOAD DASHBOARD
-  // =====================================================
+
+  /* =====================================================
+     LOAD DASHBOARD
+  ===================================================== */
 
   const loadDashboard = async () => {
+
     try {
+
       const response = await fetch(
         `${API_URL}/admin/dashboard`,
         {
           headers: {
-            Authorization: `Bearer ${token}`,
+            Authorization:
+              `Bearer ${token}`,
           },
         }
       );
 
       if (!response.ok) {
-        throw new Error("Failed to load dashboard.");
+        throw new Error(
+          "Failed to load dashboard."
+        );
       }
 
-      const data = await response.json();
+      const data =
+        await response.json();
 
       setStats({
-        properties: data.properties || 0,
-        pendingProperties: data.pendingProperties || 0,
-        availableProperties: data.availableProperties || 0,
-        soldProperties: data.soldProperties || 0,
-        buyers: data.buyers || 0,
-        inquiries: data.inquiries || 0,
-        bookings: data.bookings || 0,
-        favorites: data.favorites || 0,
-        revenue: data.revenue || 0,
+        properties:
+          data.properties || 0,
+
+        pendingProperties:
+          data.pendingProperties || 0,
+
+        availableProperties:
+          data.availableProperties || 0,
+
+        soldProperties:
+          data.soldProperties || 0,
+
+        buyers:
+          data.buyers || 0,
+
+        inquiries:
+          data.inquiries || 0,
+
+        bookings:
+          data.bookings || 0,
+
+        favorites:
+          data.favorites || 0,
+
+        revenue:
+          data.revenue || 0,
       });
+
     } catch (error) {
-      console.error("Dashboard error:", error);
+
+      console.error(
+        "Dashboard error:",
+        error
+      );
 
       setMessage(
         "Unable to load dashboard statistics."
       );
+
     }
+
   };
 
-  // =====================================================
-  // LOAD PROPERTIES
-  // =====================================================
+
+  /* =====================================================
+     LOAD PROPERTIES
+  ===================================================== */
 
   const loadProperties = async () => {
+
     try {
+
       setLoading(true);
 
       const response = await fetch(
@@ -159,110 +249,153 @@ function AdminDashboard() {
       );
 
       if (!response.ok) {
-        throw new Error("Failed to load properties.");
+        throw new Error(
+          "Failed to load properties."
+        );
       }
 
-      const data = await response.json();
+      const data =
+        await response.json();
 
-      const propertyList = Array.isArray(data)
-        ? data
-        : Array.isArray(data.properties)
-        ? data.properties
-        : Array.isArray(data.data)
-        ? data.data
-        : [];
-
-      console.log("API PROPERTY DATA:", data);
-      console.log("PROPERTY LIST:", propertyList);
+      const propertyList =
+        Array.isArray(data)
+          ? data
+          : Array.isArray(data.properties)
+          ? data.properties
+          : Array.isArray(data.data)
+          ? data.data
+          : [];
 
       setProperties(propertyList);
-    } catch (error) {
-      console.error("Properties error:", error);
 
-      setMessage("Unable to load properties.");
+    } catch (error) {
+
+      console.error(
+        "Properties error:",
+        error
+      );
+
+      setMessage(
+        "Unable to load properties."
+      );
+
     } finally {
+
       setLoading(false);
+
     }
+
   };
 
-  // =====================================================
-  // LOAD ENQUIRIES
-  // =====================================================
+
+  /* =====================================================
+     LOAD ENQUIRIES
+  ===================================================== */
 
   const loadEnquiries = async () => {
+
     try {
+
       setEnquiryLoading(true);
 
       const response = await fetch(
         `${API_URL}/enquiries`,
         {
           headers: {
-            Authorization: `Bearer ${token}`,
+            Authorization:
+              `Bearer ${token}`,
           },
         }
       );
 
       if (!response.ok) {
-        throw new Error("Failed to load enquiries.");
+        throw new Error(
+          "Failed to load enquiries."
+        );
       }
 
-      const data = await response.json();
+      const data =
+        await response.json();
 
-      const enquiryList = Array.isArray(data)
-        ? data
-        : Array.isArray(data.enquiries)
-        ? data.enquiries
-        : Array.isArray(data.data)
-        ? data.data
-        : [];
+      const enquiryList =
+        Array.isArray(data)
+          ? data
+          : Array.isArray(data.enquiries)
+          ? data.enquiries
+          : Array.isArray(data.data)
+          ? data.data
+          : [];
 
       setEnquiries(enquiryList);
-    } catch (error) {
-      console.error("Enquiries error:", error);
 
-      setMessage("Unable to load user enquiries.");
+    } catch (error) {
+
+      console.error(
+        "Enquiries error:",
+        error
+      );
+
+      setMessage(
+        "Unable to load user enquiries."
+      );
+
     } finally {
+
       setEnquiryLoading(false);
+
     }
+
   };
 
-  // =====================================================
-  // DELETE ENQUIRY
-  // =====================================================
+
+  /* =====================================================
+     DELETE ENQUIRY
+  ===================================================== */
 
   const handleDeleteEnquiry = async (id) => {
-    const confirmDelete = window.confirm(
-      "Are you sure you want to delete this enquiry?"
-    );
+
+    const confirmDelete =
+      window.confirm(
+        "Are you sure you want to delete this enquiry?"
+      );
 
     if (!confirmDelete) {
       return;
     }
 
     try {
+
       const response = await fetch(
         `${API_URL}/enquiries/${id}`,
         {
           method: "DELETE",
           headers: {
-            Authorization: `Bearer ${token}`,
+            Authorization:
+              `Bearer ${token}`,
           },
         }
       );
 
-      const data = await response.json();
+      const data =
+        await response.json();
 
       if (!response.ok) {
+
         throw new Error(
           data.message ||
             "Failed to delete enquiry."
         );
+
       }
 
-      showMessage("Enquiry deleted successfully.");
+      showMessage(
+        "Enquiry deleted successfully."
+      );
 
       await loadEnquiries();
+
     } catch (error) {
+
       console.error(
         "Delete enquiry error:",
         error
@@ -272,26 +405,34 @@ function AdminDashboard() {
         error.message ||
           "Failed to delete enquiry."
       );
+
     }
+
   };
 
-  // =====================================================
-  // UPDATE ENQUIRY STATUS
-  // =====================================================
+
+  /* =====================================================
+     UPDATE ENQUIRY STATUS
+  ===================================================== */
 
   const updateEnquiryStatus = async (
     id,
     status
   ) => {
+
     try {
+
       const response = await fetch(
         `${API_URL}/enquiries/${id}`,
         {
           method: "PUT",
 
           headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
+            "Content-Type":
+              "application/json",
+
+            Authorization:
+              `Bearer ${token}`,
           },
 
           body: JSON.stringify({
@@ -300,28 +441,37 @@ function AdminDashboard() {
         }
       );
 
-      const data = await response.json();
+      const data =
+        await response.json();
 
       if (!response.ok) {
+
         throw new Error(
           data.message ||
             "Failed to update enquiry."
         );
+
       }
 
-      setEnquiries((previous) =>
-        previous.map((enquiry) =>
-          enquiry._id === id
-            ? {
-                ...enquiry,
-                status,
-              }
-            : enquiry
-        )
+      setEnquiries(
+        (previous) =>
+          previous.map(
+            (enquiry) =>
+              enquiry._id === id
+                ? {
+                    ...enquiry,
+                    status,
+                  }
+                : enquiry
+          )
       );
 
-      showMessage("Enquiry status updated.");
+      showMessage(
+        "Enquiry status updated."
+      );
+
     } catch (error) {
+
       console.error(
         "Update enquiry status error:",
         error
@@ -331,35 +481,48 @@ function AdminDashboard() {
         error.message ||
           "Failed to update enquiry."
       );
+
     }
+
   };
 
-  // =====================================================
-  // FILTER ENQUIRIES
-  // =====================================================
 
-  const filteredEnquiries = useMemo(() => {
-    if (enquiryStatusFilter === "All") {
-      return enquiries;
-    }
+  /* =====================================================
+     FILTER ENQUIRIES
+  ===================================================== */
 
-    return enquiries.filter(
-      (enquiry) =>
-        String(enquiry.status || "New")
-          .toLowerCase() ===
-        enquiryStatusFilter.toLowerCase()
-    );
-  }, [
-    enquiries,
-    enquiryStatusFilter,
-  ]);
+  const filteredEnquiries =
+    useMemo(() => {
 
-  // =====================================================
-  // REFRESH
-  // =====================================================
+      if (
+        enquiryStatusFilter ===
+        "All"
+      ) {
+        return enquiries;
+      }
+
+      return enquiries.filter(
+        (enquiry) =>
+          String(
+            enquiry.status || "New"
+          ).toLowerCase() ===
+          enquiryStatusFilter.toLowerCase()
+      );
+
+    }, [
+      enquiries,
+      enquiryStatusFilter,
+    ]);
+
+
+  /* =====================================================
+     REFRESH
+  ===================================================== */
 
   const handleRefresh = async () => {
+
     try {
+
       setRefreshing(true);
 
       await Promise.all([
@@ -371,61 +534,78 @@ function AdminDashboard() {
       showMessage(
         "Dashboard refreshed successfully."
       );
+
     } catch (error) {
+
       console.error(
         "Refresh error:",
         error
       );
+
     } finally {
+
       setRefreshing(false);
+
     }
+
   };
 
-  // =====================================================
-  // LOGOUT
-  // =====================================================
+
+  /* =====================================================
+     LOGOUT
+  ===================================================== */
 
   const handleLogout = () => {
+
     localStorage.removeItem("token");
     localStorage.removeItem("user");
 
     navigate("/login", {
       replace: true,
     });
+
   };
 
-  // =====================================================
-  // DELETE PROPERTY
-  // =====================================================
+
+  /* =====================================================
+     DELETE PROPERTY
+  ===================================================== */
 
   const handleDelete = async (id) => {
-    const confirmDelete = window.confirm(
-      "Are you sure you want to delete this property?"
-    );
+
+    const confirmDelete =
+      window.confirm(
+        "Are you sure you want to delete this property?"
+      );
 
     if (!confirmDelete) {
       return;
     }
 
     try {
+
       const response = await fetch(
         `${API_URL}/properties/${id}`,
         {
           method: "DELETE",
 
           headers: {
-            Authorization: `Bearer ${token}`,
+            Authorization:
+              `Bearer ${token}`,
           },
         }
       );
 
-      const data = await response.json();
+      const data =
+        await response.json();
 
       if (!response.ok) {
+
         throw new Error(
           data.message ||
             "Failed to delete property."
         );
+
       }
 
       showMessage(
@@ -434,105 +614,149 @@ function AdminDashboard() {
 
       await loadProperties();
       await loadDashboard();
+
     } catch (error) {
-      console.error("Delete error:", error);
+
+      console.error(
+        "Delete error:",
+        error
+      );
 
       showMessage(
         error.message ||
           "Failed to delete property."
       );
+
     }
+
   };
 
-  // =====================================================
-  // ADD PROPERTY
-  // =====================================================
+
+  /* =====================================================
+     ADD PROPERTY
+  ===================================================== */
 
   const openAddProperty = () => {
+
     setSelectedProperty(null);
     setShowPropertyModal(true);
+
   };
 
-  // =====================================================
-  // EDIT PROPERTY
-  // =====================================================
 
-  const openEditProperty = (property) => {
+  /* =====================================================
+     EDIT PROPERTY
+  ===================================================== */
+
+  const openEditProperty = (
+    property
+  ) => {
+
     setSelectedProperty(property);
     setShowPropertyModal(true);
+
   };
 
-  // =====================================================
-  // CLOSE PROPERTY FORM
-  // =====================================================
+
+  /* =====================================================
+     CLOSE PROPERTY FORM
+  ===================================================== */
 
   const closePropertyForm = () => {
+
     setShowPropertyModal(false);
     setSelectedProperty(null);
+
   };
 
-  // =====================================================
-  // PROPERTY SUCCESS
-  // =====================================================
 
-  const handlePropertySuccess = async () => {
-    const wasEditing = Boolean(selectedProperty);
+  /* =====================================================
+     PROPERTY SUCCESS
+  ===================================================== */
 
-    closePropertyForm();
+  const handlePropertySuccess =
+    async () => {
 
-    await loadProperties();
-    await loadDashboard();
+      const wasEditing =
+        Boolean(selectedProperty);
 
-    showMessage(
-      wasEditing
-        ? "Property updated successfully."
-        : "Property added successfully."
-    );
-  };
+      closePropertyForm();
 
-  // =====================================================
-  // PROJECT SUCCESS
-  // =====================================================
+      await loadProperties();
+      await loadDashboard();
 
-  const handleProjectSuccess = () => {
-    setShowProjectModal(false);
+      showMessage(
+        wasEditing
+          ? "Property updated successfully."
+          : "Property added successfully."
+      );
 
-    showMessage(
-      "Project added successfully."
-    );
-  };
+    };
 
-  // =====================================================
-  // IMAGE URL
-  // =====================================================
 
-  const getImageUrl = (property) => {
+  /* =====================================================
+     PROJECT SUCCESS
+  ===================================================== */
+
+  const handleProjectSuccess =
+    () => {
+
+      setShowProjectModal(false);
+
+      showMessage(
+        "Project added successfully."
+      );
+
+    };
+
+
+  /* =====================================================
+     IMAGE URL
+  ===================================================== */
+
+  const getImageUrl = (
+    property
+  ) => {
+
     const image =
       property?.image ||
       property?.images?.[0] ||
       "";
 
     if (!image) {
-      return "https://via.placeholder.com/600x400?text=No+Image";
+
+      return (
+        "https://via.placeholder.com/600x400?text=No+Image"
+      );
+
     }
 
     if (
       image.startsWith("http://") ||
       image.startsWith("https://")
     ) {
+
       return image;
+
     }
 
     return `${SERVER_URL}${
-      image.startsWith("/") ? "" : "/"
+      image.startsWith("/")
+        ? ""
+        : "/"
     }${image}`;
+
   };
 
-  // =====================================================
-  // GET ALL PROPERTY IMAGES
-  // =====================================================
 
-  const getPropertyImages = (property) => {
+  /* =====================================================
+     GET ALL PROPERTY IMAGES
+  ===================================================== */
+
+  const getPropertyImages = (
+    property
+  ) => {
+
     if (!property) {
       return [];
     }
@@ -543,134 +767,195 @@ function AdminDashboard() {
       images.push(property.image);
     }
 
-    if (Array.isArray(property.images)) {
-      property.images.forEach((image) => {
-        if (image && !images.includes(image)) {
-          images.push(image);
+    if (
+      Array.isArray(property.images)
+    ) {
+
+      property.images.forEach(
+        (image) => {
+
+          if (
+            image &&
+            !images.includes(image)
+          ) {
+            images.push(image);
+          }
+
         }
-      });
+      );
+
     }
 
     return images;
+
   };
 
-  // =====================================================
-  // PROPERTY IMAGE URL
-  // =====================================================
 
-  const getFullImageUrl = (image) => {
+  /* =====================================================
+     FULL IMAGE URL
+  ===================================================== */
+
+  const getFullImageUrl = (
+    image
+  ) => {
+
     if (!image) {
-      return "https://via.placeholder.com/600x400?text=No+Image";
+
+      return (
+        "https://via.placeholder.com/600x400?text=No+Image"
+      );
+
     }
 
     if (
       image.startsWith("http://") ||
       image.startsWith("https://")
     ) {
+
       return image;
+
     }
 
     return `${SERVER_URL}${
-      image.startsWith("/") ? "" : "/"
+      image.startsWith("/")
+        ? ""
+        : "/"
     }${image}`;
+
   };
 
-  // =====================================================
-  // VIEW PROPERTY
-  // =====================================================
 
-  const openViewProperty = (property) => {
+  /* =====================================================
+     VIEW PROPERTY
+  ===================================================== */
+
+  const openViewProperty = (
+    property
+  ) => {
+
     setSelectedProperty(property);
+
   };
 
-  // =====================================================
-  // CLOSE VIEW PROPERTY
-  // =====================================================
+
+  /* =====================================================
+     CLOSE VIEW PROPERTY
+  ===================================================== */
 
   const closeViewProperty = () => {
+
     setSelectedProperty(null);
+
   };
 
-  // =====================================================
-  // FILTER PROPERTIES
-  // =====================================================
 
-  const filteredProperties = useMemo(() => {
-    const searchText = search
-      .trim()
-      .toLowerCase();
+  /* =====================================================
+     FILTER PROPERTIES
+  ===================================================== */
 
-    return properties.filter((property) => {
-      const title = String(
-        property.title ||
-          property.name ||
-          ""
-      ).toLowerCase();
+  const filteredProperties =
+    useMemo(() => {
 
-      const location = String(
-        property.location ||
-          property.map_location ||
-          ""
-      ).toLowerCase();
+      const searchText =
+        search
+          .trim()
+          .toLowerCase();
 
-      const propertyType = String(
-        property.property_type ||
-          property.propertyType ||
-          property.type ||
-          ""
-      ).toLowerCase();
+      return properties.filter(
+        (property) => {
 
-      const description = String(
-        property.description || ""
-      ).toLowerCase();
+          const title =
+            String(
+              property.title ||
+                property.name ||
+                ""
+            ).toLowerCase();
 
-      const matchesSearch =
-        searchText === "" ||
-        title.includes(searchText) ||
-        location.includes(searchText) ||
-        propertyType.includes(searchText) ||
-        description.includes(searchText);
+          const location =
+            String(
+              property.location ||
+                property.map_location ||
+                ""
+            ).toLowerCase();
 
-      const propertyStatus = String(
-        property.status || "Pending"
-      )
-        .trim()
-        .toLowerCase();
+          const propertyType =
+            String(
+              property.property_type ||
+                property.propertyType ||
+                property.type ||
+                ""
+            ).toLowerCase();
 
-      const selectedStatus = String(
-        statusFilter || "All"
-      )
-        .trim()
-        .toLowerCase();
+          const description =
+            String(
+              property.description ||
+                ""
+            ).toLowerCase();
 
-      const matchesStatus =
-        selectedStatus === "all" ||
-        propertyStatus === selectedStatus;
+          const matchesSearch =
+            searchText === "" ||
+            title.includes(searchText) ||
+            location.includes(searchText) ||
+            propertyType.includes(searchText) ||
+            description.includes(searchText);
 
-      return (
-        matchesSearch &&
-        matchesStatus
+          const propertyStatus =
+            String(
+              property.status ||
+                "Pending"
+            )
+              .trim()
+              .toLowerCase();
+
+          const selectedStatus =
+            String(
+              statusFilter ||
+                "All"
+            )
+              .trim()
+              .toLowerCase();
+
+          const matchesStatus =
+            selectedStatus === "all" ||
+            propertyStatus ===
+              selectedStatus;
+
+          return (
+            matchesSearch &&
+            matchesStatus
+          );
+
+        }
       );
-    });
-  }, [
-    properties,
-    search,
-    statusFilter,
-  ]);
 
-  // =====================================================
-  // MENU
-  // =====================================================
+    }, [
+      properties,
+      search,
+      statusFilter,
+    ]);
 
-  const handleMenu = (menu) => {
+
+  /* =====================================================
+     MENU
+  ===================================================== */
+
+  const handleMenu = (
+    menu
+  ) => {
+
     setActiveMenu(menu);
+
   };
 
-  // =====================================================
-  // PROPERTY PERCENTAGE
-  // =====================================================
 
-  const getPercentage = (value) => {
+  /* =====================================================
+     PROPERTY PERCENTAGE
+  ===================================================== */
+
+  const getPercentage = (
+    value
+  ) => {
+
     if (!stats.properties) {
       return 0;
     }
@@ -678,32 +963,43 @@ function AdminDashboard() {
     return Math.min(
       100,
       Math.round(
-        (value / stats.properties) * 100
+        (value /
+          stats.properties) *
+          100
       )
     );
+
   };
 
-  // =====================================================
-  // ADMIN HOME
-  // =====================================================
+
+  /* =====================================================
+     ADMIN HOME
+  ===================================================== */
 
   const AdminHome = () => {
+
     return (
       <div className="dashboard-content">
 
         <div className="dashboard-header">
 
           <div>
+
             <span className="dashboard-label">
               ADMIN PANEL
             </span>
 
-            <h1>Home</h1>
+            <h1>
+              Home
+            </h1>
 
             <p>
-              Welcome to the Shree Krishna
-              Constructions Admin Panel.
+              Welcome to the
+              Shree Krishna
+              Constructions Admin
+              Panel.
             </p>
+
           </div>
 
           <button
@@ -718,37 +1014,46 @@ function AdminDashboard() {
 
         </div>
 
+
         {message && (
           <div className="admin-message">
             {message}
           </div>
         )}
 
+
         <div className="section-card">
 
           <div className="section-title">
 
             <div>
+
               <h2>
                 Welcome,{" "}
-                {user?.name || "Admin"}
+                {user?.name ||
+                  "Admin"}
               </h2>
 
               <span>
-                Manage properties and
-                construction projects from
-                the admin panel.
+                Manage properties
+                and construction
+                projects from the
+                admin panel.
               </span>
+
             </div>
 
           </div>
+
 
           <div className="quick-actions">
 
             <button
               className="quick-card"
               onClick={() =>
-                setActiveMenu("dashboard")
+                setActiveMenu(
+                  "dashboard"
+                )
               }
             >
               <strong>
@@ -756,14 +1061,18 @@ function AdminDashboard() {
               </strong>
 
               <small>
-                View website statistics
+                View website
+                statistics
               </small>
             </button>
+
 
             <button
               className="quick-card"
               onClick={() =>
-                setActiveMenu("properties")
+                setActiveMenu(
+                  "properties"
+                )
               }
             >
               <strong>
@@ -771,28 +1080,35 @@ function AdminDashboard() {
               </strong>
 
               <small>
-                Manage all properties
+                Manage all
+                properties
               </small>
             </button>
 
+
             <button
               className="quick-card"
-              onClick={openAddProperty}
+              onClick={
+                openAddProperty
+              }
             >
               <strong>
                 Add New Property
               </strong>
 
               <small>
-                Create a new property
-                listing
+                Create a new
+                property listing
               </small>
             </button>
+
 
             <button
               className="quick-card"
               onClick={() =>
-                setShowProjectModal(true)
+                setShowProjectModal(
+                  true
+                )
               }
             >
               <strong>
@@ -800,14 +1116,18 @@ function AdminDashboard() {
               </strong>
 
               <small>
-                Add a construction project
+                Add a construction
+                project
               </small>
             </button>
+
 
             <button
               className="quick-card"
               onClick={() =>
-                setActiveMenu("enquiries")
+                setActiveMenu(
+                  "enquiries"
+                )
               }
             >
               <strong>
@@ -815,13 +1135,15 @@ function AdminDashboard() {
               </strong>
 
               <small>
-                View user enquiries
+                View user
+                enquiries
               </small>
             </button>
 
           </div>
 
         </div>
+
 
         <div className="dashboard-grid">
 
@@ -830,6 +1152,7 @@ function AdminDashboard() {
             <div className="section-title">
 
               <div>
+
                 <h2>
                   Property Summary
                 </h2>
@@ -838,12 +1161,16 @@ function AdminDashboard() {
                   Current property
                   information
                 </span>
+
               </div>
 
             </div>
 
+
             <div className="overview-item">
+
               <div className="overview-label">
+
                 <span>
                   Total Properties
                 </span>
@@ -851,11 +1178,16 @@ function AdminDashboard() {
                 <strong>
                   {stats.properties}
                 </strong>
+
               </div>
+
             </div>
 
+
             <div className="overview-item">
+
               <div className="overview-label">
+
                 <span>
                   Available
                 </span>
@@ -863,11 +1195,16 @@ function AdminDashboard() {
                 <strong>
                   {stats.availableProperties}
                 </strong>
+
               </div>
+
             </div>
 
+
             <div className="overview-item">
+
               <div className="overview-label">
+
                 <span>
                   Pending
                 </span>
@@ -875,11 +1212,16 @@ function AdminDashboard() {
                 <strong>
                   {stats.pendingProperties}
                 </strong>
+
               </div>
+
             </div>
 
+
             <div className="overview-item">
+
               <div className="overview-label">
+
                 <span>
                   Sold
                 </span>
@@ -887,29 +1229,37 @@ function AdminDashboard() {
                 <strong>
                   {stats.soldProperties}
                 </strong>
+
               </div>
+
             </div>
 
           </div>
+
 
           <div className="section-card">
 
             <div className="section-title">
 
               <div>
+
                 <h2>
                   Recent Properties
                 </h2>
 
                 <span>
-                  Latest property listings
+                  Latest property
+                  listings
                 </span>
+
               </div>
 
               <button
                 className="view-all"
                 onClick={() =>
-                  setActiveMenu("properties")
+                  setActiveMenu(
+                    "properties"
+                  )
                 }
               >
                 View All
@@ -917,55 +1267,66 @@ function AdminDashboard() {
 
             </div>
 
+
             {properties
               .slice(0, 5)
-              .map((property) => (
-                <div
-                  className="recent-property"
-                  key={property._id}
-                >
+              .map(
+                (property) => (
 
-                  <img
-                    src={getImageUrl(property)}
-                    alt={
-                      property.title ||
-                      "Property"
+                  <div
+                    className="recent-property"
+                    key={
+                      property._id
                     }
-                  />
+                  >
 
-                  <div className="recent-info">
+                    <img
+                      src={getImageUrl(
+                        property
+                      )}
+                      alt={
+                        property.title ||
+                        "Property"
+                      }
+                    />
 
-                    <strong>
-                      {property.title ||
-                        "Untitled Property"}
-                    </strong>
+                    <div className="recent-info">
 
-                    <p>
-                      {property.location ||
-                        "Location not available"}
-                    </p>
+                      <strong>
+                        {property.title ||
+                          "Untitled Property"}
+                      </strong>
+
+                      <p>
+                        {property.location ||
+                          "Location not available"}
+                      </p>
+
+                    </div>
+
+                    <span
+                      className={`status-badge ${
+                        (
+                          property.status ||
+                          "Pending"
+                        ).toLowerCase()
+                      }`}
+                    >
+                      {property.status ||
+                        "Pending"}
+                    </span>
 
                   </div>
 
-                  <span
-                    className={`status-badge ${
-                      (
-                        property.status ||
-                        "Pending"
-                      ).toLowerCase()
-                    }`}
-                  >
-                    {property.status ||
-                      "Pending"}
-                  </span>
+                )
+              )}
 
-                </div>
-              ))}
 
             {properties.length === 0 && (
               <div className="empty-text">
                 <p>
-                  No properties available.
+                  No properties
+                  available.
                 </p>
               </div>
             )}
@@ -976,31 +1337,39 @@ function AdminDashboard() {
 
       </div>
     );
+
   };
 
-  // =====================================================
-  // DASHBOARD HOME
-  // =====================================================
+
+  /* =====================================================
+     DASHBOARD HOME
+  ===================================================== */
 
   const DashboardHome = () => {
+
     return (
       <div className="dashboard-content">
 
         <div className="dashboard-header">
 
           <div>
+
             <span className="dashboard-label">
               ADMIN PANEL
             </span>
 
-            <h1>Dashboard</h1>
+            <h1>
+              Dashboard
+            </h1>
 
             <p>
               Welcome back,{" "}
               <strong>
-                {user?.name || "Admin"}
+                {user?.name ||
+                  "Admin"}
               </strong>
             </p>
+
           </div>
 
           <button
@@ -1015,11 +1384,13 @@ function AdminDashboard() {
 
         </div>
 
+
         {message && (
           <div className="admin-message">
             {message}
           </div>
         )}
+
 
         <div className="admin-stats">
 
@@ -1034,6 +1405,7 @@ function AdminDashboard() {
             </div>
           </div>
 
+
           <div className="stat-card orange">
             <div>
               <h3>
@@ -1044,6 +1416,7 @@ function AdminDashboard() {
               </p>
             </div>
           </div>
+
 
           <div className="stat-card green">
             <div>
@@ -1056,6 +1429,7 @@ function AdminDashboard() {
             </div>
           </div>
 
+
           <div className="stat-card red">
             <div>
               <h3>
@@ -1066,6 +1440,7 @@ function AdminDashboard() {
               </p>
             </div>
           </div>
+
 
           <div className="stat-card purple">
             <div>
@@ -1078,6 +1453,7 @@ function AdminDashboard() {
             </div>
           </div>
 
+
           <div className="stat-card pink">
             <div>
               <h3>
@@ -1088,6 +1464,7 @@ function AdminDashboard() {
               </p>
             </div>
           </div>
+
 
           <div className="stat-card blue">
             <div>
@@ -1102,41 +1479,52 @@ function AdminDashboard() {
 
         </div>
 
+
         <div className="section-card">
 
           <div className="section-title">
 
             <div>
+
               <h2>
                 Quick Actions
               </h2>
 
               <span>
-                Manage your website quickly
+                Manage your
+                website quickly
               </span>
+
             </div>
 
           </div>
+
 
           <div className="quick-actions">
 
             <button
               className="quick-card"
-              onClick={openAddProperty}
+              onClick={
+                openAddProperty
+              }
             >
               <strong>
                 Add Property
               </strong>
 
               <small>
-                Add a new property
+                Add a new
+                property
               </small>
             </button>
+
 
             <button
               className="quick-card"
               onClick={() =>
-                setShowProjectModal(true)
+                setShowProjectModal(
+                  true
+                )
               }
             >
               <strong>
@@ -1144,14 +1532,18 @@ function AdminDashboard() {
               </strong>
 
               <small>
-                Add construction project
+                Add construction
+                project
               </small>
             </button>
+
 
             <button
               className="quick-card"
               onClick={() =>
-                setActiveMenu("properties")
+                setActiveMenu(
+                  "properties"
+                )
               }
             >
               <strong>
@@ -1159,14 +1551,18 @@ function AdminDashboard() {
               </strong>
 
               <small>
-                View all properties
+                View all
+                properties
               </small>
             </button>
+
 
             <button
               className="quick-card"
               onClick={() =>
-                setActiveMenu("enquiries")
+                setActiveMenu(
+                  "enquiries"
+                )
               }
             >
               <strong>
@@ -1182,6 +1578,7 @@ function AdminDashboard() {
 
         </div>
 
+
         <div className="dashboard-grid">
 
           <div className="section-card">
@@ -1189,20 +1586,25 @@ function AdminDashboard() {
             <div className="section-title">
 
               <div>
+
                 <h2>
                   Property Overview
                 </h2>
 
                 <span>
-                  Current property status
+                  Current property
+                  status
                 </span>
+
               </div>
 
             </div>
 
+
             <div className="overview-item">
 
               <div className="overview-label">
+
                 <span>
                   Available
                 </span>
@@ -1210,6 +1612,7 @@ function AdminDashboard() {
                 <strong>
                   {stats.availableProperties}
                 </strong>
+
               </div>
 
               <div className="progress">
@@ -1217,9 +1620,10 @@ function AdminDashboard() {
                 <div
                   className="progress-green"
                   style={{
-                    width: `${getPercentage(
-                      stats.availableProperties
-                    )}%`,
+                    width:
+                      `${getPercentage(
+                        stats.availableProperties
+                      )}%`,
                   }}
                 />
 
@@ -1227,9 +1631,11 @@ function AdminDashboard() {
 
             </div>
 
+
             <div className="overview-item">
 
               <div className="overview-label">
+
                 <span>
                   Pending
                 </span>
@@ -1237,6 +1643,7 @@ function AdminDashboard() {
                 <strong>
                   {stats.pendingProperties}
                 </strong>
+
               </div>
 
               <div className="progress">
@@ -1244,9 +1651,10 @@ function AdminDashboard() {
                 <div
                   className="progress-orange"
                   style={{
-                    width: `${getPercentage(
-                      stats.pendingProperties
-                    )}%`,
+                    width:
+                      `${getPercentage(
+                        stats.pendingProperties
+                      )}%`,
                   }}
                 />
 
@@ -1254,9 +1662,11 @@ function AdminDashboard() {
 
             </div>
 
+
             <div className="overview-item">
 
               <div className="overview-label">
+
                 <span>
                   Sold
                 </span>
@@ -1264,6 +1674,7 @@ function AdminDashboard() {
                 <strong>
                   {stats.soldProperties}
                 </strong>
+
               </div>
 
               <div className="progress">
@@ -1271,9 +1682,10 @@ function AdminDashboard() {
                 <div
                   className="progress-red"
                   style={{
-                    width: `${getPercentage(
-                      stats.soldProperties
-                    )}%`,
+                    width:
+                      `${getPercentage(
+                        stats.soldProperties
+                      )}%`,
                   }}
                 />
 
@@ -1283,24 +1695,30 @@ function AdminDashboard() {
 
           </div>
 
+
           <div className="section-card">
 
             <div className="section-title">
 
               <div>
+
                 <h2>
                   Recent Properties
                 </h2>
 
                 <span>
-                  Latest property listings
+                  Latest property
+                  listings
                 </span>
+
               </div>
 
               <button
                 className="view-all"
                 onClick={() =>
-                  setActiveMenu("properties")
+                  setActiveMenu(
+                    "properties"
+                  )
                 }
               >
                 View All
@@ -1308,55 +1726,66 @@ function AdminDashboard() {
 
             </div>
 
+
             {properties
               .slice(0, 5)
-              .map((property) => (
-                <div
-                  className="recent-property"
-                  key={property._id}
-                >
+              .map(
+                (property) => (
 
-                  <img
-                    src={getImageUrl(property)}
-                    alt={
-                      property.title ||
-                      "Property"
+                  <div
+                    className="recent-property"
+                    key={
+                      property._id
                     }
-                  />
+                  >
 
-                  <div className="recent-info">
+                    <img
+                      src={getImageUrl(
+                        property
+                      )}
+                      alt={
+                        property.title ||
+                        "Property"
+                      }
+                    />
 
-                    <strong>
-                      {property.title ||
-                        "Untitled Property"}
-                    </strong>
+                    <div className="recent-info">
 
-                    <p>
-                      {property.location ||
-                        "Location not available"}
-                    </p>
+                      <strong>
+                        {property.title ||
+                          "Untitled Property"}
+                      </strong>
+
+                      <p>
+                        {property.location ||
+                          "Location not available"}
+                      </p>
+
+                    </div>
+
+                    <span
+                      className={`status-badge ${
+                        (
+                          property.status ||
+                          "Pending"
+                        ).toLowerCase()
+                      }`}
+                    >
+                      {property.status ||
+                        "Pending"}
+                    </span>
 
                   </div>
 
-                  <span
-                    className={`status-badge ${
-                      (
-                        property.status ||
-                        "Pending"
-                      ).toLowerCase()
-                    }`}
-                  >
-                    {property.status ||
-                      "Pending"}
-                  </span>
+                )
+              )}
 
-                </div>
-              ))}
 
             {properties.length === 0 && (
               <div className="empty-text">
                 <p>
-                  No properties available.
+                  No properties
+                  available.
                 </p>
               </div>
             )}
@@ -1367,35 +1796,47 @@ function AdminDashboard() {
 
       </div>
     );
+
   };
 
-  // =====================================================
-  // ENQUIRY MANAGEMENT
-  // =====================================================
+
+  /* =====================================================
+     ENQUIRY MANAGEMENT
+  ===================================================== */
 
   const EnquiryManagement = () => {
+
     return (
       <div className="dashboard-content">
 
         <div className="dashboard-header">
 
           <div>
+
             <span className="dashboard-label">
               USER ENQUIRIES
             </span>
 
-            <h1>Enquiries</h1>
+            <h1>
+              Enquiries
+            </h1>
 
             <p>
-              View and manage enquiries
-              submitted by users.
+              View and manage
+              enquiries submitted
+              by users.
             </p>
+
           </div>
 
           <button
             className="refresh-button"
-            onClick={loadEnquiries}
-            disabled={enquiryLoading}
+            onClick={
+              loadEnquiries
+            }
+            disabled={
+              enquiryLoading
+            }
           >
             {enquiryLoading
               ? "Refreshing..."
@@ -1404,22 +1845,27 @@ function AdminDashboard() {
 
         </div>
 
+
         {message && (
           <div className="admin-message">
             {message}
           </div>
         )}
 
+
         <div className="property-toolbar">
 
           <select
-            value={enquiryStatusFilter}
+            value={
+              enquiryStatusFilter
+            }
             onChange={(e) =>
               setEnquiryStatusFilter(
                 e.target.value
               )
             }
           >
+
             <option value="All">
               All Enquiries
             </option>
@@ -1435,13 +1881,19 @@ function AdminDashboard() {
             <option value="Closed">
               Closed
             </option>
+
           </select>
 
+
           <div className="property-count">
-            {filteredEnquiries.length} enquiries
+            {
+              filteredEnquiries.length
+            }{" "}
+            enquiries
           </div>
 
         </div>
+
 
         <div className="property-table-card">
 
@@ -1470,8 +1922,8 @@ function AdminDashboard() {
               </h3>
 
               <p>
-                No user enquiries are
-                available.
+                No user enquiries
+                are available.
               </p>
 
             </div>
@@ -1496,12 +1948,16 @@ function AdminDashboard() {
 
                 </thead>
 
+
                 <tbody>
 
                   {filteredEnquiries.map(
                     (enquiry) => (
+
                       <tr
-                        key={enquiry._id}
+                        key={
+                          enquiry._id
+                        }
                       >
 
                         <td>
@@ -1509,35 +1965,49 @@ function AdminDashboard() {
                           <div className="enquiry-user">
 
                             <strong>
-                              {enquiry.name}
+                              {
+                                enquiry.name
+                              }
                             </strong>
 
                             <span>
-                              {enquiry.email}
+                              {
+                                enquiry.email
+                              }
                             </span>
 
                           </div>
 
                         </td>
 
-                        <td>
-                          {enquiry.phone}
-                        </td>
 
                         <td>
-                          {enquiry.propertyTitle ||
+                          {
+                            enquiry.phone
+                          }
+                        </td>
+
+
+                        <td>
+                          {
+                            enquiry.propertyTitle ||
                             enquiry.propertyId
                               ?.title ||
-                            "General Enquiry"}
+                            "General Enquiry"
+                          }
                         </td>
+
 
                         <td>
 
                           <div className="enquiry-message">
-                            {enquiry.message}
+                            {
+                              enquiry.message
+                            }
                           </div>
 
                         </td>
+
 
                         <td>
                           {enquiry.createdAt
@@ -1548,6 +2018,7 @@ function AdminDashboard() {
                               )
                             : "N/A"}
                         </td>
+
 
                         <td>
 
@@ -1581,6 +2052,7 @@ function AdminDashboard() {
 
                         </td>
 
+
                         <td>
 
                           <button
@@ -1597,6 +2069,7 @@ function AdminDashboard() {
                         </td>
 
                       </tr>
+
                     )
                   )}
 
@@ -1612,13 +2085,16 @@ function AdminDashboard() {
 
       </div>
     );
+
   };
 
-  // =====================================================
-  // PROPERTY MANAGEMENT
-  // =====================================================
+
+  /* =====================================================
+     PROPERTY MANAGEMENT
+  ===================================================== */
 
   const PropertyManagement = () => {
+
     return (
       <div className="dashboard-content">
 
@@ -1641,14 +2117,18 @@ function AdminDashboard() {
 
           </div>
 
+
           <button
             className="add-main-button"
-            onClick={openAddProperty}
+            onClick={
+              openAddProperty
+            }
           >
             Add New Property
           </button>
 
         </div>
+
 
         {/* TOOLBAR */}
 
@@ -1665,7 +2145,9 @@ function AdminDashboard() {
               placeholder="Search by title, location or type..."
               value={search}
               onChange={(e) =>
-                setSearch(e.target.value)
+                setSearch(
+                  e.target.value
+                )
               }
             />
 
@@ -1683,10 +2165,13 @@ function AdminDashboard() {
 
           </div>
 
+
           <select
             value={statusFilter}
             onChange={(e) =>
-              setStatusFilter(e.target.value)
+              setStatusFilter(
+                e.target.value
+              )
             }
           >
 
@@ -1712,26 +2197,37 @@ function AdminDashboard() {
 
           </select>
 
+
           <div className="property-count">
-            {filteredProperties.length} properties
+            {
+              filteredProperties.length
+            }{" "}
+            properties
           </div>
 
         </div>
 
+
         {search.trim() !== "" && (
           <div className="search-result-info">
             Showing{" "}
-            {filteredProperties.length} of{" "}
-            {properties.length} properties for "
+            {
+              filteredProperties.length
+            }{" "}
+            of{" "}
+            {properties.length}{" "}
+            properties for "
             {search}"
           </div>
         )}
+
 
         {message && (
           <div className="admin-message">
             {message}
           </div>
         )}
+
 
         <div className="property-table-card">
 
@@ -1760,12 +2256,15 @@ function AdminDashboard() {
               </h3>
 
               <p>
-                Try changing your search
-                or add a new property.
+                Try changing your
+                search or add a new
+                property.
               </p>
 
               <button
-                onClick={openAddProperty}
+                onClick={
+                  openAddProperty
+                }
               >
                 Add Property
               </button>
@@ -1810,12 +2309,16 @@ function AdminDashboard() {
 
                 </thead>
 
+
                 <tbody>
 
                   {filteredProperties.map(
                     (property) => (
+
                       <tr
-                        key={property._id}
+                        key={
+                          property._id
+                        }
                       >
 
                         <td>
@@ -1835,16 +2338,22 @@ function AdminDashboard() {
                             <div>
 
                               <strong>
-                                {property.title ||
-                                  "Untitled Property"}
+                                {
+                                  property.title ||
+                                  "Untitled Property"
+                                }
                               </strong>
 
                               <small>
-                                {property.bedrooms ||
-                                  0}{" "}
+                                {
+                                  property.bedrooms ||
+                                  0
+                                }{" "}
                                 Beds •{" "}
-                                {property.bathrooms ||
-                                  0}{" "}
+                                {
+                                  property.bathrooms ||
+                                  0
+                                }{" "}
                                 Baths
                               </small>
 
@@ -1854,30 +2363,37 @@ function AdminDashboard() {
 
                         </td>
 
+
                         <td>
 
                           <span className="type-badge">
 
-                            {property.property_type ||
+                            {
+                              property.property_type ||
                               property.propertyType ||
                               property.type ||
-                              "House"}
+                              "House"
+                            }
 
                           </span>
 
                         </td>
+
 
                         <td>
 
                           <span className="location-text">
 
-                            {property.location ||
+                            {
+                              property.location ||
                               property.map_location ||
-                              "N/A"}
+                              "N/A"
+                            }
 
                           </span>
 
                         </td>
+
 
                         <td>
 
@@ -1885,7 +2401,8 @@ function AdminDashboard() {
 
                             ₹
                             {Number(
-                              property.price || 0
+                              property.price ||
+                                0
                             ).toLocaleString(
                               "en-IN"
                             )}
@@ -1893,6 +2410,7 @@ function AdminDashboard() {
                           </strong>
 
                         </td>
+
 
                         <td>
 
@@ -1904,17 +2422,20 @@ function AdminDashboard() {
                               ).toLowerCase()
                             }`}
                           >
-                            {property.status ||
-                              "Pending"}
+
+                            {
+                              property.status ||
+                              "Pending"
+                            }
+
                           </span>
 
                         </td>
 
+
                         <td>
 
                           <div className="action-buttons">
-
-                            {/* VIEW - FIXED */}
 
                             <button
                               className="view-action"
@@ -1927,7 +2448,6 @@ function AdminDashboard() {
                               View
                             </button>
 
-                            {/* EDIT - FIXED */}
 
                             <button
                               className="edit-action"
@@ -1940,7 +2460,6 @@ function AdminDashboard() {
                               Edit
                             </button>
 
-                            {/* DELETE */}
 
                             <button
                               className="delete-btn"
@@ -1958,6 +2477,7 @@ function AdminDashboard() {
                         </td>
 
                       </tr>
+
                     )
                   )}
 
@@ -1973,184 +2493,39 @@ function AdminDashboard() {
 
       </div>
     );
+
   };
 
-  // =====================================================
-  // MAIN RETURN
-  // =====================================================
+
+  /* =====================================================
+     MAIN RETURN
+  ===================================================== */
 
   return (
+
     <div className="admin-dashboard">
 
-      {/* SIDEBAR */}
+      {/* =================================================
+          ADMIN NAVBAR
+      ================================================= */}
 
-      <aside className="admin-sidebar">
+      <AdminNavbar
+        activeMenu={activeMenu}
+        setActiveMenu={
+          setActiveMenu
+        }
+        onAddProperty={
+          openAddProperty
+        }
+        onAddProject={() =>
+          setShowProjectModal(true)
+        }
+      />
 
-        {/* LOGO */}
 
-        <div className="admin-logo">
-
-          <img
-            src="/logo.jpeg"
-            alt="SK Constructions Logo"
-          />
-
-          <div>
-
-            <strong>
-              SK Constructions
-            </strong>
-
-            <span>
-              Admin Panel
-            </span>
-
-          </div>
-
-        </div>
-
-        {/* MENU */}
-
-        <nav className="admin-menu">
-
-          {/* HOME */}
-
-          <button
-            className={
-              activeMenu === "home"
-                ? "active"
-                : ""
-            }
-            onClick={() =>
-              handleMenu("home")
-            }
-          >
-            <span>
-              Home
-            </span>
-          </button>
-
-          {/* DASHBOARD */}
-
-          <button
-            className={
-              activeMenu === "dashboard"
-                ? "active"
-                : ""
-            }
-            onClick={() =>
-              handleMenu("dashboard")
-            }
-          >
-            <span>
-              Dashboard
-            </span>
-          </button>
-
-          {/* PROPERTIES */}
-
-          <button
-            className={
-              activeMenu === "properties"
-                ? "active"
-                : ""
-            }
-            onClick={() =>
-              handleMenu("properties")
-            }
-          >
-            <span>
-              Properties
-            </span>
-          </button>
-
-          {/* ADD PROPERTY */}
-
-          <button
-            onClick={openAddProperty}
-          >
-            <span>
-              Add New Property
-            </span>
-          </button>
-
-          {/* NEW PROJECT */}
-
-          <button
-            onClick={() =>
-              setShowProjectModal(true)
-            }
-          >
-            <span>
-              New Project
-            </span>
-          </button>
-
-          {/* USER ENQUIRIES */}
-
-          <button
-            className={
-              activeMenu === "enquiries"
-                ? "active"
-                : ""
-            }
-            onClick={() =>
-              handleMenu("enquiries")
-            }
-          >
-            <span>
-              User Enquiries
-            </span>
-          </button>
-
-        </nav>
-
-        {/* SIDEBAR BOTTOM */}
-
-        <div className="sidebar-bottom">
-
-          {/* USER */}
-
-          <div className="admin-user">
-
-            <div className="admin-avatar">
-
-              {(user?.name || "A")
-                .charAt(0)
-                .toUpperCase()}
-
-            </div>
-
-            <div>
-
-              <strong>
-                {user?.name || "Admin"}
-              </strong>
-
-              <small>
-                Administrator
-              </small>
-
-            </div>
-
-          </div>
-
-          {/* LOGOUT */}
-
-          <button
-            className="sidebar-logout"
-            onClick={handleLogout}
-          >
-            <span>
-              Logout
-            </span>
-          </button>
-
-        </div>
-
-      </aside>
-
-      {/* MAIN CONTENT */}
+      {/* =================================================
+          MAIN CONTENT
+      ================================================= */}
 
       <main className="admin-main">
 
@@ -2172,30 +2547,50 @@ function AdminDashboard() {
 
       </main>
 
+
       {/* =================================================
-          PROPERTY EDIT / ADD MODAL
+          PROPERTY ADD / EDIT MODAL
       ================================================= */}
 
       {showPropertyModal && (
+
         <PropertyForm
-          property={selectedProperty}
-          onClose={closePropertyForm}
-          onSuccess={handlePropertySuccess}
+          property={
+            selectedProperty
+          }
+
+          onClose={
+            closePropertyForm
+          }
+
+          onSuccess={
+            handlePropertySuccess
+          }
         />
+
       )}
+
 
       {/* =================================================
           PROJECT MODAL
       ================================================= */}
 
       {showProjectModal && (
+
         <ProjectForm
           onClose={() =>
-            setShowProjectModal(false)
+            setShowProjectModal(
+              false
+            )
           }
-          onSuccess={handleProjectSuccess}
+
+          onSuccess={
+            handleProjectSuccess
+          }
         />
+
       )}
+
 
       {/* =================================================
           VIEW PROPERTY MODAL
@@ -2203,9 +2598,12 @@ function AdminDashboard() {
 
       {selectedProperty &&
         !showPropertyModal && (
+
           <div
             className="admin-view-overlay"
-            onClick={closeViewProperty}
+            onClick={
+              closeViewProperty
+            }
           >
 
             <div
@@ -2226,11 +2624,14 @@ function AdminDashboard() {
                   </span>
 
                   <h2>
-                    {selectedProperty.title ||
-                      "Property Details"}
+                    {
+                      selectedProperty.title ||
+                      "Property Details"
+                    }
                   </h2>
 
                 </div>
+
 
                 <button
                   className="admin-view-close"
@@ -2244,6 +2645,7 @@ function AdminDashboard() {
 
               </div>
 
+
               {/* IMAGE GALLERY */}
 
               <div className="admin-view-gallery">
@@ -2256,6 +2658,7 @@ function AdminDashboard() {
                     selectedProperty
                   ).map(
                     (image, index) => (
+
                       <img
                         key={`${image}-${index}`}
                         src={getFullImageUrl(
@@ -2265,6 +2668,7 @@ function AdminDashboard() {
                           index + 1
                         }`}
                       />
+
                     )
                   )
 
@@ -2280,6 +2684,7 @@ function AdminDashboard() {
                 )}
 
               </div>
+
 
               {/* PROPERTY INFORMATION */}
 
@@ -2297,6 +2702,7 @@ function AdminDashboard() {
 
                 </div>
 
+
                 <span
                   className={`status-badge ${
                     (
@@ -2305,84 +2711,117 @@ function AdminDashboard() {
                     ).toLowerCase()
                   }`}
                 >
-                  {selectedProperty.status ||
-                    "Pending"}
+                  {
+                    selectedProperty.status ||
+                    "Pending"
+                  }
                 </span>
+
 
                 <div className="admin-view-info-grid">
 
                   <div>
+
                     <span>
                       Property Type
                     </span>
 
                     <strong>
-                      {selectedProperty.property_type ||
+                      {
+                        selectedProperty.property_type ||
                         selectedProperty.propertyType ||
                         selectedProperty.type ||
-                        "House"}
+                        "House"
+                      }
                     </strong>
+
                   </div>
 
+
                   <div>
+
                     <span>
                       Location
                     </span>
 
                     <strong>
-                      {selectedProperty.location ||
+                      {
+                        selectedProperty.location ||
                         selectedProperty.map_location ||
-                        "N/A"}
+                        "N/A"
+                      }
                     </strong>
+
                   </div>
 
+
                   <div>
+
                     <span>
                       Bedrooms
                     </span>
 
                     <strong>
-                      {selectedProperty.bedrooms ??
-                        0}
+                      {
+                        selectedProperty.bedrooms ??
+                        0
+                      }
                     </strong>
+
                   </div>
 
+
                   <div>
+
                     <span>
                       Bathrooms
                     </span>
 
                     <strong>
-                      {selectedProperty.bathrooms ??
-                        0}
+                      {
+                        selectedProperty.bathrooms ??
+                        0
+                      }
                     </strong>
+
                   </div>
 
+
                   <div>
+
                     <span>
                       Area
                     </span>
 
                     <strong>
-                      {selectedProperty.area_sqft ??
-                        0}{" "}
+                      {
+                        selectedProperty.area_sqft ??
+                        0
+                      }{" "}
                       Sq. Ft.
                     </strong>
+
                   </div>
 
+
                   <div>
+
                     <span>
                       Featured
                     </span>
 
                     <strong>
-                      {selectedProperty.featured
-                        ? "Yes"
-                        : "No"}
+                      {
+                        selectedProperty.featured
+                          ? "Yes"
+                          : "No"
+                      }
                     </strong>
+
                   </div>
 
                 </div>
+
 
                 {/* DESCRIPTION */}
 
@@ -2393,15 +2832,19 @@ function AdminDashboard() {
                   </h3>
 
                   <p>
-                    {selectedProperty.description ||
-                      "No description available."}
+                    {
+                      selectedProperty.description ||
+                      "No description available."
+                    }
                   </p>
 
                 </div>
 
+
                 {/* VIDEO */}
 
                 {selectedProperty.video && (
+
                   <div className="admin-view-video">
 
                     <h3>
@@ -2416,11 +2859,14 @@ function AdminDashboard() {
                     />
 
                   </div>
+
                 )}
+
 
                 {/* MAP LOCATION */}
 
                 {selectedProperty.map_location && (
+
                   <div className="admin-view-location">
 
                     <h3>
@@ -2428,11 +2874,15 @@ function AdminDashboard() {
                     </h3>
 
                     <p>
-                      {selectedProperty.map_location}
+                      {
+                        selectedProperty.map_location
+                      }
                     </p>
 
                   </div>
+
                 )}
+
 
                 {/* ACTIONS */}
 
@@ -2449,6 +2899,7 @@ function AdminDashboard() {
                   >
                     Edit Property
                   </button>
+
 
                   <button
                     type="button"
@@ -2467,10 +2918,13 @@ function AdminDashboard() {
             </div>
 
           </div>
+
         )}
 
     </div>
+
   );
+
 }
 
 export default AdminDashboard;

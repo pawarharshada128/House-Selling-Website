@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 
 function AdminNavbar({
@@ -9,67 +9,204 @@ function AdminNavbar({
 }) {
   const navigate = useNavigate();
 
+  const [menuOpen, setMenuOpen] = useState(false);
+
+  // =====================================================
+  // CLOSE MOBILE MENU
+  // =====================================================
+
+  const closeMenu = () => {
+    setMenuOpen(false);
+  };
+
+  // =====================================================
+  // LOGOUT
+  // =====================================================
+
   const handleLogout = () => {
     localStorage.removeItem("token");
     localStorage.removeItem("user");
 
-    navigate("/login");
+    closeMenu();
+
+    navigate("/login", {
+      replace: true,
+    });
   };
+
+  // =====================================================
+  // HOME
+  // =====================================================
+
+  const handleHome = () => {
+    setActiveMenu("home");
+    navigate("/");
+    closeMenu();
+  };
+
+  // =====================================================
+  // MENU
+  // =====================================================
+
+  const handleMenu = (menu) => {
+    setActiveMenu(menu);
+    closeMenu();
+  };
+
+  // =====================================================
+  // ADD PROPERTY
+  // =====================================================
+
+  const handleAddProperty = () => {
+    onAddProperty();
+    closeMenu();
+  };
+
+  // =====================================================
+  // ADD PROJECT
+  // =====================================================
+
+  const handleAddProject = () => {
+    onAddProject();
+    closeMenu();
+  };
+
+  // =====================================================
+  // RETURN
+  // =====================================================
 
   return (
     <header className="admin-navbar">
 
+      {/* =================================================
+          LOGO
+      ================================================= */}
+
       <div
         className="admin-navbar-logo"
-        onClick={() => navigate("/")}
+        onClick={handleHome}
       >
         <img
           src="/logo.jpeg"
           alt="SK Constructions"
         />
 
-        <span>
-          SK Constructions
-        </span>
+        <div className="admin-navbar-brand">
+          <span>SK Constructions</span>
+          <small>Admin Panel</small>
+        </div>
       </div>
 
-      <nav className="admin-navbar-links">
+      {/* =================================================
+          MOBILE MENU BUTTON
+      ================================================= */}
 
-        <button onClick={() => navigate("/")}>
+      <button
+        type="button"
+        className="admin-mobile-menu-button"
+        onClick={() => setMenuOpen((previous) => !previous)}
+        aria-label="Toggle navigation menu"
+        aria-expanded={menuOpen}
+      >
+        {menuOpen ? "✕" : "☰"}
+      </button>
+
+      {/* =================================================
+          NAVIGATION
+      ================================================= */}
+
+      <nav
+        className={`admin-navbar-links ${
+          menuOpen
+            ? "admin-navbar-links-open"
+            : ""
+        }`}
+      >
+
+        {/* HOME */}
+
+        <button
+          type="button"
+          className={
+            activeMenu === "home"
+              ? "admin-nav-active"
+              : ""
+          }
+          onClick={handleHome}
+        >
           Home
         </button>
 
+        {/* DASHBOARD */}
+
         <button
+          type="button"
           className={
             activeMenu === "dashboard"
               ? "admin-nav-active"
               : ""
           }
-          onClick={() => setActiveMenu("dashboard")}
+          onClick={() =>
+            handleMenu("dashboard")
+          }
         >
           Dashboard
         </button>
 
+        {/* PROPERTIES */}
+
         <button
+          type="button"
           className={
             activeMenu === "properties"
               ? "admin-nav-active"
               : ""
           }
-          onClick={() => setActiveMenu("properties")}
+          onClick={() =>
+            handleMenu("properties")
+          }
         >
           Properties
         </button>
 
-        <button onClick={onAddProperty}>
+        {/* USER ENQUIRIES */}
+
+        <button
+          type="button"
+          className={
+            activeMenu === "enquiries"
+              ? "admin-nav-active"
+              : ""
+          }
+          onClick={() =>
+            handleMenu("enquiries")
+          }
+        >
+          User Enquiries
+        </button>
+
+        {/* ADD PROPERTY */}
+
+        <button
+          type="button"
+          onClick={handleAddProperty}
+        >
           Add New Property
         </button>
 
-        <button onClick={onAddProject}>
+        {/* NEW PROJECT */}
+
+        <button
+          type="button"
+          onClick={handleAddProject}
+        >
           New Project
         </button>
 
+        {/* LOGOUT */}
+
         <button
+          type="button"
           className="admin-logout-button"
           onClick={handleLogout}
         >
@@ -77,6 +214,7 @@ function AdminNavbar({
         </button>
 
       </nav>
+
     </header>
   );
 }
