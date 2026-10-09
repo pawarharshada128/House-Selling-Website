@@ -1,3 +1,4 @@
+
 const express = require("express");
 const multer = require("multer");
 const path = require("path");
@@ -7,9 +8,12 @@ const router = express.Router();
 
 // =====================================================
 // UPLOAD DIRECTORY
+// Must match the directory in server.js
 // =====================================================
 
-const uploadDir = path.join(__dirname, "../uploads");
+const uploadDir =
+  process.env.UPLOAD_DIR ||
+  path.join(__dirname, "..", "uploads");
 
 if (!fs.existsSync(uploadDir)) {
   fs.mkdirSync(uploadDir, { recursive: true });
@@ -29,7 +33,7 @@ const storage = multer.diskStorage({
       Date.now() +
       "-" +
       Math.round(Math.random() * 1e9) +
-      path.extname(file.originalname);
+      path.extname(file.originalname).toLowerCase();
 
     cb(null, uniqueName);
   },
@@ -57,15 +61,14 @@ const fileFilter = function (req, file, cb) {
     allowedImages.includes(file.mimetype) ||
     allowedVideos.includes(file.mimetype)
   ) {
-    cb(null, true);
-  } else {
-    cb(
-      new Error(
-        "Only JPG, JPEG, PNG, WEBP images and MP4, WEBM, OGG videos are allowed."
-      ),
-      false
-    );
+    return cb(null, true);
   }
+
+  cb(
+    new Error(
+      "Only JPG, JPEG, PNG, WEBP images and MP4, WEBM, OGG videos are allowed."
+    )
+  );
 };
 
 // =====================================================
@@ -73,26 +76,25 @@ const fileFilter = function (req, file, cb) {
 // =====================================================
 
 const upload = multer({
-  storage: storage,
-  fileFilter: fileFilter,
-
+  storage,
+  fileFilter,
   limits: {
     fileSize: 100 * 1024 * 1024,
   },
 });
 
 // =====================================================
-// GET BACKEND URL
+// BACKEND URL
 // =====================================================
 
-// function getBackendUrl(req) {
-//   return (
-//     process.env.BACKEND_URL ||
-//     `${req.protocol}://${req.get("host")}`
-//   );
-// }
 function getBackendUrl(req) {
-  return "https://house-selling-website.onrender.com";
+  const configuredUrl = process.env.BACKEND_URL;
+
+  if (configuredUrl) {
+    return configuredUrl.replace(/\/+$/, "");
+  }
+
+  return `${req.protocol}://${req.get("host")}`;
 }
 
 // =====================================================
@@ -112,15 +114,11 @@ router.post(
       maxCount: 1,
     },
   ]),
-
   (req, res) => {
     try {
       const backendUrl = getBackendUrl(req);
 
-      // ================================================
-      // IMAGE
-      // ================================================
-
+      // Upload image
       if (req.files?.image?.[0]) {
         const file = req.files.image[0];
 
@@ -135,10 +133,7 @@ router.post(
         });
       }
 
-      // ================================================
-      // VIDEO
-      // ================================================
-
+      // Upload video
       if (req.files?.video?.[0]) {
         const file = req.files.video[0];
 
@@ -153,24 +148,34 @@ router.post(
         });
       }
 
-      // ================================================
-      // NOTHING UPLOADED
-      // ================================================
-
+      // No file received
       return res.status(400).json({
         message: "No image or video uploaded.",
       });
-
     } catch (error) {
       console.error("Upload error:", error);
 
       return res.status(500).json({
-        message:
-          error.message ||
-          "File upload failed.",
+        message: error.message || "File upload failed.",
       });
     }
   }
 );
+
+// =====================================================
+// MULTER / UPLOAD ERROR HANDLER
+// =====================================================
+
+router.use((err, req, res, next) => {
+  console.error("Upload middleware error:", err);
+
+  if (res.headersSent) {
+    return next(err);
+  }
+
+  return res.status(err instanceof multer.MulterError ? 400 : 500).json({
+    message: err.message || "File upload failed.",
+  });
+});
 
 module.exports = router;

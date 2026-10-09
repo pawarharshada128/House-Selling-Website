@@ -1,17 +1,20 @@
+
 import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import "./App.css";
 
 // const API_URL = "http://localhost:5000/api";
-// const SERVER_URL = "http://localhost:5000";
 const API_URL = "https://house-selling-website.onrender.com/api";
 const SERVER_URL = "https://house-selling-website.onrender.com";
+
 function App() {
   return <HomePage />;
 }
 
 function HomePage() {
   const navigate = useNavigate();
+
+  // Keep all your existing HomePage code below.
 
   // =====================================================
   // USER
@@ -344,12 +347,14 @@ function HomePage() {
               Explore Properties
             </a>
 
-            <a
-              href="/contact"
-              className="hero-outline-button"
-            >
-              Contact Us
-            </a>
+         
+<button
+  type="button"
+  className="hero-outline-button"
+  onClick={() => navigate("/contact")}
+>
+  Contact Us
+</button>
 
           </div>
 

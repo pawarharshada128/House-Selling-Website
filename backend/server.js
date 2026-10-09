@@ -1,11 +1,11 @@
+
 const express = require("express");
 const mongoose = require("mongoose");
 const cors = require("cors");
 const dotenv = require("dotenv");
 const path = require("path");
+const fs = require("fs");
 const dns = require("dns");
-
-const mapRoutes = require("./routes/mapRoutes");
 
 dotenv.config();
 
@@ -24,6 +24,19 @@ const app = express();
 app.set("trust proxy", 1);
 
 // =====================================================
+// UPLOAD DIRECTORY
+// Same directory for upload and image serving
+// =====================================================
+
+const uploadDir =
+  process.env.UPLOAD_DIR ||
+  path.join(__dirname, "uploads");
+
+if (!fs.existsSync(uploadDir)) {
+  fs.mkdirSync(uploadDir, { recursive: true });
+}
+
+// =====================================================
 // MIDDLEWARE
 // =====================================================
 
@@ -40,23 +53,14 @@ app.use(
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// =====================================================
-// UPLOADS
-// =====================================================
-
-// app.use(
-//   "/uploads",
-//   express.static(path.join(__dirname, "uploads"))
-// );
-app.use(
-  "/uploads",
-  express.static(path.join(__dirname, "uploads"))
-);
+// Serve uploaded images and videos
+app.use("/uploads", express.static(uploadDir));
 
 // =====================================================
 // ROUTES
 // =====================================================
 
+const mapRoutes = require("./routes/mapRoutes");
 const cartRoutes = require("./routes/cartRoutes");
 const authRoutes = require("./routes/authRoutes");
 const propertyRoutes = require("./routes/propertyRoutes");
@@ -95,7 +99,7 @@ app.get("/", (req, res) => {
 });
 
 // =====================================================
-// 404
+// 404 HANDLER
 // =====================================================
 
 app.use((req, res) => {
@@ -111,7 +115,11 @@ app.use((req, res) => {
 app.use((err, req, res, next) => {
   console.error("Server error:", err);
 
-  res.status(500).json({
+  if (res.headersSent) {
+    return next(err);
+  }
+
+  res.status(err.status || 500).json({
     message: err.message || "Internal server error.",
   });
 });
@@ -138,16 +146,13 @@ mongoose
   .connect(MONGO_URI)
   .then(() => {
     console.log("MongoDB connected successfully.");
+    console.log("Upload directory:", uploadDir);
 
     app.listen(PORT, "0.0.0.0", () => {
       console.log(`Server running on port ${PORT}`);
     });
   })
   .catch((error) => {
-    console.error(
-      "MongoDB connection failed:",
-      error
-    );
-
+    console.error("MongoDB connection failed:", error);
     process.exit(1);
   });
