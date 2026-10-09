@@ -8,27 +8,28 @@ const router = express.Router();
 
 // =====================================================
 // UPLOAD DIRECTORY
-// Must match the directory in server.js
+// Must match server.js
+// Default: backend/uploads
 // =====================================================
-
-const uploadDir =
-  process.env.UPLOAD_DIR ||
-  path.join(__dirname, "..", "uploads");
+const uploadDir = path.resolve(
+  process.env.UPLOAD_DIR || path.join(__dirname, "..", "uploads")
+);
 
 if (!fs.existsSync(uploadDir)) {
   fs.mkdirSync(uploadDir, { recursive: true });
 }
 
-// =====================================================
-// STORAGE
-// =====================================================
+console.log("Upload route directory:", uploadDir);
 
+// =====================================================
+// FILE STORAGE
+// =====================================================
 const storage = multer.diskStorage({
-  destination: function (req, file, cb) {
+  destination: (req, file, cb) => {
     cb(null, uploadDir);
   },
 
-  filename: function (req, file, cb) {
+  filename: (req, file, cb) => {
     const uniqueName =
       Date.now() +
       "-" +
@@ -40,23 +41,21 @@ const storage = multer.diskStorage({
 });
 
 // =====================================================
-// FILE FILTER
+// ALLOWED FILE TYPES
 // =====================================================
+const allowedImages = [
+  "image/jpeg",
+  "image/png",
+  "image/webp",
+];
 
-const fileFilter = function (req, file, cb) {
-  const allowedImages = [
-    "image/jpeg",
-    "image/jpg",
-    "image/png",
-    "image/webp",
-  ];
+const allowedVideos = [
+  "video/mp4",
+  "video/webm",
+  "video/ogg",
+];
 
-  const allowedVideos = [
-    "video/mp4",
-    "video/webm",
-    "video/ogg",
-  ];
-
+const fileFilter = (req, file, cb) => {
   if (
     allowedImages.includes(file.mimetype) ||
     allowedVideos.includes(file.mimetype)
@@ -72,9 +71,8 @@ const fileFilter = function (req, file, cb) {
 };
 
 // =====================================================
-// MULTER
+// MULTER CONFIGURATION
 // =====================================================
-
 const upload = multer({
   storage,
   fileFilter,
@@ -86,7 +84,6 @@ const upload = multer({
 // =====================================================
 // BACKEND URL
 // =====================================================
-
 function getBackendUrl(req) {
   const configuredUrl = process.env.BACKEND_URL;
 
@@ -101,7 +98,6 @@ function getBackendUrl(req) {
 // UPLOAD IMAGE OR VIDEO
 // POST /api/upload
 // =====================================================
-
 router.post(
   "/",
   upload.fields([
@@ -118,12 +114,9 @@ router.post(
     try {
       const backendUrl = getBackendUrl(req);
 
-      // Upload image
       if (req.files?.image?.[0]) {
         const file = req.files.image[0];
-
-        const imageUrl =
-          `${backendUrl}/uploads/${file.filename}`;
+        const imageUrl = `${backendUrl}/uploads/${file.filename}`;
 
         return res.status(200).json({
           message: "Image uploaded successfully.",
@@ -133,12 +126,9 @@ router.post(
         });
       }
 
-      // Upload video
       if (req.files?.video?.[0]) {
         const file = req.files.video[0];
-
-        const videoUrl =
-          `${backendUrl}/uploads/${file.filename}`;
+        const videoUrl = `${backendUrl}/uploads/${file.filename}`;
 
         return res.status(200).json({
           message: "Video uploaded successfully.",
@@ -148,7 +138,6 @@ router.post(
         });
       }
 
-      // No file received
       return res.status(400).json({
         message: "No image or video uploaded.",
       });
@@ -163,9 +152,8 @@ router.post(
 );
 
 // =====================================================
-// MULTER / UPLOAD ERROR HANDLER
+// UPLOAD ERROR HANDLER
 // =====================================================
-
 router.use((err, req, res, next) => {
   console.error("Upload middleware error:", err);
 
@@ -173,7 +161,9 @@ router.use((err, req, res, next) => {
     return next(err);
   }
 
-  return res.status(err instanceof multer.MulterError ? 400 : 500).json({
+  const status = err instanceof multer.MulterError ? 400 : 500;
+
+  return res.status(status).json({
     message: err.message || "File upload failed.",
   });
 });

@@ -12,34 +12,30 @@ dotenv.config();
 // =====================================================
 // DNS
 // =====================================================
-
 dns.setServers(["8.8.8.8", "1.1.1.1"]);
 
 const app = express();
 
-// =====================================================
-// TRUST PROXY
-// =====================================================
-
 app.set("trust proxy", 1);
 
 // =====================================================
-// UPLOAD DIRECTORY
-// Same directory for upload and image serving
+// SHARED UPLOAD DIRECTORY
+// Default: backend/uploads
+// Keep this same path in uploadRoutes.js
 // =====================================================
-
-const uploadDir =
-  process.env.UPLOAD_DIR ||
-  path.join(__dirname, "uploads");
+const uploadDir = path.resolve(
+  process.env.UPLOAD_DIR || path.join(__dirname, "uploads")
+);
 
 if (!fs.existsSync(uploadDir)) {
   fs.mkdirSync(uploadDir, { recursive: true });
 }
 
+console.log("Configured upload directory:", uploadDir);
+
 // =====================================================
 // MIDDLEWARE
 // =====================================================
-
 app.use(
   cors({
     origin: [
@@ -59,7 +55,6 @@ app.use("/uploads", express.static(uploadDir));
 // =====================================================
 // ROUTES
 // =====================================================
-
 const mapRoutes = require("./routes/mapRoutes");
 const cartRoutes = require("./routes/cartRoutes");
 const authRoutes = require("./routes/authRoutes");
@@ -75,7 +70,6 @@ const adminRoutes = require("./routes/admin");
 // =====================================================
 // API ROUTES
 // =====================================================
-
 app.use("/api/admin", adminRoutes);
 app.use("/api/cart", cartRoutes);
 app.use("/api/auth", authRoutes);
@@ -91,7 +85,6 @@ app.use("/api/upload", uploadRoutes);
 // =====================================================
 // HOME / HEALTH CHECK
 // =====================================================
-
 app.get("/", (req, res) => {
   res.status(200).json({
     message: "HomeFinder API is running successfully.",
@@ -101,7 +94,6 @@ app.get("/", (req, res) => {
 // =====================================================
 // 404 HANDLER
 // =====================================================
-
 app.use((req, res) => {
   res.status(404).json({
     message: "Route not found.",
@@ -111,7 +103,6 @@ app.use((req, res) => {
 // =====================================================
 // ERROR HANDLER
 // =====================================================
-
 app.use((err, req, res, next) => {
   console.error("Server error:", err);
 
@@ -127,18 +118,15 @@ app.use((err, req, res, next) => {
 // =====================================================
 // MONGODB CONNECTION
 // =====================================================
-
 const PORT = process.env.PORT || 5000;
 
 const MONGO_URI =
-  process.env.MONGO_URI ||
-  process.env.MONGODB_URI;
+  process.env.MONGO_URI || process.env.MONGODB_URI;
 
 if (!MONGO_URI) {
   console.error(
     "MONGO_URI or MONGODB_URI is missing in environment variables."
   );
-
   process.exit(1);
 }
 
@@ -146,10 +134,10 @@ mongoose
   .connect(MONGO_URI)
   .then(() => {
     console.log("MongoDB connected successfully.");
-    console.log("Upload directory:", uploadDir);
 
     app.listen(PORT, "0.0.0.0", () => {
       console.log(`Server running on port ${PORT}`);
+      console.log("Images served from:", uploadDir);
     });
   })
   .catch((error) => {
