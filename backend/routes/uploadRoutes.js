@@ -85,11 +85,14 @@ const upload = multer({
 // GET BACKEND URL
 // =====================================================
 
+// function getBackendUrl(req) {
+//   return (
+//     process.env.BACKEND_URL ||
+//     `${req.protocol}://${req.get("host")}`
+//   );
+// }
 function getBackendUrl(req) {
-  return (
-    process.env.BACKEND_URL ||
-    `${req.protocol}://${req.get("host")}`
-  );
+  return "https://house-selling-website.onrender.com";
 }
 
 // =====================================================
