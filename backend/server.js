@@ -1,5 +1,9 @@
+
 const dns = require("dns");
+
+// Fix Node.js DNS resolution for MongoDB Atlas
 dns.setServers(["8.8.8.8", "1.1.1.1"]);
+
 require("dotenv").config();
 
 const express = require("express");
@@ -9,16 +13,32 @@ const path = require("path");
 
 const app = express();
 
-// ================================
+// =====================================
+// CONFIGURATION
+// =====================================
+
+const PORT = process.env.PORT || 5000;
+const MONGO_URI = process.env.MONGO_URI || process.env.MONGODB_URI;
+
+const allowedOrigins = [
+  "http://localhost:5173",
+  "https://shree-krishna-constructions.vercel.app"
+];
+
+// =====================================
 // MIDDLEWARE
-// ================================
+// =====================================
 
 app.use(
   cors({
-    origin: [
-      "http://localhost:5173",
-      "https://house-selling-website.onrender.com"
-    ],
+    origin: function (origin, callback) {
+      // Allow requests without an Origin header, such as local tools.
+      if (!origin || allowedOrigins.includes(origin)) {
+        return callback(null, true);
+      }
+
+      return callback(new Error("Origin not allowed by CORS"));
+    },
     credentials: true
   })
 );
@@ -26,16 +46,18 @@ app.use(
 app.use(express.json({ limit: "10mb" }));
 app.use(express.urlencoded({ extended: true }));
 
-// ================================
+// =====================================
 // STATIC FILES
-// Existing disk-based uploads
-// ================================
+// =====================================
 
-app.use("/uploads", express.static(path.join(__dirname, "uploads")));
+app.use(
+  "/uploads",
+  express.static(path.join(__dirname, "uploads"))
+);
 
-// ================================
-// ROUTES
-// ================================
+// =====================================
+// API ROUTES
+// =====================================
 
 const adminRoutes = require("./routes/admin");
 const authRoutes = require("./routes/authRoutes");
@@ -48,8 +70,6 @@ const blogRoutes = require("./routes/blogRoutes");
 const testimonialRoutes = require("./routes/testimonialRoutes");
 const mapRoutes = require("./routes/mapRoutes");
 const uploadRoutes = require("./routes/uploadRoutes");
-
-// New route for storing image binary data in MongoDB
 const databaseImageRoutes = require("./routes/databaseImageRoutes");
 
 app.use("/api/admin", adminRoutes);
@@ -65,56 +85,65 @@ app.use("/api/map", mapRoutes);
 app.use("/api/upload", uploadRoutes);
 app.use("/api/database-images", databaseImageRoutes);
 
-// ================================
-// TEST ROUTE
-// ================================
+// =====================================
+// HEALTH CHECK
+// =====================================
 
 app.get("/", (req, res) => {
   res.status(200).json({
+    success: true,
     message: "SK Constructions / HomeFinder API is running"
   });
 });
 
-// ================================
-// NOT FOUND HANDLER
-// ================================
+// =====================================
+// 404 HANDLER
+// =====================================
 
 app.use((req, res) => {
   res.status(404).json({
+    success: false,
     message: "API route not found"
   });
 });
 
-// ================================
+// =====================================
 // ERROR HANDLER
-// ================================
+// =====================================
 
 app.use((err, req, res, next) => {
   console.error("Server error:", err.message);
 
+  if (err.message === "Origin not allowed by CORS") {
+    return res.status(403).json({
+      success: false,
+      message: "Origin not allowed by CORS"
+    });
+  }
+
   res.status(err.status || 500).json({
+    success: false,
     message: err.message || "Internal server error"
   });
 });
 
-// ================================
-// DATABASE + SERVER
-// ================================
-
-const PORT = process.env.PORT || 5000;
-const MONGO_URI = process.env.MONGO_URI || process.env.MONGODB_URI;
+// =====================================
+// MONGODB + SERVER STARTUP
+// =====================================
 
 async function startServer() {
   try {
     if (!MONGO_URI) {
-      throw new Error("MONGO_URI or MONGODB_URI is missing from .env");
+      throw new Error(
+        "MongoDB connection string is missing. Set MONGO_URI in environment variables."
+      );
     }
 
     await mongoose.connect(MONGO_URI);
 
     console.log("MongoDB connected successfully");
 
-    app.listen(PORT, () => {
+    app.listen(PORT, "0.0.0.0", () => {
       console.log(`Server running on port ${PORT}`);
     });
   } catch (error) {
