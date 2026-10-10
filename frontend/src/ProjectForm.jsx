@@ -1,267 +1,248 @@
-import React, {
-  useState,
-} from "react";
+import React, { useState } from "react";
 
-// const API_URL =
-//   "http://localhost:5000/api";
 const API_URL = "https://house-selling-website.onrender.com/api";
-// const SERVER_URL = "https://house-selling-website.onrender.com";
+const BACKEND_URL = "https://house-selling-website.onrender.com";
 
-function ProjectForm({
-  onClose,
-  onSuccess,
-}) {
-  const [formData, setFormData] =
-    useState({
-      title: "",
-      description: "",
-      status: "Ongoing",
-      location: "",
-    });
+const ProjectForm = () => {
+  const [formData, setFormData] = useState({
+    title: "",
+    description: "",
+    status: "Available",
+    location: "",
+  });
 
-  const [loading, setLoading] =
-    useState(false);
+  const [image, setImage] = useState(null);
+  const [imageUrl, setImageUrl] = useState("");
+  const [uploading, setUploading] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [message, setMessage] = useState("");
 
   const handleChange = (e) => {
-    const {
-      name,
-      value,
-    } = e.target;
+    setFormData({
+      ...formData,
+      [e.target.name]: e.target.value,
+    });
+  };
 
-    setFormData(
-      (previous) => ({
-        ...previous,
-        [name]: value,
-      })
-    );
+  const handleImageChange = (e) => {
+    const selectedImage = e.target.files?.[0];
+
+    if (!selectedImage) return;
+
+    if (!["image/jpeg", "image/png", "image/webp"].includes(selectedImage.type)) {
+      setMessage("Please select a JPG, PNG, or WEBP image.");
+      e.target.value = "";
+      return;
+    }
+
+    if (selectedImage.size > 4 * 1024 * 1024) {
+      setMessage("Image size must be 4 MB or less.");
+      e.target.value = "";
+      return;
+    }
+
+    setImage(selectedImage);
+    setImageUrl("");
+    setMessage("");
+  };
+
+  const uploadImage = async () => {
+    if (!image) return imageUrl;
+
+    const token = localStorage.getItem("token");
+
+    if (!token) {
+      throw new Error("Please log in as an admin before uploading an image.");
+    }
+
+    const data = new FormData();
+    data.append("image", image);
+
+    setUploading(true);
+
+    try {
+      const response = await fetch(`${API_URL}/database-images`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+        body: data,
+      });
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        throw new Error(result.message || "Image upload failed.");
+      }
+
+      const uploadedUrl = result.image.startsWith("http")
+        ? result.image
+        : `${BACKEND_URL}${result.image}`;
+
+      setImageUrl(uploadedUrl);
+      return uploadedUrl;
+    } finally {
+      setUploading(false);
+    }
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setMessage("");
 
-    const token =
-      localStorage.getItem(
-        "token"
-      );
+    const token = localStorage.getItem("token");
 
     if (!token) {
-      alert(
-        "Please login first."
-      );
+      setMessage("Please log in as an admin.");
       return;
     }
 
+    setSaving(true);
+
     try {
-      setLoading(true);
+      let uploadedImageUrl = imageUrl;
 
-      const response =
-        await fetch(
-          `${API_URL}/projects`,
-          {
-            method: "POST",
-
-            headers: {
-              "Content-Type":
-                "application/json",
-
-              Authorization:
-                `Bearer ${token}`,
-            },
-
-            body: JSON.stringify(
-              formData
-            ),
-          }
-        );
-
-      const data =
-        await response.json();
-
-      if (!response.ok) {
-        throw new Error(
-          data.message ||
-            data.error ||
-            "Failed to add project."
-        );
+      if (image) {
+        uploadedImageUrl = await uploadImage();
       }
 
-      alert(
-        "Project added successfully."
-      );
+      const projectData = {
+        ...formData,
+        ...(uploadedImageUrl && { image: uploadedImageUrl }),
+      };
 
-      onSuccess?.();
-      onClose();
+      const response = await fetch(`${API_URL}/projects`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(projectData),
+      });
 
+      const result = await response.json();
+
+      if (!response.ok) {
+        throw new Error(result.message || "Failed to save project.");
+      }
+
+      setMessage("Project saved successfully!");
+
+      setFormData({
+        title: "",
+        description: "",
+        status: "Available",
+        location: "",
+      });
+
+      setImage(null);
+      setImageUrl("");
+
+      e.target.reset();
     } catch (error) {
-      console.error(
-        "Project error:",
-        error
-      );
-
-      alert(
-        error.message ||
-          "Failed to add project."
-      );
+      setMessage(error.message || "Something went wrong.");
     } finally {
-      setLoading(false);
+      setSaving(false);
     }
   };
 
   return (
-    <div
-      className="admin-modal-overlay"
-      onClick={onClose}
-    >
+    <div className="project-form-container">
+      <h2>Add Project</h2>
 
-      <div
-        className="admin-modal project-modal"
-        onClick={(e) =>
-          e.stopPropagation()
-        }
-      >
+      {message && <p>{message}</p>}
 
-        <div className="admin-modal-header">
-
-          <div>
-            <span className="admin-modal-label">
-              PROJECT MANAGEMENT
-            </span>
-
-            <h2>
-              Add New Project
-            </h2>
-          </div>
-
-          <button
-            className="modal-close-button"
-            onClick={onClose}
-          >
-            ✕
-          </button>
-
+      <form onSubmit={handleSubmit}>
+        <div>
+          <label htmlFor="title">Project Title</label>
+          <input
+            id="title"
+            type="text"
+            name="title"
+            value={formData.title}
+            onChange={handleChange}
+            required
+          />
         </div>
 
-        <form
-          onSubmit={handleSubmit}
-          className="admin-property-form"
-        >
+        <div>
+          <label htmlFor="description">Description</label>
+          <textarea
+            id="description"
+            name="description"
+            value={formData.description}
+            onChange={handleChange}
+            required
+          />
+        </div>
 
-          <div className="admin-form-grid">
+        <div>
+          <label htmlFor="status">Status</label>
+          <select
+            id="status"
+            name="status"
+            value={formData.status}
+            onChange={handleChange}
+            required
+          >
+            <option value="Available">Available</option>
+            <option value="Ongoing">Ongoing</option>
+            <option value="Completed">Completed</option>
+          </select>
+        </div>
 
-            <div className="admin-form-group full">
-              <label>
-                Project Title
-              </label>
+        <div>
+          <label htmlFor="location">Location</label>
+          <input
+            id="location"
+            type="text"
+            name="location"
+            value={formData.location}
+            onChange={handleChange}
+            required
+          />
+        </div>
 
-              <input
-                type="text"
-                name="title"
-                placeholder="Enter project title"
-                value={
-                  formData.title
-                }
-                onChange={
-                  handleChange
-                }
-                required
-              />
-            </div>
+        <div>
+          <label htmlFor="image">Project Image</label>
+          <input
+            id="image"
+            type="file"
+            accept="image/jpeg,image/png,image/webp"
+            onChange={handleImageChange}
+          />
+        </div>
 
-            <div className="admin-form-group">
-              <label>
-                Status
-              </label>
-
-              <select
-                name="status"
-                value={
-                  formData.status
-                }
-                onChange={
-                  handleChange
-                }
-              >
-                <option value="Ongoing">
-                  Ongoing
-                </option>
-
-                <option value="Completed">
-                  Completed
-                </option>
-
-                <option value="Upcoming">
-                  Upcoming
-                </option>
-              </select>
-            </div>
-
-            <div className="admin-form-group">
-              <label>
-                Location
-              </label>
-
-              <input
-                type="text"
-                name="location"
-                placeholder="Project location"
-                value={
-                  formData.location
-                }
-                onChange={
-                  handleChange
-                }
-              />
-            </div>
-
-            <div className="admin-form-group full">
-              <label>
-                Project Description
-              </label>
-
-              <textarea
-                name="description"
-                rows="6"
-                placeholder="Enter project description"
-                value={
-                  formData.description
-                }
-                onChange={
-                  handleChange
-                }
-                required
-              />
-            </div>
-
+        {image && (
+          <div>
+            <p>Selected image: {image.name}</p>
+            <img
+              src={URL.createObjectURL(image)}
+              alt="Selected project preview"
+              style={{
+                width: "180px",
+                height: "120px",
+                objectFit: "cover",
+                borderRadius: "8px",
+              }}
+            />
           </div>
+        )}
 
-          <div className="admin-modal-actions">
+        {imageUrl && (
+          <p>Image uploaded successfully.</p>
+        )}
 
-            <button
-              type="button"
-              className="admin-secondary-button"
-              onClick={onClose}
-            >
-              Cancel
-            </button>
-
-            <button
-              type="submit"
-              className="admin-primary-button"
-              disabled={loading}
-            >
-              {loading
-                ? "Saving..."
-                : "Add Project"}
-            </button>
-
-          </div>
-
-        </form>
-
-      </div>
-
+        <button type="submit" disabled={saving || uploading}>
+          {uploading
+            ? "Uploading Image..."
+            : saving
+            ? "Saving Project..."
+            : "Save Project"}
+        </button>
+      </form>
     </div>
   );
-}
+};
 
 export default ProjectForm;

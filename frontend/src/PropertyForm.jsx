@@ -248,40 +248,87 @@ function PropertyForm({ property, onClose, onSuccess }) {
   // UPLOAD FILE
   // --------------------------------------------------
 
-  const uploadFile = async (file, fieldName) => {
-    if (!(file instanceof File)) {
-      return "";
-    }
+  // const uploadFile = async (file, fieldName) => {
+  //   if (!(file instanceof File)) {
+  //     return "";
+  //   }
 
-    const uploadData = new FormData();
+  //   const uploadData = new FormData();
 
-    uploadData.append(fieldName, file);
+  //   uploadData.append(fieldName, file);
 
-    const response = await fetch(
-      `${SERVER_URL}/api/upload`,
-      {
-        method: "POST",
-        body: uploadData,
-      }
-    );
+  //   const response = await fetch(
+  //     `${SERVER_URL}/api/upload`,
+  //     {
+  //       method: "POST",
+  //       body: uploadData,
+  //     }
+  //   );
 
-    const data = await response.json();
+  //   const data = await response.json();
 
-    if (!response.ok) {
-      throw new Error(
-        data.message || "File upload failed."
-      );
-    }
+  //   if (!response.ok) {
+  //     throw new Error(
+  //       data.message || "File upload failed."
+  //     );
+  //   }
 
-    return (
-      data.image ||
-      data.imageUrl ||
-      data.video ||
-      data.videoUrl ||
-      data.url ||
-      ""
-    );
-  };
+  //   return (
+  //     data.image ||
+  //     data.imageUrl ||
+  //     data.video ||
+  //     data.videoUrl ||
+  //     data.url ||
+  //     ""
+  //   );
+  // };
+
+  
+const uploadFile = async (file, fieldName) => {
+  if (!(file instanceof File)) {
+    return "";
+  }
+
+  const token = localStorage.getItem("token");
+  const uploadData = new FormData();
+  uploadData.append(fieldName, file);
+
+  // Images are stored in MongoDB.
+  // Videos continue using the existing disk upload route.
+  const uploadUrl =
+    fieldName === "video"
+      ? `${SERVER_URL}/api/upload`
+      : `${API_URL}/database-images`;
+
+  const response = await fetch(uploadUrl, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+    body: uploadData,
+  });
+
+  const data = await response.json();
+
+  if (!response.ok) {
+    throw new Error(data.message || "File upload failed.");
+  }
+
+  if (fieldName === "video") {
+    return data.video || data.videoUrl || data.url || "";
+  }
+
+  const imagePath = data.image || data.url || "";
+
+  if (!imagePath) {
+    throw new Error("Image URL was not returned by the server.");
+  }
+
+  return imagePath.startsWith("http")
+    ? imagePath
+    : `${SERVER_URL}${imagePath}`;
+};
+
 
   // --------------------------------------------------
   // UPLOAD MAIN IMAGE
