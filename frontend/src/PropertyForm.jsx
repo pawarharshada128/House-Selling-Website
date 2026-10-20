@@ -130,7 +130,7 @@ function PropertyForm({ property, onClose, onSuccess }) {
       alert("Please paste a Google Maps link first.");
       return;
     }
-
+  
     // First try to extract coordinates directly
     const directCoordinates = extractCoordinates(url);
 

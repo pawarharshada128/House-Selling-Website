@@ -84,7 +84,7 @@ app.use("/api/testimonials", testimonialRoutes);
 app.use("/api/map", mapRoutes);
 app.use("/api/upload", uploadRoutes);
 app.use("/api/database-images", databaseImageRoutes);
-
+app.use("/uploads", express.static("uploads"));
 // =====================================
 // HEALTH CHECK
 // =====================================

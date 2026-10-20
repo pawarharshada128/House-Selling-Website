@@ -47,7 +47,13 @@ function PropertyDetails() {
 
   const [property, setProperty] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState("");
+  const [reloadCount, setReloadCount] = useState(0);
   const [selectedImage, setSelectedImage] = useState("");
+  const [showImageViewer, setShowImageViewer] = useState(false);
+  const [descriptionExpanded, setDescriptionExpanded] = useState(false);
+  const [shortlistLoading, setShortlistLoading] = useState(false);
+  const [actionMessage, setActionMessage] = useState("");
 
   // ==============================
   // BOOKING POPUP STATES
@@ -65,6 +71,7 @@ function PropertyDetails() {
     const fetchProperty = async () => {
       try {
         setLoading(true);
+        setLoadError("");
 
         console.log(
           "Fetching property with ID:",
@@ -77,15 +84,13 @@ function PropertyDetails() {
 
         const data = await response.json();
 
-        console.log("PROPERTY DATA:", data);
-
         if (!response.ok) {
-          console.error("Error:", data);
           setProperty(null);
+          setLoadError(
+            data.message || "This property could not be found."
+          );
           return;
         }
-
-        console.log("Fetched property:", data);
 
         setProperty(data);
 
@@ -105,13 +110,60 @@ function PropertyDetails() {
         );
 
         setProperty(null);
+        setLoadError(
+          "We couldn't load this property. Check your connection and try again."
+        );
       } finally {
         setLoading(false);
       }
     };
 
     fetchProperty();
-  }, [id]);
+  }, [id, reloadCount]);
+
+  useEffect(() => {
+    if (!showImageViewer) {
+      return undefined;
+    }
+
+    const images = [
+      property?.image,
+      ...(Array.isArray(property?.images)
+        ? property.images
+        : []),
+    ].filter((image, index, allImages) =>
+      image && allImages.indexOf(image) === index
+    );
+
+    const handleKeyDown = (event) => {
+      if (event.key === "Escape") {
+        setShowImageViewer(false);
+      }
+
+      if (
+        (event.key === "ArrowRight" ||
+          event.key === "ArrowLeft") &&
+        images.length > 1
+      ) {
+        event.preventDefault();
+
+        setSelectedImage((currentImage) => {
+          const currentIndex = images.indexOf(currentImage);
+          const direction = event.key === "ArrowRight" ? 1 : -1;
+          const nextIndex =
+            (currentIndex + direction + images.length) % images.length;
+
+          return images[nextIndex];
+        });
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+
+    return () => {
+      window.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [property, showImageViewer]);
 
   // ==============================
   // IMAGE URL
@@ -257,13 +309,21 @@ function PropertyDetails() {
     const token = localStorage.getItem("token");
 
     if (!token) {
-      alert("Please login first.");
+      navigate("/login", {
+        state: {
+          fromWishlist: true,
+          property,
+        },
+      });
       return;
     }
 
     if (!property) {
       return;
     }
+
+    setShortlistLoading(true);
+    setActionMessage("");
 
     try {
       const response = await fetch(
@@ -280,16 +340,14 @@ function PropertyDetails() {
       const data = await response.json();
 
       if (!response.ok) {
-        alert(
+        throw new Error(
           data.message ||
             "Could not add to shortlist."
         );
-
-        return;
       }
 
-      alert(
-        "Property added to shortlist!"
+      setActionMessage(
+        data.message || "Property added to your shortlist."
       );
 
     } catch (error) {
@@ -298,7 +356,45 @@ function PropertyDetails() {
         error
       );
 
-      alert("Backend connection failed.");
+      setActionMessage(
+        error.message || "Could not connect to the server."
+      );
+    } finally {
+      setShortlistLoading(false);
+    }
+  };
+
+  const handleShare = async () => {
+    const shareData = {
+      title: property.title,
+      text: `Take a look at ${property.title}`,
+      url: window.location.href,
+    };
+
+    try {
+      if (navigator.share) {
+        await navigator.share(shareData);
+        setActionMessage("Property shared.");
+        return;
+      }
+
+      if (!navigator.clipboard) {
+        throw new Error(
+          "Copying the link is not supported in this browser."
+        );
+      }
+
+      await navigator.clipboard.writeText(shareData.url);
+      setActionMessage("Property link copied.");
+    } catch (error) {
+      if (error.name === "AbortError") {
+        return;
+      }
+
+      console.error("Share property error:", error);
+      setActionMessage(
+        error.message || "Unable to share this property."
+      );
     }
   };
 
@@ -308,8 +404,14 @@ function PropertyDetails() {
 
   if (loading) {
     return (
-      <div className="loading">
-        <h2>Loading property...</h2>
+      <div
+        className="property-details-loading"
+        role="status"
+        aria-live="polite"
+      >
+        <span className="property-loading-spinner" aria-hidden="true" />
+        <h2>Finding your property</h2>
+        <p>Just a moment while we load the details and photos.</p>
       </div>
     );
   }
@@ -323,8 +425,22 @@ function PropertyDetails() {
       <div className="no-properties">
 
         <h2>
-          Property Not Found
+          {loadError ? "Unable to show this property" : "Property Not Found"}
         </h2>
+
+        <p>
+          {loadError ||
+            "This listing may have been removed or is no longer available."}
+        </p>
+
+        {loadError && (
+          <button
+            className="view-button"
+            onClick={() => setReloadCount((count) => count + 1)}
+          >
+            Try Again
+          </button>
+        )}
 
         <button
           className="view-button"
@@ -425,8 +541,9 @@ function PropertyDetails() {
       <button
         className="back-button"
         onClick={() => navigate("/")}
+        aria-label="Back to property listings"
       >
-        ← Back to Properties
+        <span aria-hidden="true">←</span> All properties
       </button>
 
       {/* ==============================
@@ -474,11 +591,23 @@ function PropertyDetails() {
         <div className="details-image-section">
 
           {mainImage ? (
-            <img
-              src={mainImage}
-              alt={property.title}
-              className="details-main-image"
-            />
+            <button
+              type="button"
+              className="details-main-image-button"
+              onClick={() => setShowImageViewer(true)}
+              aria-label="Open property photo viewer"
+            >
+              <img
+                src={mainImage}
+                alt={property.title}
+                className="details-main-image"
+              />
+              <span className="image-viewer-hint">
+                View photos
+                {allImages.length > 1 &&
+                  ` · ${allImages.length} photos`}
+              </span>
+            </button>
           ) : (
             <div className="details-no-image">
               🏠
@@ -505,31 +634,26 @@ function PropertyDetails() {
                     getImageUrl(image);
 
                   return (
-                    <img
+                    <button
                       key={index}
-                      src={imageUrl}
-                      alt={`Property ${
-                        index + 1
+                      type="button"
+                      className={`property-gallery-thumbnail ${
+                        selectedImage === image ? "active" : ""
                       }`}
+                      aria-label={`Show property photo ${index + 1}`}
+                      aria-pressed={selectedImage === image}
                       onClick={() =>
                         setSelectedImage(
                           image
                         )
                       }
-                      style={{
-                        width: "90px",
-                        height: "70px",
-                        objectFit: "cover",
-                        borderRadius: "8px",
-                        cursor: "pointer",
-
-                        border:
-                          selectedImage ===
-                          image
-                            ? "3px solid #2563eb"
-                            : "2px solid #ddd",
-                      }}
-                    />
+                    >
+                      <img
+                        src={imageUrl}
+                        alt=""
+                        className="property-gallery-thumbnail-image"
+                      />
+                    </button>
                   );
                 }
               )}
@@ -614,9 +738,25 @@ function PropertyDetails() {
 
             <p>
               {property.description
-                ? property.description
+                ? descriptionExpanded ||
+                  property.description.length <= 280
+                  ? property.description
+                  : `${property.description.slice(0, 280).trimEnd()}...`
                 : "No description available."}
             </p>
+
+            {property.description?.length > 280 && (
+              <button
+                type="button"
+                className="description-toggle"
+                aria-expanded={descriptionExpanded}
+                onClick={() =>
+                  setDescriptionExpanded((expanded) => !expanded)
+                }
+              >
+                {descriptionExpanded ? "Show less" : "Read full description"}
+              </button>
+            )}
 
           </div>
 
@@ -629,22 +769,123 @@ function PropertyDetails() {
             <button
               className="shortlist-btn"
               onClick={handleBookHome}
+              disabled={property.status === "Sold"}
             >
-              Book Home
+              {property.status === "Sold"
+                ? "Property Sold"
+                : "Book Home"}
             </button>
 
             <button
               className="shortlist-btn"
               onClick={handleShortlist}
+              disabled={shortlistLoading}
             >
-              ❤️ Shortlist
+              {shortlistLoading
+                ? "Adding..."
+                : "♡ Shortlist"}
+            </button>
+
+            <button
+              className="share-property-btn"
+              onClick={handleShare}
+            >
+              Share
             </button>
 
           </div>
 
+          {actionMessage && (
+            <p className="property-action-message" role="status">
+              {actionMessage}
+            </p>
+          )}
+
         </div>
 
       </div>
+
+      <div className="details-mobile-actions">
+        <button
+          type="button"
+          className="mobile-shortlist-button"
+          onClick={handleShortlist}
+          disabled={shortlistLoading}
+        >
+          {shortlistLoading ? "Adding..." : "♡ Save"}
+        </button>
+        <button
+          type="button"
+          className="mobile-book-button"
+          onClick={handleBookHome}
+          disabled={property.status === "Sold"}
+        >
+          {property.status === "Sold" ? "Sold" : "Enquire about this home"}
+        </button>
+      </div>
+
+      {showImageViewer && mainImage && (
+        <div
+          className="property-image-viewer"
+          role="dialog"
+          aria-modal="true"
+          aria-label="Property photo viewer"
+          onClick={() => setShowImageViewer(false)}
+        >
+          <button
+            type="button"
+            className="image-viewer-close"
+            aria-label="Close photo viewer"
+            onClick={() => setShowImageViewer(false)}
+          >
+            ×
+          </button>
+
+          {allImages.length > 1 && (
+            <button
+              type="button"
+              className="image-viewer-arrow previous"
+              aria-label="Previous photo"
+              onClick={(event) => {
+                event.stopPropagation();
+                const currentIndex = allImages.indexOf(selectedImage);
+                const previousIndex =
+                  (currentIndex - 1 + allImages.length) % allImages.length;
+                setSelectedImage(allImages[previousIndex]);
+              }}
+            >
+              ‹
+            </button>
+          )}
+
+          <img
+            src={mainImage}
+            alt={`${property.title} photo`}
+            className="image-viewer-photo"
+            onClick={(event) => event.stopPropagation()}
+          />
+
+          {allImages.length > 1 && (
+            <button
+              type="button"
+              className="image-viewer-arrow next"
+              aria-label="Next photo"
+              onClick={(event) => {
+                event.stopPropagation();
+                const currentIndex = allImages.indexOf(selectedImage);
+                const nextIndex = (currentIndex + 1) % allImages.length;
+                setSelectedImage(allImages[nextIndex]);
+              }}
+            >
+              ›
+            </button>
+          )}
+
+          <span className="image-viewer-count">
+            {allImages.indexOf(selectedImage) + 1} / {allImages.length}
+          </span>
+        </div>
+      )}
 
       {/* ==============================
           PROPERTY VIDEO

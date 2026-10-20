@@ -90,6 +90,9 @@ function AdminDashboard() {
   const [statusFilter, setStatusFilter] =
     useState("All");
 
+  const [updatingStatusId, setUpdatingStatusId] =
+    useState(null);
+
 
   /* =====================================================
      GENERAL
@@ -626,6 +629,74 @@ function AdminDashboard() {
         error.message ||
           "Failed to delete property."
       );
+
+    }
+
+  };
+
+
+  /* =====================================================
+     UPDATE PROPERTY STATUS
+  ===================================================== */
+
+  const handleStatusChange = async (
+    id,
+    status
+  ) => {
+
+    setUpdatingStatusId(id);
+
+    try {
+
+      const response = await fetch(
+        `${API_URL}/properties/${id}/status`,
+        {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({ status }),
+        }
+      );
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(
+          data.message ||
+            "Failed to update property status."
+        );
+      }
+
+      setProperties((currentProperties) =>
+        currentProperties.map((property) =>
+          property._id === id
+            ? data.property
+            : property
+        )
+      );
+
+      await loadDashboard();
+      showMessage(
+        `Property status changed to ${status}.`
+      );
+
+    } catch (error) {
+
+      console.error(
+        "Property status update error:",
+        error
+      );
+
+      showMessage(
+        error.message ||
+          "Failed to update property status."
+      );
+
+    } finally {
+
+      setUpdatingStatusId(null);
 
     }
 
@@ -2183,10 +2254,6 @@ function AdminDashboard() {
               Pending
             </option>
 
-            <option value="Approved">
-              Approved
-            </option>
-
             <option value="Available">
               Available
             </option>
@@ -2414,21 +2481,44 @@ function AdminDashboard() {
 
                         <td>
 
-                          <span
-                            className={`status-badge ${
-                              (
+                          <div className="property-status-control">
+                            <span
+                              className={`status-badge ${
+                                (
+                                  property.status ||
+                                  "Pending"
+                                ).toLowerCase()
+                              }`}
+                            >
+                              {
                                 property.status ||
                                 "Pending"
-                              ).toLowerCase()
-                            }`}
-                          >
+                              }
+                            </span>
 
-                            {
-                              property.status ||
-                              "Pending"
-                            }
-
-                          </span>
+                            <select
+                              className="property-status-select"
+                              aria-label={`Set status for ${property.title || "property"}`}
+                              value={property.status || "Pending"}
+                              disabled={updatingStatusId === property._id}
+                              onChange={(event) =>
+                                handleStatusChange(
+                                  property._id,
+                                  event.target.value
+                                )
+                              }
+                            >
+                              <option value="Pending">
+                                Pending
+                              </option>
+                              <option value="Available">
+                                Available
+                              </option>
+                              <option value="Sold">
+                                Sold
+                              </option>
+                            </select>
+                          </div>
 
                         </td>
 
