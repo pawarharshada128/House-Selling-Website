@@ -1,13 +1,16 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { LanguageSelector, useLocale } from "./LocaleContext";
 
 function AdminNavbar({
   activeMenu,
+  buildRequestCount,
   setActiveMenu,
   onAddProperty,
   onAddProject,
 }) {
   const navigate = useNavigate();
+  const { t } = useLocale();
 
   const [menuOpen, setMenuOpen] = useState(false);
 
@@ -88,12 +91,12 @@ function AdminNavbar({
       >
         <img
           src="/logo.jpeg"
-          alt="SK Constructions"
+          alt={t("SK Constructions")}
         />
 
         <div className="admin-navbar-brand">
-          <span>SK Constructions</span>
-          <small>Admin Panel</small>
+          <span>{t("SK Constructions")}</span>
+          <small>{t("Admin Panel")}</small>
         </div>
       </div>
 
@@ -105,7 +108,7 @@ function AdminNavbar({
         type="button"
         className="admin-mobile-menu-button"
         onClick={() => setMenuOpen((previous) => !previous)}
-        aria-label="Toggle navigation menu"
+        aria-label={t("Toggle navigation menu")}
         aria-expanded={menuOpen}
       >
         {menuOpen ? "✕" : "☰"}
@@ -134,7 +137,7 @@ function AdminNavbar({
           }
           onClick={handleHome}
         >
-          Home
+          {t("Home")}
         </button>
 
         {/* DASHBOARD */}
@@ -150,7 +153,7 @@ function AdminNavbar({
             handleMenu("dashboard")
           }
         >
-          Dashboard
+          {t("Dashboard")}
         </button>
 
         {/* PROPERTIES */}
@@ -166,7 +169,7 @@ function AdminNavbar({
             handleMenu("properties")
           }
         >
-          Properties
+          {t("Properties")}
         </button>
 
         {/* USER ENQUIRIES */}
@@ -182,7 +185,28 @@ function AdminNavbar({
             handleMenu("enquiries")
           }
         >
-          User Enquiries
+          {t("User Enquiries")}
+        </button>
+
+        {/* BUILD ON YOUR LAND REQUESTS */}
+
+        <button
+          type="button"
+          className={
+            activeMenu === "build-requests"
+              ? "admin-nav-active"
+              : ""
+          }
+          onClick={() =>
+            handleMenu("build-requests")
+          }
+        >
+          {t("Build Requests")}
+          {buildRequestCount > 0 && (
+            <span className="admin-nav-count">
+              {buildRequestCount}
+            </span>
+          )}
         </button>
 
         {/* ADD PROPERTY */}
@@ -191,7 +215,7 @@ function AdminNavbar({
           type="button"
           onClick={handleAddProperty}
         >
-          Add New Property
+          {t("Add New Property")}
         </button>
 
         {/* NEW PROJECT */}
@@ -200,8 +224,10 @@ function AdminNavbar({
           type="button"
           onClick={handleAddProject}
         >
-          New Project
+          {t("New Project")}
         </button>
+
+        <LanguageSelector className="admin-language-selector" />
 
         {/* LOGOUT */}
 
@@ -210,7 +236,7 @@ function AdminNavbar({
           className="admin-logout-button"
           onClick={handleLogout}
         >
-          Logout
+          {t("Logout")}
         </button>
 
       </nav>

@@ -1,12 +1,14 @@
 import "./App.css";
 import { useLocation } from "react-router-dom";
 import { useState } from "react";
+import { useLocale } from "./LocaleContext";
 
 // const API_URL = "http://localhost:5000/api";
 const API_URL = "https://house-selling-website.onrender.com/api";
 // const SERVER_URL = "https://house-selling-website.onrender.com";
 function Contact() {
   const location = useLocation();
+  const { t } = useLocale();
 
   const property = location.state?.property;
 
@@ -97,17 +99,15 @@ function Contact() {
           <div className="contact-info">
 
             <span className="section-label">
-              GET IN TOUCH
+              {t("GET IN TOUCH")}
             </span>
 
             <h2>
-              Contact Shree Krishna Constructions
+              {t("Contact Shree Krishna Constructions")}
             </h2>
 
             <p>
-              Have questions about a property,
-              project or construction service?
-              Our team is here to help you.
+              {t("Have questions about a property, project or construction service? Our team is here to help you.")}
             </p>
 
             {/* SELECTED PROPERTY */}
@@ -116,26 +116,26 @@ function Contact() {
               <div className="selected-property">
 
                 <h3>
-                  Selected Property
+                  {t("Selected Property")}
                 </h3>
 
                 <p>
                   <strong>
-                    Property:
+                    {t("Property")}:
                   </strong>{" "}
                   {property.title}
                 </p>
 
                 <p>
                   <strong>
-                    Location:
+                    {t("Location")}:
                   </strong>{" "}
                   {property.location}
                 </p>
 
                 <p>
                   <strong>
-                    Price:
+                    {t("Price")}:
                   </strong>{" "}
                   ₹
                   {Number(
@@ -155,7 +155,7 @@ function Contact() {
               <div>
 
                 <h3>
-                  Address
+                  {t("Address")}
                 </h3>
 
                 <p>
@@ -177,7 +177,7 @@ function Contact() {
               <div>
 
                 <h3>
-                  Phone
+                  {t("Phone")}
                 </h3>
 
                 <p>
@@ -197,7 +197,7 @@ function Contact() {
               <div>
 
                 <h3>
-                  Email
+                  {t("Email")}
                 </h3>
 
                 <p>
@@ -217,11 +217,11 @@ function Contact() {
               <div>
 
                 <h3>
-                  Working Hours
+                  {t("Working Hours")}
                 </h3>
 
                 <p>
-                  Monday - Saturday
+                  {t("Monday - Saturday")}
                 </p>
 
                 <p>
@@ -241,18 +241,18 @@ function Contact() {
           <div className="contact-form-container">
 
             <span className="section-label">
-              PROPERTY ENQUIRY
+              {t("PROPERTY ENQUIRY")}
             </span>
 
             <h2>
-              Send Us a Message
+              {t("Send Us a Message")}
             </h2>
 
             {/* SUCCESS */}
 
             {successMessage && (
               <div className="contact-success">
-                {successMessage}
+                {t(successMessage)}
               </div>
             )}
 
@@ -260,7 +260,7 @@ function Contact() {
 
             {errorMessage && (
               <div className="contact-error">
-                {errorMessage}
+                {t(errorMessage)}
               </div>
             )}
 
@@ -269,21 +269,21 @@ function Contact() {
               <input
                 type="text"
                 name="name"
-                placeholder="Your Name"
+                placeholder={t("Your Name")}
                 required
               />
 
               <input
                 type="email"
                 name="email"
-                placeholder="Your Email"
+                placeholder={t("Your Email")}
                 required
               />
 
               <input
                 type="tel"
                 name="phone"
-                placeholder="Your Phone"
+                placeholder={t("Your Phone")}
                 required
               />
 
@@ -291,8 +291,8 @@ function Contact() {
                 name="message"
                 placeholder={
                   property
-                    ? `I am interested in ${property.title}. Please provide more information.`
-                    : "Tell us about the property or project you are interested in"
+                    ? `${t("I am interested in")} ${property.title}. ${t("Please provide more information.")}`
+                    : t("Tell us about the property or project you are interested in")
                 }
                 rows="6"
                 required
@@ -304,8 +304,8 @@ function Contact() {
                 disabled={loading}
               >
                 {loading
-                  ? "Sending..."
-                  : "Send Enquiry"}
+                  ? t("Sending...")
+                  : t("Send Enquiry")}
               </button>
 
             </form>

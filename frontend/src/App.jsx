@@ -1,6 +1,7 @@
 
 import { useEffect, useState } from "react";
-import { useNavigate, Link } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
+import { useLocale } from "./LocaleContext";
 import "./App.css";
 
 // const API_URL = "http://localhost:5000/api";
@@ -13,6 +14,88 @@ function App() {
 
 function HomePage() {
   const navigate = useNavigate();
+  const location = useLocation();
+  const { t } = useLocale();
+
+  const [buildRequestLoading, setBuildRequestLoading] = useState(false);
+  const [buildRequestFeedback, setBuildRequestFeedback] = useState(null);
+
+  useEffect(() => {
+    const sectionId = location.state?.scrollTo;
+    if (!sectionId) {
+      return undefined;
+    }
+
+    const frameId = window.requestAnimationFrame(() => {
+      document.getElementById(sectionId)?.scrollIntoView({
+        behavior: "smooth",
+        block: "start",
+      });
+
+      navigate(location.pathname, {
+        replace: true,
+        state: null,
+      });
+    });
+
+    return () => window.cancelAnimationFrame(frameId);
+  }, [location.pathname, location.state, navigate]);
+
+  const handleBuildRequest = async (event) => {
+    event.preventDefault();
+
+    const form = event.currentTarget;
+    const formData = new FormData(form);
+    const requestDetails = [
+      "Build on Your Land request",
+      `Land location: ${formData.get("landLocation")}`,
+      `Land area: ${formData.get("landArea") || "Not provided"} sq. ft.`,
+      `Estimated budget: ${formData.get("budget") || "Not provided"}`,
+      `Preferred home size: ${formData.get("homeSize") || "Not specified"}`,
+      `Bedrooms: ${formData.get("bedrooms") || "Not specified"}`,
+      `Additional details: ${formData.get("requirements") || "None provided"}`,
+    ].join("\n");
+
+    setBuildRequestLoading(true);
+    setBuildRequestFeedback(null);
+
+    try {
+      const response = await fetch(`${API_URL}/enquiries`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          name: formData.get("name"),
+          email: formData.get("email"),
+          phone: formData.get("phone"),
+          message: requestDetails,
+          propertyTitle: "Build on Your Land",
+        }),
+      });
+
+      const data = await response.json();
+      if (!response.ok) {
+        throw new Error(
+          data.message || "We couldn't send your request."
+        );
+      }
+
+      setBuildRequestFeedback({
+        type: "success",
+        text: t("Thanks! Our construction team will contact you to discuss your land and plans."),
+      });
+      form.reset();
+    } catch (error) {
+      console.error("Build request error:", error);
+      setBuildRequestFeedback({
+        type: "error",
+        text: error.message || "Unable to send your request. Please try again.",
+      });
+    } finally {
+      setBuildRequestLoading(false);
+    }
+  };
 
   // Keep all your existing HomePage code below.
 
@@ -156,7 +239,7 @@ function HomePage() {
       const token = localStorage.getItem("token");
 
       if (!token) {
-        alert("Please login first.");
+        alert(t("Please login first."));
         return;
       }
 
@@ -173,16 +256,16 @@ function HomePage() {
       const data = await response.json();
 
       if (!response.ok) {
-        alert(data.message || "Failed to add property.");
+        alert(data.message || t("Failed to add property."));
         return;
       }
 
       await fetchWishlist();
 
-      alert("Property added to Favorites ❤️");
+      alert(t("Property added to Favorites ❤️"));
     } catch (error) {
       console.error(error);
-      alert("Unable to add property to Favorites.");
+      alert(t("Unable to add property to Favorites."));
     }
   };
 
@@ -195,7 +278,7 @@ function HomePage() {
       const token = localStorage.getItem("token");
 
       if (!token) {
-        alert("Please login first.");
+        alert(t("Please login first."));
         return;
       }
 
@@ -212,16 +295,16 @@ function HomePage() {
       const data = await response.json();
 
       if (!response.ok) {
-        alert(data.message || "Failed to remove property.");
+        alert(data.message || t("Failed to remove property."));
         return;
       }
 
       await fetchWishlist();
 
-      alert("Property removed from wishlist.");
+      alert(t("Property removed from wishlist."));
     } catch (error) {
       console.error(error);
-      alert("Unable to remove property.");
+      alert(t("Unable to remove property."));
     }
   };
 
@@ -322,20 +405,17 @@ function HomePage() {
         <div className="hero-content">
 
           <span className="hero-label">
-            FIND A PLACE TO CALL HOME
+            {t("FIND A PLACE TO CALL HOME")}
           </span>
 
           <h1>
-            Discover a Home
+            {t("Discover a Home")}
             <br />
-            Designed for Your Life
+            {t("Designed for Your Life")}
           </h1>
 
           <p>
-            Explore carefully selected
-            homes, villas, apartments
-            and plots in desirable
-            locations.
+            {t("Explore carefully selected homes, villas, apartments and plots in desirable locations.")}
           </p>
 
           <div className="hero-buttons">
@@ -344,17 +424,15 @@ function HomePage() {
               href="#properties"
               className="hero-button"
             >
-              Explore Properties
+              {t("Explore Properties")}
             </a>
 
-         
-<button
-  type="button"
-  className="hero-outline-button"
-  onClick={() => navigate("/contact")}
->
-  Contact Us
-</button>
+            <a
+              href="#build-on-your-land"
+              className="hero-outline-button"
+            >
+              {t("Build on Your Land")}
+            </a>
 
           </div>
 
@@ -372,12 +450,11 @@ function HomePage() {
           <div className="intro-text">
 
             <span className="section-label">
-              WELCOME TO HOMEFINDER
+              {t("WELCOME TO HOMEFINDER")}
             </span>
 
             <h2>
-              A Better Way to Find
-              Your Next Property
+              {t("A Better Way to Find Your Next Property")}
             </h2>
 
           </div>
@@ -385,17 +462,14 @@ function HomePage() {
           <div className="intro-description">
 
             <p>
-              HomeFinder brings properties,
-              projects and professional
-              construction services together
-              in one convenient platform.
+              {t("HomeFinder brings properties, projects and professional construction services together in one convenient platform.")}
             </p>
 
             <a
               href="#about"
               className="text-link"
             >
-              Learn More About Us
+              {t("Learn More About Us")}
             </a>
 
           </div>
@@ -420,19 +494,17 @@ function HomePage() {
             <div>
 
               <span className="section-label">
-                OUR PROPERTIES
+                {t("OUR PROPERTIES")}
               </span>
 
               <h2>
-                Featured Properties
+                {t("Featured Properties")}
               </h2>
 
             </div>
 
             <p>
-              Explore our available
-              residential and commercial
-              properties.
+              {t("Explore our available residential and commercial properties.")}
             </p>
 
           </div>
@@ -444,12 +516,12 @@ function HomePage() {
             <div className="search-field">
 
               <label>
-                Search
+                {t("Search")}
               </label>
 
               <input
                 type="text"
-                placeholder="Search title or location"
+                placeholder={t("Search title or location")}
                 value={search}
                 onChange={(e) =>
                   setSearch(e.target.value)
@@ -461,7 +533,7 @@ function HomePage() {
             <div className="search-field">
 
               <label>
-                Property Type
+                {t("Property Type")}
               </label>
 
               <select
@@ -472,27 +544,27 @@ function HomePage() {
               >
 
                 <option value="All">
-                  All Types
+                  {t("All Types")}
                 </option>
 
                 <option value="House">
-                  House
+                  {t("House")}
                 </option>
 
                 <option value="Penthouse">
-                  Penthouse
+                  {t("Penthouse")}
                 </option>
 
                 <option value="Villa">
-                  Villa
+                  {t("Villa")}
                 </option>
 
                 <option value="Plot">
-                  Plot
+                  {t("Plot")}
                 </option>
 
                 <option value="Commercial">
-                  Commercial
+                  {t("Commercial")}
                 </option>
 
               </select>
@@ -502,12 +574,12 @@ function HomePage() {
             <div className="search-field">
 
               <label>
-                Maximum Price
+                {t("Maximum Price")}
               </label>
 
               <input
                 type="number"
-                placeholder="Maximum price"
+                placeholder={t("Maximum price")}
                 value={maxPrice}
                 onChange={(e) =>
                   setMaxPrice(e.target.value)
@@ -525,17 +597,17 @@ function HomePage() {
                 setMaxPrice("");
               }}
             >
-              Clear Filters
+              {t("Clear Filters")}
             </button>
 
           </div>
 
           <p className="property-count">
-            Showing{" "}
+            {t("Showing")}{" "}
             <strong>
               {filteredProperties.length}
             </strong>{" "}
-            properties
+            {t("properties")}
           </p>
 
           {/* PROPERTY GRID */}
@@ -547,12 +619,11 @@ function HomePage() {
               <div className="no-properties">
 
                 <h3>
-                  No Properties Found
+                  {t("No Properties Found")}
                 </h3>
 
                 <p>
-                  Try changing your search
-                  or filter criteria.
+                  {t("Try changing your search or filter criteria.")}
                 </p>
 
               </div>
@@ -601,11 +672,11 @@ function HomePage() {
                           : "flex",
                       }}
                     >
-                      Property Image
+                      {t("Property Image")}
                     </div>
 
                     <span className="property-badge-static">
-                      {property.property_type}
+                      {t(property.property_type)}
                     </span>
 
                     <span
@@ -616,8 +687,7 @@ function HomePage() {
                         ).toLowerCase()
                       }`}
                     >
-                      {property.status ||
-                        "Pending"}
+                      {t(property.status || "Pending")}
                     </span>
 
                   </div>
@@ -645,17 +715,17 @@ function HomePage() {
 
                       <span>
                         {property.bedrooms || 0}{" "}
-                        Bedrooms
+                        {t("Bedrooms")}
                       </span>
 
                       <span>
                         {property.bathrooms || 0}{" "}
-                        Bathrooms
+                        {t("Bathrooms")}
                       </span>
 
                       <span>
                         {property.area_sqft || 0}{" "}
-                        sq.ft
+                        {t("sq.ft")}
                       </span>
 
                     </div>
@@ -680,7 +750,7 @@ function HomePage() {
                             handleViewDetails(property)
                           }
                         >
-                          View Details
+                          {t("View Details")}
                         </button>
 
                         <button
@@ -712,8 +782,8 @@ function HomePage() {
                           }}
                         >
                           {isWishlisted(property._id)
-                            ? "♥ Saved"
-                            : "♡ Wishlist"}
+                            ? `♥ ${t("Saved")}`
+                            : `♡ ${t("Wishlist")}`}
                         </button>
 
                       </div>
@@ -728,7 +798,7 @@ function HomePage() {
                             handleViewDetails(property)
                           }
                         >
-                          View Details
+                          {t("View Details")}
                         </button>
 
                       </div>
@@ -767,14 +837,13 @@ function HomePage() {
               <div>
 
                 <h2>
-                  My Favorites
+                  {t("My Favorites")}
                 </h2>
 
               </div>
 
               <p>
-                Properties you have saved
-                for later.
+                {t("Properties you have saved for later.")}
               </p>
 
             </div>
@@ -784,19 +853,18 @@ function HomePage() {
               <div className="no-properties">
 
                 <h3>
-                  Your wishlist is empty
+                  {t("Your wishlist is empty")}
                 </h3>
 
                 <p>
-                  Save properties you like
-                  and find them here later.
+                  {t("Save properties you like and find them here later.")}
                 </p>
 
                 <a
                   href="#properties"
                   className="view-button"
                 >
-                  Explore Properties
+                  {t("Explore Properties")}
                 </a>
 
               </div>
@@ -836,13 +904,13 @@ function HomePage() {
                         ) : (
 
                           <div className="no-image">
-                            Property Image
+                            {t("Property Image")}
                           </div>
 
                         )}
 
                         <span className="property-badge-static">
-                          {property.property_type}
+                          {t(property.property_type)}
                         </span>
 
                       </div>
@@ -874,7 +942,7 @@ function HomePage() {
                               )
                             }
                           >
-                            View Details
+                            {t("View Details")}
                           </button>
 
                           <button
@@ -885,7 +953,7 @@ function HomePage() {
                               )
                             }
                           >
-                            ♥ Remove
+                            ♥ {t("Remove")}
                           </button>
 
                         </div>
@@ -922,17 +990,15 @@ function HomePage() {
           <div className="section-heading centered">
 
             <span className="section-label">
-              OUR PROJECTS
+              {t("OUR PROJECTS")}
             </span>
 
             <h2>
-              Construction Projects
+              {t("Construction Projects")}
             </h2>
 
             <p>
-              Discover our ongoing and
-              completed construction
-              projects.
+              {t("Discover our ongoing and completed construction projects.")}
             </p>
 
           </div>
@@ -944,7 +1010,7 @@ function HomePage() {
               <div className="project-image project-one">
 
                 <span>
-                  ONGOING PROJECT
+                  {t("ONGOING PROJECT")}
                 </span>
 
               </div>
@@ -952,17 +1018,15 @@ function HomePage() {
               <div className="project-content">
 
                 <h3>
-                  Residential Development
+                  {t("Residential Development")}
                 </h3>
 
                 <p>
-                  Modern residential spaces
-                  designed with quality
-                  construction.
+                  {t("Modern residential spaces designed with quality construction.")}
                 </p>
 
                 <a href="/contact">
-                  Enquire About Project
+                  {t("Enquire About Project")}
                 </a>
 
               </div>
@@ -974,7 +1038,7 @@ function HomePage() {
               <div className="project-image project-two">
 
                 <span>
-                  COMPLETED PROJECT
+                  {t("COMPLETED PROJECT")}
                 </span>
 
               </div>
@@ -982,17 +1046,15 @@ function HomePage() {
               <div className="project-content">
 
                 <h3>
-                  Premium Housing Project
+                  {t("Premium Housing Project")}
                 </h3>
 
                 <p>
-                  Carefully planned homes
-                  combining practical layouts
-                  with modern architecture.
+                  {t("Carefully planned homes combining practical layouts with modern architecture.")}
                 </p>
 
                 <a href="/contact">
-                  View Project Information
+                  {t("View Project Information")}
                 </a>
 
               </div>
@@ -1004,7 +1066,7 @@ function HomePage() {
               <div className="project-image project-three">
 
                 <span>
-                  UPCOMING PROJECT
+                  {t("UPCOMING PROJECT")}
                 </span>
 
               </div>
@@ -1012,17 +1074,15 @@ function HomePage() {
               <div className="project-content">
 
                 <h3>
-                  Future Development
+                  {t("Future Development")}
                 </h3>
 
                 <p>
-                  New residential and
-                  commercial opportunities
-                  are being planned.
+                  {t("New residential and commercial opportunities are being planned.")}
                 </p>
 
                 <a href="/contact">
-                  Request Information
+                  {t("Request Information")}
                 </a>
 
               </div>
@@ -1049,16 +1109,15 @@ function HomePage() {
           <div className="section-heading centered">
 
             <span className="section-label">
-              WHAT WE DO
+              {t("WHAT WE DO")}
             </span>
 
             <h2>
-              Our Services
+              {t("Our Services")}
             </h2>
 
             <p>
-              Professional property and
-              construction services.
+              {t("Professional property and construction services.")}
             </p>
 
           </div>
@@ -1072,12 +1131,11 @@ function HomePage() {
               </div>
 
               <h3>
-                Property Development
+                {t("Property Development")}
               </h3>
 
               <p>
-                Development of thoughtfully
-                planned properties.
+                {t("Development of thoughtfully planned properties.")}
               </p>
 
             </div>
@@ -1089,12 +1147,11 @@ function HomePage() {
               </div>
 
               <h3>
-                Property Sales
+                {t("Property Sales")}
               </h3>
 
               <p>
-                Find properties based on
-                location and budget.
+                {t("Find properties based on location and budget.")}
               </p>
 
             </div>
@@ -1106,12 +1163,11 @@ function HomePage() {
               </div>
 
               <h3>
-                Construction Services
+                {t("Construction Services")}
               </h3>
 
               <p>
-                Quality construction solutions
-                focused on durability.
+                {t("Quality construction solutions focused on durability.")}
               </p>
 
             </div>
@@ -1123,12 +1179,11 @@ function HomePage() {
               </div>
 
               <h3>
-                Customer Support
+                {t("Customer Support")}
               </h3>
 
               <p>
-                Customer assistance with
-                property enquiries.
+                {t("Customer assistance with property enquiries.")}
               </p>
 
             </div>
@@ -1137,6 +1192,179 @@ function HomePage() {
 
         </div>
 
+      </section>
+
+      {/* =================================================
+          BUILD ON YOUR LAND
+      ================================================= */}
+
+      <section
+        className="build-land-section"
+        id="build-on-your-land"
+      >
+        <div className="build-land-container">
+          <div className="build-land-intro">
+            <span className="section-label">
+              {t("YOUR LAND, YOUR HOME")}
+            </span>
+            <h2>
+              {t("Build a home that feels like yours")}
+            </h2>
+            <p>
+              {t("Already own a plot? Tell us a little about your land and the home you have in mind. Our construction team will get in touch to discuss the next steps.")}
+            </p>
+
+            <div className="build-land-steps">
+              <div>
+                <span>01</span>
+                <p>{t("Share your land and home requirements")}</p>
+              </div>
+              <div>
+                <span>02</span>
+                <p>{t("Discuss design, scope and budget with our team")}</p>
+              </div>
+              <div>
+                <span>03</span>
+                <p>{t("Plan your next steps together")}</p>
+              </div>
+            </div>
+          </div>
+
+          <form
+            className="build-land-form"
+            onSubmit={handleBuildRequest}
+          >
+            <h3>{t("Tell us about your project")}</h3>
+            <p>{t("Required fields are marked with an asterisk.")}</p>
+
+            <div className="build-land-form-grid">
+              <label>
+                {t("Your name *")}
+                <input
+                  name="name"
+                  type="text"
+                  autoComplete="name"
+                  placeholder={t("e.g. Priya Sharma")}
+                  required
+                  maxLength={100}
+                />
+              </label>
+
+              <label>
+                {t("Phone number *")}
+                <input
+                  name="phone"
+                  type="tel"
+                  autoComplete="tel"
+                  placeholder={t("Your contact number")}
+                  required
+                  maxLength={30}
+                />
+              </label>
+
+              <label className="build-land-form-full">
+                {t("Email address *")}
+                <input
+                  name="email"
+                  type="email"
+                  autoComplete="email"
+                  placeholder={t("you@example.com")}
+                  required
+                  maxLength={254}
+                />
+              </label>
+
+              <label className="build-land-form-full">
+                {t("Where is your land? *")}
+                <input
+                  name="landLocation"
+                  type="text"
+                  placeholder={t("City, area or full address")}
+                  required
+                  maxLength={200}
+                />
+              </label>
+
+              <label>
+                {t("Land area (sq. ft.)")}
+                <input
+                  name="landArea"
+                  type="number"
+                  min="1"
+                  placeholder={t("e.g. 1200")}
+                />
+              </label>
+
+              <label>
+                {t("Estimated budget")}
+                <select name="budget" defaultValue="">
+                  <option value="">{t("Choose a range")}</option>
+                  <option value="Under ₹25 lakh">{t("Under ₹25 lakh")}</option>
+                  <option value="₹25–50 lakh">{t("₹25–50 lakh")}</option>
+                  <option value="₹50 lakh–₹1 crore">{t("₹50 lakh–₹1 crore")}</option>
+                  <option value="Above ₹1 crore">{t("Above ₹1 crore")}</option>
+                  <option value="Need guidance">{t("I need guidance")}</option>
+                </select>
+              </label>
+
+              <label>
+                {t("Preferred home size")}
+                <select name="homeSize" defaultValue="">
+                  <option value="">{t("Select home size")}</option>
+                  <option value="Compact">{t("Compact")}</option>
+                  <option value="Medium">{t("Medium")}</option>
+                  <option value="Large">{t("Large")}</option>
+                  <option value="Not sure yet">{t("Not sure yet")}</option>
+                </select>
+              </label>
+
+              <label>
+                {t("Number of bedrooms")}
+                <select name="bedrooms" defaultValue="">
+                  <option value="">{t("Select bedrooms")}</option>
+                  <option value="1">{t("1 bedroom")}</option>
+                  <option value="2">{t("2 bedrooms")}</option>
+                  <option value="3">{t("3 bedrooms")}</option>
+                  <option value="4+">{t("4 or more bedrooms")}</option>
+                  <option value="Not sure yet">{t("Not sure yet")}</option>
+                </select>
+              </label>
+
+              <label className="build-land-form-full">
+                {t("Anything else we should know?")}
+                <textarea
+                  name="requirements"
+                  rows="4"
+                  placeholder={t("Your preferred style, timeline, or other requirements")}
+                  maxLength={1000}
+                />
+              </label>
+            </div>
+
+            {buildRequestFeedback && (
+              <p
+                className={`build-land-feedback ${buildRequestFeedback.type}`}
+                role="status"
+                aria-live="polite"
+              >
+                {t(buildRequestFeedback.text)}
+              </p>
+            )}
+
+            <button
+              type="submit"
+              className="build-land-submit"
+              disabled={buildRequestLoading}
+            >
+              {buildRequestLoading
+                ? t("Sending your request...")
+                : t("Request a construction consultation")}
+            </button>
+            <small>
+              {t("No commitment required. We’ll contact you to understand your project.")}
+            </small>
+          </form>
+        </div>
       </section>
 
       {/* =================================================
@@ -1155,27 +1383,19 @@ function HomePage() {
           <div className="about-content">
 
             <span className="section-label">
-              ABOUT HOMEFINDER
+              {t("ABOUT HOMEFINDER")}
             </span>
 
             <h2>
-              Building Better Spaces
-              for Better Living
+              {t("Building Better Spaces for Better Living")}
             </h2>
 
             <p>
-              HomeFinder is a professional
-              property platform designed to
-              make property discovery simple,
-              transparent and convenient.
+              {t("HomeFinder is a professional property platform designed to make property discovery simple, transparent and convenient.")}
             </p>
 
             <p>
-              From residential properties
-              to construction projects,
-              customers can find useful
-              property information before
-              making an enquiry.
+              {t("From residential properties to construction projects, customers can find useful property information before making an enquiry.")}
             </p>
 
             <div className="about-points">
@@ -1183,11 +1403,11 @@ function HomePage() {
               <div>
 
                 <strong>
-                  Quality
+                  {t("Quality")}
                 </strong>
 
                 <span>
-                  Carefully presented properties
+                  {t("Carefully presented properties")}
                 </span>
 
               </div>
@@ -1195,11 +1415,11 @@ function HomePage() {
               <div>
 
                 <strong>
-                  Transparency
+                  {t("Transparency")}
                 </strong>
 
                 <span>
-                  Clear property information
+                  {t("Clear property information")}
                 </span>
 
               </div>
@@ -1207,11 +1427,11 @@ function HomePage() {
               <div>
 
                 <strong>
-                  Support
+                  {t("Support")}
                 </strong>
 
                 <span>
-                  Customer-focused assistance
+                  {t("Customer-focused assistance")}
                 </span>
 
               </div>

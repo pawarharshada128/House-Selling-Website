@@ -1,10 +1,12 @@
 import React, { useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
+import { useLocale } from "./LocaleContext";
 
 function Payment() {
 
   const location = useLocation();
   const navigate = useNavigate();
+  const { t } = useLocale();
 
   const property = location.state?.property;
 
@@ -16,10 +18,10 @@ function Payment() {
 
         <div className="payment-container">
 
-          <h2>No Property Selected</h2>
+          <h2>{t("No Property Selected")}</h2>
 
           <button onClick={() => navigate("/")}>
-            Back to Home
+            {t("Back to Home")}
           </button>
 
         </div>
@@ -38,12 +40,12 @@ function Payment() {
   const handlePayment = () => {
 
     if (!paymentMethod) {
-      alert("Please select a payment method.");
+      alert(t("Please select a payment method."));
       return;
     }
 
     alert(
-      `Payment Method: ${paymentMethod}\nAdvance Amount: ₹${advanceAmount.toLocaleString("en-IN")}`
+      `${t("Payment Method")}: ${t(paymentMethod)}\n${t("Advance Amount")}: ₹${advanceAmount.toLocaleString("en-IN")}`
     );
   };
 
@@ -52,7 +54,7 @@ function Payment() {
 
       <div className="payment-container">
 
-        <h1>Payment</h1>
+        <h1>{t("Payment")}</h1>
 
         <div className="payment-property">
 
@@ -63,7 +65,7 @@ function Payment() {
           </p>
 
           <p>
-            Property Type:{" "}
+            {t("Property Type")}:{" "}
             {property.property_type}
           </p>
 
@@ -71,10 +73,10 @@ function Payment() {
 
         <div className="amount-details">
 
-          <h2>Amount Details</h2>
+          <h2>{t("Amount Details")}</h2>
 
           <div className="amount-row">
-            <span>Total Property Price</span>
+            <span>{t("Total Property Price")}</span>
 
             <strong>
               ₹{totalAmount.toLocaleString("en-IN")}
@@ -82,7 +84,7 @@ function Payment() {
           </div>
 
           <div className="amount-row">
-            <span>Advance Payment (10%)</span>
+            <span>{t("Advance Payment (10%)")}</span>
 
             <strong>
               ₹{advanceAmount.toLocaleString("en-IN")}
@@ -90,7 +92,7 @@ function Payment() {
           </div>
 
           <div className="amount-row">
-            <span>Remaining Payment</span>
+            <span>{t("Remaining Payment")}</span>
 
             <strong>
               ₹{remainingAmount.toLocaleString("en-IN")}
@@ -101,7 +103,7 @@ function Payment() {
 
         <div className="payment-options">
 
-          <h2>Select Payment Method</h2>
+          <h2>{t("Select Payment Method")}</h2>
 
           <label>
             <input
@@ -112,7 +114,7 @@ function Payment() {
                 setPaymentMethod(e.target.value)
               }
             />
-            📱 UPI
+            📱 {t("UPI")}
           </label>
 
           <label>
@@ -124,7 +126,7 @@ function Payment() {
                 setPaymentMethod(e.target.value)
               }
             />
-            💳 Credit / Debit Card
+            💳 {t("Credit / Debit Card")}
           </label>
 
           <label>
@@ -136,7 +138,7 @@ function Payment() {
                 setPaymentMethod(e.target.value)
               }
             />
-            🏦 Net Banking
+            🏦 {t("Net Banking")}
           </label>
 
           <label>
@@ -148,7 +150,7 @@ function Payment() {
                 setPaymentMethod(e.target.value)
               }
             />
-            💵 Cash
+            💵 {t("Cash")}
           </label>
 
         </div>
@@ -157,7 +159,7 @@ function Payment() {
           className="pay-button"
           onClick={handlePayment}
         >
-          Pay Advance ₹
+          {t("Pay Advance")} ₹
           {advanceAmount.toLocaleString("en-IN")}
         </button>
 

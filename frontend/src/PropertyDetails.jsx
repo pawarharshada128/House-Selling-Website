@@ -14,6 +14,7 @@ import {
 import markerIcon2x from "leaflet/dist/images/marker-icon-2x.png";
 import markerIcon from "leaflet/dist/images/marker-icon.png";
 import markerShadow from "leaflet/dist/images/marker-shadow.png";
+import { useLocale } from "./LocaleContext";
 
 import "./App.css";
 
@@ -44,6 +45,7 @@ L.Icon.Default.mergeOptions({
 function PropertyDetails() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const { t } = useLocale();
 
   const [property, setProperty] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -410,8 +412,8 @@ function PropertyDetails() {
         aria-live="polite"
       >
         <span className="property-loading-spinner" aria-hidden="true" />
-        <h2>Finding your property</h2>
-        <p>Just a moment while we load the details and photos.</p>
+        <h2>{t("Finding your property")}</h2>
+        <p>{t("Just a moment while we load the details and photos.")}</p>
       </div>
     );
   }
@@ -425,12 +427,11 @@ function PropertyDetails() {
       <div className="no-properties">
 
         <h2>
-          {loadError ? "Unable to show this property" : "Property Not Found"}
+          {loadError ? t("Unable to show this property") : t("Property Not Found")}
         </h2>
 
         <p>
-          {loadError ||
-            "This listing may have been removed or is no longer available."}
+          {loadError ? t(loadError) : t("This listing may have been removed or is no longer available.")}
         </p>
 
         {loadError && (
@@ -438,7 +439,7 @@ function PropertyDetails() {
             className="view-button"
             onClick={() => setReloadCount((count) => count + 1)}
           >
-            Try Again
+            {t("Try Again")}
           </button>
         )}
 
@@ -541,9 +542,9 @@ function PropertyDetails() {
       <button
         className="back-button"
         onClick={() => navigate("/")}
-        aria-label="Back to property listings"
+        aria-label={t("Back to property listings")}
       >
-        <span aria-hidden="true">←</span> All properties
+        <span aria-hidden="true">←</span> {t("All properties")}
       </button>
 
       {/* ==============================
@@ -555,8 +556,7 @@ function PropertyDetails() {
         <div>
 
           <span className="details-type-badge">
-            {property.property_type ||
-              "Property"}
+            {t(property.property_type || "Property")}
           </span>
 
           <h1>
@@ -595,7 +595,7 @@ function PropertyDetails() {
               type="button"
               className="details-main-image-button"
               onClick={() => setShowImageViewer(true)}
-              aria-label="Open property photo viewer"
+              aria-label={t("Open property photo viewer")}
             >
               <img
                 src={mainImage}
@@ -603,7 +603,7 @@ function PropertyDetails() {
                 className="details-main-image"
               />
               <span className="image-viewer-hint">
-                View photos
+                {t("View photos")}
                 {allImages.length > 1 &&
                   ` · ${allImages.length} photos`}
               </span>
@@ -640,7 +640,7 @@ function PropertyDetails() {
                       className={`property-gallery-thumbnail ${
                         selectedImage === image ? "active" : ""
                       }`}
-                      aria-label={`Show property photo ${index + 1}`}
+                      aria-label={`${t("Show property photo")} ${index + 1}`}
                       aria-pressed={selectedImage === image}
                       onClick={() =>
                         setSelectedImage(
@@ -680,7 +680,7 @@ function PropertyDetails() {
               </strong>
 
               <span>
-                Bedrooms
+                {t("Bedrooms")}
               </span>
 
             </div>
@@ -692,7 +692,7 @@ function PropertyDetails() {
               </strong>
 
               <span>
-                Bathrooms
+                {t("Bathrooms")}
               </span>
 
             </div>
@@ -704,7 +704,7 @@ function PropertyDetails() {
               </strong>
 
               <span>
-                Sq. Ft.
+                {t("Sq. Ft.")}
               </span>
 
             </div>
@@ -716,14 +716,13 @@ function PropertyDetails() {
           <div className="status-box">
 
             <strong>
-              Status:
+              {t("Status")}:
             </strong>{" "}
 
             <span
               className={`property-status ${statusClass}`}
             >
-              {property.status ||
-                "Pending"}
+              {t(property.status || "Pending")}
             </span>
 
           </div>
@@ -733,7 +732,7 @@ function PropertyDetails() {
           <div className="description">
 
             <h2>
-              Description
+              {t("Description")}
             </h2>
 
             <p>
@@ -742,7 +741,7 @@ function PropertyDetails() {
                   property.description.length <= 280
                   ? property.description
                   : `${property.description.slice(0, 280).trimEnd()}...`
-                : "No description available."}
+                : t("No description available.")}
             </p>
 
             {property.description?.length > 280 && (
@@ -754,7 +753,7 @@ function PropertyDetails() {
                   setDescriptionExpanded((expanded) => !expanded)
                 }
               >
-                {descriptionExpanded ? "Show less" : "Read full description"}
+                {descriptionExpanded ? t("Show less") : t("Read full description")}
               </button>
             )}
 
@@ -772,8 +771,8 @@ function PropertyDetails() {
               disabled={property.status === "Sold"}
             >
               {property.status === "Sold"
-                ? "Property Sold"
-                : "Book Home"}
+                ? t("Property Sold")
+                : t("Book Home")}
             </button>
 
             <button
@@ -782,15 +781,15 @@ function PropertyDetails() {
               disabled={shortlistLoading}
             >
               {shortlistLoading
-                ? "Adding..."
-                : "♡ Shortlist"}
+                ? t("Adding...")
+                : `♡ ${t("Shortlist")}`}
             </button>
 
             <button
               className="share-property-btn"
               onClick={handleShare}
             >
-              Share
+              {t("Share")}
             </button>
 
           </div>
@@ -812,7 +811,7 @@ function PropertyDetails() {
           onClick={handleShortlist}
           disabled={shortlistLoading}
         >
-          {shortlistLoading ? "Adding..." : "♡ Save"}
+          {shortlistLoading ? t("Adding...") : `♡ ${t("Save")}`}
         </button>
         <button
           type="button"
@@ -820,7 +819,7 @@ function PropertyDetails() {
           onClick={handleBookHome}
           disabled={property.status === "Sold"}
         >
-          {property.status === "Sold" ? "Sold" : "Enquire about this home"}
+          {property.status === "Sold" ? t("Sold") : t("Enquire about this home")}
         </button>
       </div>
 
@@ -829,13 +828,13 @@ function PropertyDetails() {
           className="property-image-viewer"
           role="dialog"
           aria-modal="true"
-          aria-label="Property photo viewer"
+          aria-label={t("Property photo viewer")}
           onClick={() => setShowImageViewer(false)}
         >
           <button
             type="button"
             className="image-viewer-close"
-            aria-label="Close photo viewer"
+            aria-label={t("Close photo viewer")}
             onClick={() => setShowImageViewer(false)}
           >
             ×
@@ -845,7 +844,7 @@ function PropertyDetails() {
             <button
               type="button"
               className="image-viewer-arrow previous"
-              aria-label="Previous photo"
+              aria-label={t("Previous photo")}
               onClick={(event) => {
                 event.stopPropagation();
                 const currentIndex = allImages.indexOf(selectedImage);
@@ -869,7 +868,7 @@ function PropertyDetails() {
             <button
               type="button"
               className="image-viewer-arrow next"
-              aria-label="Next photo"
+              aria-label={t("Next photo")}
               onClick={(event) => {
                 event.stopPropagation();
                 const currentIndex = allImages.indexOf(selectedImage);
@@ -901,7 +900,7 @@ function PropertyDetails() {
         >
 
           <h2>
-            Property Video
+            {t("Property Video")}
           </h2>
 
           <video
@@ -919,8 +918,7 @@ function PropertyDetails() {
               type="video/mp4"
             />
 
-            Your browser does not support
-            video playback.
+            {t("Your browser does not support video playback.")}
 
           </video>
 
@@ -941,7 +939,7 @@ function PropertyDetails() {
         >
 
           <h2>
-            📍 Property Location
+            📍 {t("Property Location")}
           </h2>
 
           <MapContainer
@@ -1002,7 +1000,7 @@ function PropertyDetails() {
                 marginTop: "15px",
               }}
             >
-              🗺️ Open in Google Maps
+              🗺️ {t("Open in Google Maps")}
             </a>
           )}
 
@@ -1025,12 +1023,11 @@ function PropertyDetails() {
         >
 
           <h2>
-            📍 Property Location
+            📍 {t("Property Location")}
           </h2>
 
           <p>
-            Location coordinates are not
-            available for this property.
+            {t("Location coordinates are not available for this property.")}
           </p>
 
           {property.map_location && (
@@ -1042,7 +1039,7 @@ function PropertyDetails() {
               rel="noopener noreferrer"
               className="google-map-link"
             >
-              🗺️ Open in Google Maps
+              🗺️ {t("Open in Google Maps")}
             </a>
           )}
 
@@ -1063,19 +1060,19 @@ function PropertyDetails() {
         >
 
           <h2>
-            Property Coordinates
+            {t("Property Coordinates")}
           </h2>
 
           <p>
             <strong>
-              Latitude:
+              {t("Latitude")}:
             </strong>{" "}
             {latitude}
           </p>
 
           <p>
             <strong>
-              Longitude:
+              {t("Longitude")}:
             </strong>{" "}
             {longitude}
           </p>
@@ -1099,11 +1096,11 @@ function PropertyDetails() {
               <div>
 
                 <span className="section-label">
-                  HOME BOOKING
+                  {t("HOME BOOKING")}
                 </span>
 
                 <h2>
-                  Book This Property
+                  {t("Book This Property")}
                 </h2>
 
               </div>
@@ -1131,15 +1128,14 @@ function PropertyDetails() {
 
               <p>
                 <strong>
-                  Property Type:
+                  {t("Property Type")}:
                 </strong>{" "}
-                {property.property_type ||
-                  "Property"}
+                {t(property.property_type || "Property")}
               </p>
 
               <p>
                 <strong>
-                  Location:
+                  {t("Location")}:
                 </strong>{" "}
                 {property.location}
               </p>
@@ -1149,7 +1145,7 @@ function PropertyDetails() {
                 <div>
 
                   <span>
-                    Bedrooms
+                    {t("Bedrooms")}
                   </span>
 
                   <strong>
@@ -1161,7 +1157,7 @@ function PropertyDetails() {
                 <div>
 
                   <span>
-                    Bathrooms
+                    {t("Bathrooms")}
                   </span>
 
                   <strong>
@@ -1173,11 +1169,11 @@ function PropertyDetails() {
                 <div>
 
                   <span>
-                    Area
+                    {t("Area")}
                   </span>
 
                   <strong>
-                    {property.area_sqft ?? 0} Sq. Ft.
+                    {property.area_sqft ?? 0} {t("Sq. Ft.")}
                   </strong>
 
                 </div>
@@ -1193,13 +1189,13 @@ function PropertyDetails() {
             <div className="booking-payment">
 
               <h3>
-                Payment Details
+                {t("Payment Details")}
               </h3>
 
               <div className="booking-payment-row">
 
                 <span>
-                  Total Payment
+                  {t("Total Payment")}
                 </span>
 
                 <strong>
@@ -1214,7 +1210,7 @@ function PropertyDetails() {
               <div className="booking-payment-row">
 
                 <span>
-                  Advance Payment (10%)
+                  {t("Advance Payment (10%)")}
                 </span>
 
                 <strong>
@@ -1229,7 +1225,7 @@ function PropertyDetails() {
               <div className="booking-payment-row remaining">
 
                 <span>
-                  Remaining Payment
+                  {t("Remaining Payment")}
                 </span>
 
                 <strong>
@@ -1250,13 +1246,11 @@ function PropertyDetails() {
             <div className="booking-contact">
 
               <h3>
-                Contact Information
+                {t("Contact Information")}
               </h3>
 
               <p>
-                Please provide your details.
-                Our team will contact you
-                regarding this property.
+                {t("Please provide your details. Our team will contact you regarding this property.")}
               </p>
 
               {enquiryMessage && (
@@ -1274,21 +1268,21 @@ function PropertyDetails() {
                 <input
                   type="text"
                   name="name"
-                  placeholder="Your Name"
+                  placeholder={t("Your Name")}
                   required
                 />
 
                 <input
                   type="email"
                   name="email"
-                  placeholder="Your Email"
+                  placeholder={t("Your Email")}
                   required
                 />
 
                 <input
                   type="tel"
                   name="phone"
-                  placeholder="Your Phone"
+                  placeholder={t("Your Phone")}
                   required
                 />
 
@@ -1296,7 +1290,7 @@ function PropertyDetails() {
                   name="message"
                   rows="4"
                   required
-                  defaultValue={`I am interested in ${property.title}. I would like to know more about the booking process, payment options and availability.`}
+                  defaultValue={`${t("I am interested in")} ${property.title}. ${t("I would like to know more about the booking process, payment options and availability.")}`}
                 />
 
                 <div className="booking-popup-actions">
@@ -1308,7 +1302,7 @@ function PropertyDetails() {
                       setShowBookingPopup(false)
                     }
                   >
-                    Cancel
+                    {t("Cancel")}
                   </button>
 
                   <button
@@ -1317,8 +1311,8 @@ function PropertyDetails() {
                     disabled={enquiryLoading}
                   >
                     {enquiryLoading
-                      ? "Submitting..."
-                      : "Submit Enquiry"}
+                      ? t("Submitting...")
+                      : t("Submit Enquiry")}
                   </button>
 
                 </div>

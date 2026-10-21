@@ -1,8 +1,10 @@
 import { useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import "./App.css";
+import { useLocale } from "./LocaleContext";
 
 function Auth({ onLogin, initialMode = "login" }) {
+  const { t } = useLocale();
   const location = useLocation();
   const navigate = useNavigate();
 
@@ -26,7 +28,7 @@ function Auth({ onLogin, initialMode = "login" }) {
     e.preventDefault();
 
     if (!email.trim() || !password.trim()) {
-      alert("Please enter email and password.");
+      alert(t("Please enter email and password."));
       return;
     }
 
@@ -55,7 +57,7 @@ function Auth({ onLogin, initialMode = "login" }) {
         alert(
           data.message ||
             data.error ||
-            "Login failed."
+            t("Login failed.")
         );
         return;
       }
@@ -106,7 +108,7 @@ function Auth({ onLogin, initialMode = "login" }) {
       console.error("Login error:", error);
 
       alert(
-        "Cannot connect to backend. Make sure your backend is running on port 5000."
+        t("Cannot connect to backend. Make sure your backend is running on port 5000.")
       );
     } finally {
       setLoading(false);
@@ -125,13 +127,13 @@ function Auth({ onLogin, initialMode = "login" }) {
       !email.trim() ||
       !password.trim()
     ) {
-      alert("Please fill all fields.");
+      alert(t("Please fill all fields."));
       return;
     }
 
     if (password.length < 6) {
       alert(
-        "Password must contain at least 6 characters."
+        t("Password must contain at least 6 characters.")
       );
       return;
     }
@@ -162,14 +164,14 @@ function Auth({ onLogin, initialMode = "login" }) {
         alert(
           data.message ||
             data.error ||
-            "Registration failed."
+            t("Registration failed.")
         );
 
         return;
       }
 
       alert(
-        "Registration successful! Please login."
+        t("Registration successful! Please login.")
       );
 
       // Clear fields
@@ -199,7 +201,7 @@ function Auth({ onLogin, initialMode = "login" }) {
       );
 
       alert(
-        "Cannot connect to backend. Make sure your backend is running on port 5000."
+        t("Cannot connect to backend. Make sure your backend is running on port 5000.")
       );
     } finally {
       setLoading(false);
@@ -237,7 +239,7 @@ function Auth({ onLogin, initialMode = "login" }) {
 
   const handleForgotPassword = () => {
     alert(
-      "Please contact Shree Krishna Constructions support to reset your password."
+      t("Please contact Shree Krishna Constructions support to reset your password.")
     );
   };
 
@@ -266,20 +268,17 @@ function Auth({ onLogin, initialMode = "login" }) {
           </div>
 
           <h1>
-           Shree Krishna Constructions
+           {t("Shree Krishna Constructions")}
           </h1>
 
           <div className="brand-line"></div>
 
           <h2>
-            Find a place you will love
-            to call home.
+            {t("Find a place you will love to call home.")}
           </h2>
 
           <p>
-            Discover verified properties, explore
-            beautiful homes, and find the perfect
-            place for you and your family.
+            {t("Discover verified properties, explore beautiful homes, and find the perfect place for you and your family.")}
           </p>
 
           <div className="brand-features">
@@ -289,12 +288,11 @@ function Auth({ onLogin, initialMode = "login" }) {
 
               <div>
                 <strong>
-                  Verified Properties
+                  {t("Verified Properties")}
                 </strong>
 
                 <p>
-                  Explore quality homes and
-                  properties.
+                  {t("Explore quality homes and properties.")}
                 </p>
               </div>
             </div>
@@ -304,12 +302,11 @@ function Auth({ onLogin, initialMode = "login" }) {
 
               <div>
                 <strong>
-                  Easy Property Search
+                  {t("Easy Property Search")}
                 </strong>
 
                 <p>
-                  Find properties based on your
-                  requirements.
+                  {t("Find properties based on your requirements.")}
                 </p>
               </div>
             </div>
@@ -319,12 +316,11 @@ function Auth({ onLogin, initialMode = "login" }) {
 
               <div>
                 <strong>
-                  Trusted Platform
+                  {t("Trusted Platform")}
                 </strong>
 
                 <p>
-                  A simple and reliable way to
-                  find your next home.
+                  {t("A simple and reliable way to find your next home.")}
                 </p>
               </div>
             </div>
@@ -349,14 +345,14 @@ function Auth({ onLogin, initialMode = "login" }) {
 
             <h2>
               {isRegister
-                ? "Create your account"
-                : "Welcome back"}
+                ? t("Create your account")
+                : t("Welcome back")}
             </h2>
 
             <p>
               {isRegister
-                ? "Register to start finding your dream home."
-                : "Sign in to continue to HomeFinder."}
+                ? t("Register to start finding your dream home.")
+                : t("Sign in to continue to HomeFinder.")}
             </p>
 
           </div>
@@ -376,13 +372,13 @@ function Auth({ onLogin, initialMode = "login" }) {
               <div className="form-group">
 
                 <label htmlFor="name">
-                  Full Name
+                  {t("Full Name")}
                 </label>
 
                 <input
                   id="name"
                   type="text"
-                  placeholder="Enter your full name"
+                  placeholder={t("Enter your full name")}
                   value={name}
                   onChange={(e) =>
                     setName(e.target.value)
@@ -399,13 +395,13 @@ function Auth({ onLogin, initialMode = "login" }) {
             <div className="form-group">
 
               <label htmlFor="email">
-                Email Address
+                {t("Email Address")}
               </label>
 
               <input
                 id="email"
                 type="email"
-                placeholder="Enter your email"
+                placeholder={t("Enter your email")}
                 value={
                   email ||
                   (!isRegister
@@ -426,7 +422,7 @@ function Auth({ onLogin, initialMode = "login" }) {
             <div className="form-group">
 
               <label htmlFor="password">
-                Password
+                {t("Password")}
               </label>
 
               <div className="password-wrapper">
@@ -438,7 +434,7 @@ function Auth({ onLogin, initialMode = "login" }) {
                       ? "text"
                       : "password"
                   }
-                  placeholder="Enter your password"
+                  placeholder={t("Enter your password")}
                   value={password}
                   onChange={(e) =>
                     setPassword(e.target.value)
@@ -462,8 +458,8 @@ function Auth({ onLogin, initialMode = "login" }) {
                   }
                 >
                   {showPassword
-                    ? "Hide"
-                    : "Show"}
+                    ? t("Hide")
+                    : t("Show")}
                 </button>
 
               </div>
@@ -488,7 +484,7 @@ function Auth({ onLogin, initialMode = "login" }) {
                   />
 
                   <span>
-                    Remember me
+                    {t("Remember me")}
                   </span>
 
                 </label>
@@ -500,7 +496,7 @@ function Auth({ onLogin, initialMode = "login" }) {
                     handleForgotPassword
                   }
                 >
-                  Forgot password?
+                  {t("Forgot password?")}
                 </button>
 
               </div>
@@ -514,10 +510,10 @@ function Auth({ onLogin, initialMode = "login" }) {
               disabled={loading}
             >
               {loading
-                ? "Please wait..."
+                ? t("Please wait...")
                 : isRegister
-                ? "Create Account"
-                : "Sign In"}
+                ? t("Create Account")
+                : t("Sign In")}
             </button>
 
           </form>
@@ -528,8 +524,8 @@ function Auth({ onLogin, initialMode = "login" }) {
 
             <span>
               {isRegister
-                ? "Already have an account?"
-                : "Don't have an account?"}
+                ? t("Already have an account?")
+                : t("Don't have an account?")}
             </span>
 
             <button
@@ -537,8 +533,8 @@ function Auth({ onLogin, initialMode = "login" }) {
               onClick={switchMode}
             >
               {isRegister
-                ? "Sign In"
-                : "Create Account"}
+                ? t("Sign In")
+                : t("Create Account")}
             </button>
 
           </div>
@@ -548,19 +544,19 @@ function Auth({ onLogin, initialMode = "login" }) {
           <div className="auth-footer">
 
             <p>
-              By continuing, you agree to our
+              {t("By continuing, you agree to our")}
             </p>
 
             <div>
 
               <button type="button">
-                Terms of Service
+                {t("Terms of Service")}
               </button>
 
-              <span>and</span>
+              <span>{t("and")}</span>
 
               <button type="button">
-                Privacy Policy
+                {t("Privacy Policy")}
               </button>
 
             </div>

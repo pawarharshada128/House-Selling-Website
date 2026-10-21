@@ -1,10 +1,12 @@
 
 import React, { useState } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
+import { LanguageSelector, useLocale } from "./LocaleContext";
 
 function Navbar() {
   const navigate = useNavigate();
   const location = useLocation();
+  const { t } = useLocale();
 
   // Mobile menu state
   const [menuOpen, setMenuOpen] = useState(false);
@@ -91,11 +93,11 @@ function Navbar() {
       >
         <img
           src="/logo.jpeg"
-          alt="Shree Krishna Constructions Logo"
+          alt={t("Shree Krishna Constructions Logo")}
           className="navbar-logo-image"
         />
 
-        <span>Shree Krishna Constructions</span>
+        <span>{t("Shree Krishna Constructions")}</span>
       </div>
 
       {/* MOBILE MENU BUTTON */}
@@ -103,7 +105,7 @@ function Navbar() {
         type="button"
         className="mobile-menu-button"
         onClick={() => setMenuOpen((previous) => !previous)}
-        aria-label="Toggle navigation menu"
+        aria-label={t("Toggle navigation menu")}
         aria-expanded={menuOpen}
       >
         <span></span>
@@ -124,14 +126,14 @@ function Navbar() {
                 navigate("/admin-dashboard");
               }}
             >
-              Admin Dashboard
+              {t("Admin Dashboard")}
             </button>
           </>
         ) : (
           <>
             {/* HOME */}
             <Link to="/" onClick={closeMenu}>
-              Home
+              {t("Home")}
             </Link>
 
             {/* PROPERTIES */}
@@ -140,12 +142,20 @@ function Navbar() {
               className="properties-nav-button"
               onClick={handleProperties}
             >
-              Properties
+              {t("Properties")}
+            </button>
+
+            <button
+              type="button"
+              className="build-land-nav-button"
+              onClick={() => navigateToSection("build-on-your-land")}
+            >
+              {t("Build on Your Land")}
             </button>
 
             {/* CONTACT */}
             <Link to="/contact" onClick={closeMenu}>
-              Contact
+              {t("Contact")}
             </Link>
 
             {/* FAVORITES: BUYERS ONLY */}
@@ -155,7 +165,7 @@ function Navbar() {
                 className="favorites-nav-button"
                 onClick={handleFavorites}
               >
-                Favorites
+                {t("Favorites")}
               </button>
             )}
 
@@ -163,7 +173,7 @@ function Navbar() {
             {!token && (
               <>
                 <Link to="/login" onClick={closeMenu}>
-                  Login
+                  {t("Login")}
                 </Link>
 
                 <Link
@@ -171,18 +181,20 @@ function Navbar() {
                   className="signup-link"
                   onClick={closeMenu}
                 >
-                  Sign Up
+                  {t("Sign Up")}
                 </Link>
               </>
             )}
           </>
         )}
 
+        <LanguageSelector className="navbar-language-selector" />
+
         {/* LOGGED-IN USER */}
         {token && (
           <>
             <span className="navbar-user">
-              Hi, {user?.name || "User"}
+              {t("Hi")}, {user?.name || t("User")}
             </span>
 
             <button
@@ -190,7 +202,7 @@ function Navbar() {
               className="logout-button"
               onClick={handleLogout}
             >
-              Logout
+              {t("Logout")}
             </button>
           </>
         )}

@@ -5,6 +5,7 @@ import {
 } from "react-router-dom";
 
 import RouterApp from "./RouterApp";
+import { LocaleProvider } from "./LocaleContext";
 
 import "./index.css";
 import "./App.css";
@@ -16,7 +17,9 @@ ReactDOM.createRoot(
   <React.StrictMode>
 
     <BrowserRouter>
-      <RouterApp />
+      <LocaleProvider>
+        <RouterApp />
+      </LocaleProvider>
     </BrowserRouter>
 
   </React.StrictMode>

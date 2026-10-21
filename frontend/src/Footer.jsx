@@ -1,7 +1,9 @@
 import React from "react";
 import { Link } from "react-router-dom";
+import { useLocale } from "./LocaleContext";
 
 function Footer() {
+  const { t } = useLocale();
   return (
     <footer className="footer">
 
@@ -9,40 +11,39 @@ function Footer() {
 
         <div className="footer-column">
 
-          <h2>Shree Krishna Constructions</h2>
+          <h2>{t("Shree Krishna Constructions")}</h2>
 
           <p>
-            Find your dream home easily
-            with us.
+            {t("Find your dream home easily with us.")}
           </p>
 
         </div>
 
         <div className="footer-column">
 
-          <h3>Quick Links</h3>
+          <h3>{t("Quick Links")}</h3>
 
           <Link to="/">
-            Home
+            {t("Home")}
           </Link>
 
           <Link to="/contact">
-            Contact
+            {t("Contact")}
           </Link>
 
           <Link to="/login">
-            Login
+            {t("Login")}
           </Link>
 
           <Link to="/signup">
-            Sign Up
+            {t("Sign Up")}
           </Link>
 
         </div>
 
         <div className="footer-column">
 
-          <h3>Contact</h3>
+          <h3>{t("Contact")}</h3>
 
           <p> shreekrishna_constructions@gmail.com</p>
 
@@ -56,7 +57,7 @@ function Footer() {
 
       <div className="footer-bottom">
 
-        © 2026 HomeFinder. All Rights Reserved.
+        © 2026 {t("HomeFinder")}. {t("All Rights Reserved.")}
 
       </div>
 

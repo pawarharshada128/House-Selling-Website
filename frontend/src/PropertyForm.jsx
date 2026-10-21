@@ -1,10 +1,12 @@
 import React, { useState } from "react";
+import { useLocale } from "./LocaleContext";
 
 // const API_URL = "http://localhost:5000/api";
 // const SERVER_URL = "http://localhost:5000";
 const API_URL = "https://house-selling-website.onrender.com/api";
 const SERVER_URL = "https://house-selling-website.onrender.com";
 function PropertyForm({ property, onClose, onSuccess }) {
+  const { t } = useLocale();
   const isEditing = Boolean(property);
 
   const [formData, setFormData] = useState({
@@ -127,7 +129,7 @@ function PropertyForm({ property, onClose, onSuccess }) {
     const url = formData.map_location.trim();
 
     if (!url) {
-      alert("Please paste a Google Maps link first.");
+      alert(t("Please paste a Google Maps link first."));
       return;
     }
   
@@ -141,7 +143,7 @@ function PropertyForm({ property, onClose, onSuccess }) {
         longitude: directCoordinates.longitude,
       }));
 
-      alert("Location coordinates detected successfully.");
+      alert(t("Location coordinates detected successfully."));
       return;
     }
 
@@ -171,7 +173,7 @@ function PropertyForm({ property, onClose, onSuccess }) {
         if (!response.ok || !data.success) {
           throw new Error(
             data.message ||
-              "Unable to detect coordinates from Google Maps link."
+              t("Unable to detect coordinates from Google Maps link.")
           );
         }
 
@@ -181,13 +183,13 @@ function PropertyForm({ property, onClose, onSuccess }) {
           longitude: data.longitude,
         }));
 
-        alert("Location detected successfully.");
+        alert(t("Location detected successfully."));
       } catch (error) {
         console.error("Google Maps error:", error);
 
         alert(
           error.message ||
-            "Could not detect location from this Google Maps link."
+            t("Could not detect location from this Google Maps link.")
         );
       } finally {
         setMapLoading(false);
@@ -197,7 +199,7 @@ function PropertyForm({ property, onClose, onSuccess }) {
     }
 
     alert(
-      "Please enter a valid Google Maps URL or Google Maps short link."
+      t("Please enter a valid Google Maps URL or Google Maps short link.")
     );
   };
 
@@ -391,23 +393,23 @@ const uploadFile = async (file, fieldName) => {
     const token = localStorage.getItem("token");
 
     if (!token) {
-      alert("Please login first.");
+      alert(t("Please login first."));
       return;
     }
 
     // Basic validation
     if (!formData.title.trim()) {
-      alert("Please enter property title.");
+      alert(t("Please enter property title."));
       return;
     }
 
     if (!formData.location.trim()) {
-      alert("Please enter property location.");
+      alert(t("Please enter property location."));
       return;
     }
 
     if (!formData.price) {
-      alert("Please enter property price.");
+      alert(t("Please enter property price."));
       return;
     }
 
@@ -500,7 +502,7 @@ const uploadFile = async (file, fieldName) => {
         throw new Error(
           data.message ||
             data.error ||
-            "Property operation failed."
+            t("Property operation failed.")
         );
       }
 
@@ -510,8 +512,8 @@ const uploadFile = async (file, fieldName) => {
 
       alert(
         isEditing
-          ? "Property updated successfully."
-          : "Property added successfully."
+          ? t("Property updated successfully.")
+          : t("Property added successfully.")
       );
 
       if (onSuccess) {
@@ -529,7 +531,7 @@ const uploadFile = async (file, fieldName) => {
 
       alert(
         error.message ||
-          "Something went wrong while saving property."
+          t("Something went wrong while saving property.")
       );
     } finally {
       setLoading(false);
@@ -568,13 +570,13 @@ const uploadFile = async (file, fieldName) => {
         <div className="admin-modal-header">
           <div>
             <span className="admin-modal-label">
-              PROPERTY MANAGEMENT
+              {t("PROPERTY MANAGEMENT")}
             </span>
 
             <h2>
               {isEditing
-                ? "Update Property"
-                : "Add New Property"}
+                ? t("Update Property")
+                : t("Add New Property")}
             </h2>
           </div>
 
@@ -596,7 +598,7 @@ const uploadFile = async (file, fieldName) => {
         >
           <div className="admin-form-grid">
 
-            {/* PROPERTY TITLE */}
+            {/*             {t("Property Title")} */}
 
             <div className="admin-form-group full">
               <label>Property Title</label>
@@ -604,14 +606,14 @@ const uploadFile = async (file, fieldName) => {
               <input
                 type="text"
                 name="title"
-                placeholder="Enter property title"
+                placeholder={t("Enter property title")}
                 value={formData.title}
                 onChange={handleChange}
                 required
               />
             </div>
 
-            {/* PROPERTY TYPE */}
+            {/*             {t("Property Type")} */}
 
             <div className="admin-form-group">
               <label>Property Type</label>
@@ -623,28 +625,28 @@ const uploadFile = async (file, fieldName) => {
                 required
               >
                 <option value="House">
-                  House
+                  {t("House")}
                 </option>
 
                 <option value="Penthouse">
-                  Penthouse
+                  {t("Penthouse")}
                 </option>
 
                 <option value="Villa">
-                  Villa
+                  {t("Villa")}
                 </option>
 
                 <option value="Plot">
-                  Plot
+                  {t("Plot")}
                 </option>
 
                 <option value="Commercial">
-                  Commercial
+                  {t("Commercial")}
                 </option>
               </select>
             </div>
 
-            {/* LOCATION */}
+            {/*             {t("Location")} */}
 
             <div className="admin-form-group">
               <label>Location</label>
@@ -652,14 +654,14 @@ const uploadFile = async (file, fieldName) => {
               <input
                 type="text"
                 name="location"
-                placeholder="Property location"
+                placeholder={t("Property location")}
                 value={formData.location}
                 onChange={handleChange}
                 required
               />
             </div>
 
-            {/* PRICE */}
+            {/*             {t("Price")} */}
 
             <div className="admin-form-group">
               <label>Price</label>
@@ -667,7 +669,7 @@ const uploadFile = async (file, fieldName) => {
               <input
                 type="number"
                 name="price"
-                placeholder="Property price"
+                placeholder={t("Property price")}
                 value={formData.price}
                 onChange={handleChange}
                 min="0"
@@ -675,7 +677,7 @@ const uploadFile = async (file, fieldName) => {
               />
             </div>
 
-            {/* BEDROOMS */}
+            {/*             {t("Bedrooms")} */}
 
             <div className="admin-form-group">
               <label>Bedrooms</label>
@@ -683,7 +685,7 @@ const uploadFile = async (file, fieldName) => {
               <input
                 type="number"
                 name="bedrooms"
-                placeholder="Number of bedrooms"
+                placeholder={t("Number of bedrooms")}
                 value={formData.bedrooms}
                 onChange={handleChange}
                 min="0"
@@ -691,7 +693,7 @@ const uploadFile = async (file, fieldName) => {
               />
             </div>
 
-            {/* BATHROOMS */}
+            {/*             {t("Bathrooms")} */}
 
             <div className="admin-form-group">
               <label>Bathrooms</label>
@@ -699,7 +701,7 @@ const uploadFile = async (file, fieldName) => {
               <input
                 type="number"
                 name="bathrooms"
-                placeholder="Number of bathrooms"
+                placeholder={t("Number of bathrooms")}
                 value={formData.bathrooms}
                 onChange={handleChange}
                 min="0"
@@ -710,12 +712,12 @@ const uploadFile = async (file, fieldName) => {
             {/* AREA */}
 
             <div className="admin-form-group">
-              <label>Area (sq.ft)</label>
+              <label>              {t("Area (sq.ft)")}</label>
 
               <input
                 type="number"
                 name="area_sqft"
-                placeholder="Area in square feet"
+                placeholder={t("Area in square feet")}
                 value={formData.area_sqft}
                 onChange={handleChange}
                 min="0"
@@ -726,7 +728,7 @@ const uploadFile = async (file, fieldName) => {
 
             <div className="admin-form-group full">
               <label>
-                Main Property Photo
+                {t("Main Property Photo")}
               </label>
 
               <input
@@ -737,14 +739,13 @@ const uploadFile = async (file, fieldName) => {
 
               {property?.image && (
                 <small>
-                  Existing main image will remain if
-                  you do not select a new image.
+                  {t("Existing main image will remain if you do not select a new image.")}
                 </small>
               )}
 
               {formData.image instanceof File && (
                 <small>
-                  New image selected:{" "}
+                  {t("New image selected:")}{" "}
                   {formData.image.name}
                 </small>
               )}
@@ -754,7 +755,7 @@ const uploadFile = async (file, fieldName) => {
 
             <div className="admin-form-group full">
               <label>
-                Additional Property Photos
+                {t("Additional Property Photos")}
               </label>
 
               <input
@@ -767,8 +768,7 @@ const uploadFile = async (file, fieldName) => {
               />
 
               <small>
-                You can select multiple property
-                photos.
+                {t("You can select multiple property photos.")}
               </small>
 
               {formData.images.length > 0 && (
@@ -782,7 +782,7 @@ const uploadFile = async (file, fieldName) => {
                 Array.isArray(property?.images) &&
                 property.images.length > 0 && (
                   <small>
-                    Existing gallery images:
+                    {t("Existing gallery images:")}
                     {" "}
                     {property.images.length}
                   </small>
@@ -793,7 +793,7 @@ const uploadFile = async (file, fieldName) => {
 
             <div className="admin-form-group full">
               <label>
-                Property Video
+                {t("Property Video")}
               </label>
 
               <input
@@ -804,14 +804,13 @@ const uploadFile = async (file, fieldName) => {
 
               {property?.video && (
                 <small>
-                  Existing video will remain if
-                  you do not select a new video.
+                  {t("Existing video will remain if you do not select a new video.")}
                 </small>
               )}
 
               {formData.video instanceof File && (
                 <small>
-                  New video selected:{" "}
+                  {t("New video selected:")}{" "}
                   {formData.video.name}
                 </small>
               )}
@@ -821,13 +820,13 @@ const uploadFile = async (file, fieldName) => {
 
             <div className="admin-form-group full">
               <label>
-                Google Maps Location
+                {t("Google Maps Location")}
               </label>
 
               <input
                 type="text"
                 name="map_location"
-                placeholder="Paste Google Maps URL"
+                placeholder={t("Paste Google Maps URL")}
                 value={formData.map_location}
                 onChange={
                   handleMapLocationChange
@@ -850,8 +849,8 @@ const uploadFile = async (file, fieldName) => {
                 }
               >
                 {mapLoading
-                  ? "Detecting Location..."
-                  : "Detect Location"}
+                  ? t("Detecting Location...")
+                  : t("Detect Location")}
               </button>
 
               {/* COORDINATES */}
@@ -860,19 +859,19 @@ const uploadFile = async (file, fieldName) => {
                 formData.longitude !== "" && (
                   <div className="map-coordinate-box">
                     <small>
-                      Location detected successfully.
+                      {t("Location detected successfully.")}
                     </small>
 
                     <div>
                       <strong>
-                        Latitude:
+                        {t("Latitude")}:
                       </strong>{" "}
                       {formData.latitude}
                     </div>
 
                     <div>
                       <strong>
-                        Longitude:
+                        {t("Longitude")}:
                       </strong>{" "}
                       {formData.longitude}
                     </div>
@@ -885,8 +884,7 @@ const uploadFile = async (file, fieldName) => {
                 formData.latitude === "" &&
                 formData.longitude === "" && (
                   <small>
-                    Click "Detect Location" to get
-                    latitude and longitude.
+                    {t('Click "Detect Location" to get latitude and longitude.')}
                   </small>
                 )}
             </div>
@@ -895,14 +893,14 @@ const uploadFile = async (file, fieldName) => {
 
             <div className="admin-form-group">
               <label>
-                Latitude
+                {t("Latitude")}
               </label>
 
               <input
                 type="number"
                 step="any"
                 name="latitude"
-                placeholder="Example: 20.123456"
+                placeholder={t("Example: 20.123456")}
                 value={formData.latitude}
                 onChange={handleChange}
               />
@@ -912,14 +910,14 @@ const uploadFile = async (file, fieldName) => {
 
             <div className="admin-form-group">
               <label>
-                Longitude
+                {t("Longitude")}
               </label>
 
               <input
                 type="number"
                 step="any"
                 name="longitude"
-                placeholder="Example: 74.123456"
+                placeholder={t("Example: 74.123456")}
                 value={formData.longitude}
                 onChange={handleChange}
               />
@@ -929,12 +927,12 @@ const uploadFile = async (file, fieldName) => {
 
             <div className="admin-form-group full">
               <label>
-                Property Description
+                {t("Property Description")}
               </label>
 
               <textarea
                 name="description"
-                placeholder="Write property description"
+                placeholder={t("Write property description")}
                 rows="6"
                 value={formData.description}
                 onChange={handleChange}
@@ -952,7 +950,7 @@ const uploadFile = async (file, fieldName) => {
               onClick={handleClose}
               disabled={loading || mapLoading}
             >
-              Cancel
+              {t("Cancel")}
             </button>
 
             <button
@@ -961,10 +959,10 @@ const uploadFile = async (file, fieldName) => {
               disabled={loading || mapLoading}
             >
               {loading
-                ? "Saving..."
+                ? t("Saving...")
                 : isEditing
-                ? "Update Property"
-                : "Publish Property"}
+                ? t("Update Property")
+                : t("Publish Property")}
             </button>
 
           </div>

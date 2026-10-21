@@ -174,6 +174,21 @@ video {
   color: #2e1d18;
 }
 
+.admin-nav-count {
+  display: inline-flex;
+  min-width: 19px;
+  height: 19px;
+  align-items: center;
+  justify-content: center;
+  margin-left: 7px;
+  padding: 0 5px;
+  border-radius: 999px;
+  background: #d4af37;
+  color: #2e1d18;
+  font-size: 11px;
+  font-weight: 700;
+}
+
 .admin-navbar-links .admin-logout-button {
   margin-left: 5px;
   background: #fff;
@@ -892,6 +907,66 @@ video {
   white-space: normal;
   line-height: 1.5;
   color: #666;
+}
+
+.enquiry-message-preserve {
+  white-space: pre-line;
+  overflow-wrap: anywhere;
+}
+
+.enquiry-reply-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  min-width: 145px;
+}
+
+.enquiry-reply-hint {
+  margin: 0 0 14px;
+  color: #666;
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.enquiry-reply-link {
+  display: inline-flex;
+  min-height: 30px;
+  align-items: center;
+  justify-content: center;
+  padding: 5px 8px;
+  border: 1px solid transparent;
+  border-radius: 5px;
+  font-size: 11px;
+  font-weight: 600;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.enquiry-reply-link.email {
+  border-color: #d8cbbb;
+  background: #f8f4f1;
+  color: #694f42;
+}
+
+.enquiry-reply-link.whatsapp {
+  border-color: #b9dfc1;
+  background: #eff8f0;
+  color: #24713a;
+}
+
+.enquiry-reply-link.call {
+  border-color: #c9d9e8;
+  background: #f1f6fa;
+  color: #315f82;
+}
+
+.enquiry-reply-link:hover {
+  filter: brightness(0.96);
+}
+
+.enquiry-reply-link:focus-visible {
+  outline: 2px solid #d4af37;
+  outline-offset: 2px;
 }
 
 .enquiry-status-select {

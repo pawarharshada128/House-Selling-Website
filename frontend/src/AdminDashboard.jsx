@@ -9,6 +9,7 @@ import { useNavigate } from "react-router-dom";
 import PropertyForm from "./PropertyForm";
 import ProjectForm from "./ProjectForm";
 import AdminNavbar from "./AdminNavbar";
+import { useLocale } from "./LocaleContext";
 
 import "./AdminDashboard.css";
 
@@ -23,10 +24,70 @@ const API_URL =
 const SERVER_URL =
   "https://house-selling-website.onrender.com";
 
+const isBuildLandRequest = (enquiry) => {
+  const title = String(enquiry.propertyTitle || "")
+    .trim()
+    .toLowerCase();
+  const message = String(enquiry.message || "")
+    .trim()
+    .toLowerCase();
+
+  return (
+    title === "build on your land" ||
+    message.startsWith("build on your land request")
+  );
+};
+
+const getEnquiryReplyDetails = (enquiry, t) => {
+  const isBuildRequest = isBuildLandRequest(enquiry);
+  const propertyTitle =
+    enquiry.propertyTitle ||
+    enquiry.propertyId?.title ||
+    "";
+  const subject = isBuildRequest
+    ? t("Your Build on Your Land enquiry")
+    : propertyTitle
+      ? `${t("Your enquiry about")} ${propertyTitle}`
+      : t("Your property enquiry");
+  const topic = isBuildRequest
+    ? t("your Build on Your Land request")
+    : propertyTitle
+      ? `${t("your enquiry about")} ${propertyTitle}`
+      : t("your property enquiry");
+  const message = [
+    `${t("Hi")} ${enquiry.name || t("there")},`,
+    "",
+    `${t("Thank you for contacting Shree Krishna Constructions about")} ${topic}.`,
+    t("We would be happy to discuss your requirements and answer your questions."),
+    "",
+    t("Please let us know a convenient time to speak."),
+    "",
+    t("Regards,"),
+    t("Shree Krishna Constructions"),
+  ].join("\n");
+
+  return { subject, message };
+};
+
+const getWhatsAppNumber = (phone) => {
+  const digits = String(phone || "").replace(/\D/g, "");
+
+  if (digits.length === 10) {
+    return `91${digits}`;
+  }
+
+  if (digits.length === 11 && digits.startsWith("0")) {
+    return `91${digits.slice(1)}`;
+  }
+
+  return digits.length >= 11 ? digits : "";
+};
+
 
 function AdminDashboard() {
 
   const navigate = useNavigate();
+  const { t, language } = useLocale();
 
 
   /* =====================================================
@@ -497,25 +558,30 @@ function AdminDashboard() {
   const filteredEnquiries =
     useMemo(() => {
 
-      if (
-        enquiryStatusFilter ===
-        "All"
-      ) {
-        return enquiries;
-      }
+      return enquiries.filter((enquiry) => {
+        const isBuildRequest = isBuildLandRequest(enquiry);
+        const matchesSection =
+          activeMenu === "build-requests"
+            ? isBuildRequest
+            : !isBuildRequest;
+        const matchesStatus =
+          enquiryStatusFilter === "All" ||
+          String(enquiry.status || "New").toLowerCase() ===
+            enquiryStatusFilter.toLowerCase();
 
-      return enquiries.filter(
-        (enquiry) =>
-          String(
-            enquiry.status || "New"
-          ).toLowerCase() ===
-          enquiryStatusFilter.toLowerCase()
-      );
+        return matchesSection && matchesStatus;
+      });
 
     }, [
       enquiries,
       enquiryStatusFilter,
+      activeMenu,
     ]);
+
+  const buildRequestCount = useMemo(
+    () => enquiries.filter(isBuildLandRequest).length,
+    [enquiries]
+  );
 
 
   /* =====================================================
@@ -679,7 +745,7 @@ function AdminDashboard() {
 
       await loadDashboard();
       showMessage(
-        `Property status changed to ${status}.`
+        t(`Property status changed to ${status}.`)
       );
 
     } catch (error) {
@@ -1057,18 +1123,15 @@ function AdminDashboard() {
           <div>
 
             <span className="dashboard-label">
-              ADMIN PANEL
+              {t("ADMIN PANEL")}
             </span>
 
             <h1>
-              Home
+              {t("Home")}
             </h1>
 
             <p>
-              Welcome to the
-              Shree Krishna
-              Constructions Admin
-              Panel.
+              {t("Welcome to the Shree Krishna Constructions Admin Panel.")}
             </p>
 
           </div>
@@ -1079,8 +1142,8 @@ function AdminDashboard() {
             disabled={refreshing}
           >
             {refreshing
-              ? "Refreshing..."
-              : "Refresh"}
+              ? t("Refreshing...")
+              : t("Refresh")}
           </button>
 
         </div>
@@ -1088,7 +1151,7 @@ function AdminDashboard() {
 
         {message && (
           <div className="admin-message">
-            {message}
+            {t(message)}
           </div>
         )}
 
@@ -1100,16 +1163,13 @@ function AdminDashboard() {
             <div>
 
               <h2>
-                Welcome,{" "}
+                {t("Welcome")},{" "}
                 {user?.name ||
-                  "Admin"}
+                  t("Admin")}
               </h2>
 
               <span>
-                Manage properties
-                and construction
-                projects from the
-                admin panel.
+                {t("Manage properties and construction projects from the admin panel.")}
               </span>
 
             </div>
@@ -1128,12 +1188,11 @@ function AdminDashboard() {
               }
             >
               <strong>
-                Dashboard
+                {t("Dashboard")}
               </strong>
 
               <small>
-                View website
-                statistics
+                {t("View website statistics")}
               </small>
             </button>
 
@@ -1147,12 +1206,11 @@ function AdminDashboard() {
               }
             >
               <strong>
-                Properties
+                {t("Properties")}
               </strong>
 
               <small>
-                Manage all
-                properties
+                {t("Manage all properties")}
               </small>
             </button>
 
@@ -1164,12 +1222,11 @@ function AdminDashboard() {
               }
             >
               <strong>
-                Add New Property
+                {t("Add New Property")}
               </strong>
 
               <small>
-                Create a new
-                property listing
+                {t("Create a new property listing")}
               </small>
             </button>
 
@@ -1183,12 +1240,11 @@ function AdminDashboard() {
               }
             >
               <strong>
-                New Project
+                {t("New Project")}
               </strong>
 
               <small>
-                Add a construction
-                project
+                {t("Add a construction project")}
               </small>
             </button>
 
@@ -1202,12 +1258,11 @@ function AdminDashboard() {
               }
             >
               <strong>
-                User Enquiries
+                {t("User Enquiries")}
               </strong>
 
               <small>
-                View user
-                enquiries
+                {t("View user enquiries")}
               </small>
             </button>
 
@@ -1225,12 +1280,11 @@ function AdminDashboard() {
               <div>
 
                 <h2>
-                  Property Summary
+                  {t("Property Summary")}
                 </h2>
 
                 <span>
-                  Current property
-                  information
+                  {t("Current property information")}
                 </span>
 
               </div>
@@ -1243,7 +1297,7 @@ function AdminDashboard() {
               <div className="overview-label">
 
                 <span>
-                  Total Properties
+                  {t("Total Properties")}
                 </span>
 
                 <strong>
@@ -1260,7 +1314,7 @@ function AdminDashboard() {
               <div className="overview-label">
 
                 <span>
-                  Available
+                  {t("Available")}
                 </span>
 
                 <strong>
@@ -1277,7 +1331,7 @@ function AdminDashboard() {
               <div className="overview-label">
 
                 <span>
-                  Pending
+                  {t("Pending")}
                 </span>
 
                 <strong>
@@ -1294,7 +1348,7 @@ function AdminDashboard() {
               <div className="overview-label">
 
                 <span>
-                  Sold
+                  {t("Sold")}
                 </span>
 
                 <strong>
@@ -1315,12 +1369,11 @@ function AdminDashboard() {
               <div>
 
                 <h2>
-                  Recent Properties
+                  {t("Recent Properties")}
                 </h2>
 
                 <span>
-                  Latest property
-                  listings
+                  {t("Latest property listings")}
                 </span>
 
               </div>
@@ -1333,7 +1386,7 @@ function AdminDashboard() {
                   )
                 }
               >
-                View All
+                {t("View All")}
               </button>
 
             </div>
@@ -1365,12 +1418,12 @@ function AdminDashboard() {
 
                       <strong>
                         {property.title ||
-                          "Untitled Property"}
+                          t("Untitled Property")}
                       </strong>
 
                       <p>
                         {property.location ||
-                          "Location not available"}
+                        t("Location not available")}
                       </p>
 
                     </div>
@@ -1383,8 +1436,7 @@ function AdminDashboard() {
                         ).toLowerCase()
                       }`}
                     >
-                      {property.status ||
-                        "Pending"}
+                      {t(property.status || "Pending")}
                     </span>
 
                   </div>
@@ -1396,8 +1448,7 @@ function AdminDashboard() {
             {properties.length === 0 && (
               <div className="empty-text">
                 <p>
-                  No properties
-                  available.
+                  {t("No properties available.")}
                 </p>
               </div>
             )}
@@ -1426,18 +1477,18 @@ function AdminDashboard() {
           <div>
 
             <span className="dashboard-label">
-              ADMIN PANEL
+              {t("ADMIN PANEL")}
             </span>
 
             <h1>
-              Dashboard
+              {t("Dashboard")}
             </h1>
 
             <p>
-              Welcome back,{" "}
+              {t("Welcome back")},{" "}
               <strong>
                 {user?.name ||
-                  "Admin"}
+                  t("Admin")}
               </strong>
             </p>
 
@@ -1449,8 +1500,8 @@ function AdminDashboard() {
             disabled={refreshing}
           >
             {refreshing
-              ? "Refreshing..."
-              : "Refresh"}
+              ? t("Refreshing...")
+              : t("Refresh")}
           </button>
 
         </div>
@@ -1458,7 +1509,7 @@ function AdminDashboard() {
 
         {message && (
           <div className="admin-message">
-            {message}
+            {t(message)}
           </div>
         )}
 
@@ -1471,7 +1522,7 @@ function AdminDashboard() {
                 {stats.properties}
               </h3>
               <p>
-                Total Properties
+                {t("Total Properties")}
               </p>
             </div>
           </div>
@@ -1483,7 +1534,7 @@ function AdminDashboard() {
                 {stats.pendingProperties}
               </h3>
               <p>
-                Pending
+                {t("Pending")}
               </p>
             </div>
           </div>
@@ -1495,7 +1546,7 @@ function AdminDashboard() {
                 {stats.availableProperties}
               </h3>
               <p>
-                Available
+                {t("Available")}
               </p>
             </div>
           </div>
@@ -1507,7 +1558,7 @@ function AdminDashboard() {
                 {stats.soldProperties}
               </h3>
               <p>
-                Sold
+                {t("Sold")}
               </p>
             </div>
           </div>
@@ -1519,7 +1570,7 @@ function AdminDashboard() {
                 {stats.buyers}
               </h3>
               <p>
-                Buyers
+                {t("Buyers")}
               </p>
             </div>
           </div>
@@ -1531,7 +1582,7 @@ function AdminDashboard() {
                 {stats.favorites}
               </h3>
               <p>
-                Favorites
+                {t("Favorites")}
               </p>
             </div>
           </div>
@@ -1543,7 +1594,7 @@ function AdminDashboard() {
                 {enquiries.length}
               </h3>
               <p>
-                User Enquiries
+                {t("User Enquiries")}
               </p>
             </div>
           </div>
@@ -1558,12 +1609,11 @@ function AdminDashboard() {
             <div>
 
               <h2>
-                Quick Actions
+                {t("Quick Actions")}
               </h2>
 
               <span>
-                Manage your
-                website quickly
+                {t("Manage your website quickly")}
               </span>
 
             </div>
@@ -1580,12 +1630,11 @@ function AdminDashboard() {
               }
             >
               <strong>
-                Add Property
+                {t("Add Property")}
               </strong>
 
               <small>
-                Add a new
-                property
+                {t("Add a new property")}
               </small>
             </button>
 
@@ -1599,12 +1648,11 @@ function AdminDashboard() {
               }
             >
               <strong>
-                New Project
+                {t("New Project")}
               </strong>
 
               <small>
-                Add construction
-                project
+                {t("Add construction project")}
               </small>
             </button>
 
@@ -1618,12 +1666,11 @@ function AdminDashboard() {
               }
             >
               <strong>
-                Manage Properties
+                {t("Manage Properties")}
               </strong>
 
               <small>
-                View all
-                properties
+                {t("View all properties")}
               </small>
             </button>
 
@@ -1637,11 +1684,11 @@ function AdminDashboard() {
               }
             >
               <strong>
-                User Enquiries
+                {t("User Enquiries")}
               </strong>
 
               <small>
-                View enquiries
+                {t("View enquiries")}
               </small>
             </button>
 
@@ -1659,12 +1706,11 @@ function AdminDashboard() {
               <div>
 
                 <h2>
-                  Property Overview
+                  {t("Property Overview")}
                 </h2>
 
                 <span>
-                  Current property
-                  status
+                  {t("Current property status")}
                 </span>
 
               </div>
@@ -1677,7 +1723,7 @@ function AdminDashboard() {
               <div className="overview-label">
 
                 <span>
-                  Available
+                  {t("Available")}
                 </span>
 
                 <strong>
@@ -1708,7 +1754,7 @@ function AdminDashboard() {
               <div className="overview-label">
 
                 <span>
-                  Pending
+                  {t("Pending")}
                 </span>
 
                 <strong>
@@ -1739,7 +1785,7 @@ function AdminDashboard() {
               <div className="overview-label">
 
                 <span>
-                  Sold
+                  {t("Sold")}
                 </span>
 
                 <strong>
@@ -1774,12 +1820,11 @@ function AdminDashboard() {
               <div>
 
                 <h2>
-                  Recent Properties
+                  {t("Recent Properties")}
                 </h2>
 
                 <span>
-                  Latest property
-                  listings
+                  {t("Latest property listings")}
                 </span>
 
               </div>
@@ -1792,7 +1837,7 @@ function AdminDashboard() {
                   )
                 }
               >
-                View All
+                {t("View All")}
               </button>
 
             </div>
@@ -1875,7 +1920,7 @@ function AdminDashboard() {
      ENQUIRY MANAGEMENT
   ===================================================== */
 
-  const EnquiryManagement = () => {
+  const EnquiryManagement = ({ buildRequests = false }) => {
 
     return (
       <div className="dashboard-content">
@@ -1885,17 +1930,21 @@ function AdminDashboard() {
           <div>
 
             <span className="dashboard-label">
-              USER ENQUIRIES
+              {t(buildRequests
+                ? "CONSTRUCTION REQUESTS"
+                : "USER ENQUIRIES")}
             </span>
 
             <h1>
-              Enquiries
+              {t(buildRequests
+                ? "Build on Your Land"
+                : "Property Enquiries")}
             </h1>
 
             <p>
-              View and manage
-              enquiries submitted
-              by users.
+              {t(buildRequests
+                ? "View and manage requests from users who want to build a home on their land."
+                : "View and reply to enquiries from users interested in buying properties, as well as other general enquiries.")}
             </p>
 
           </div>
@@ -1910,8 +1959,8 @@ function AdminDashboard() {
             }
           >
             {enquiryLoading
-              ? "Refreshing..."
-              : "Refresh"}
+              ? t("Refreshing...")
+              : t("Refresh")}
           </button>
 
         </div>
@@ -1919,7 +1968,7 @@ function AdminDashboard() {
 
         {message && (
           <div className="admin-message">
-            {message}
+            {t(message)}
           </div>
         )}
 
@@ -1938,19 +1987,21 @@ function AdminDashboard() {
           >
 
             <option value="All">
-              All Enquiries
+              {t(buildRequests
+                ? "All Requests"
+                : "All Property Enquiries")}
             </option>
 
             <option value="New">
-              New
+              {t("New")}
             </option>
 
             <option value="Contacted">
-              Contacted
+              {t("Contacted")}
             </option>
 
             <option value="Closed">
-              Closed
+              {t("Closed")}
             </option>
 
           </select>
@@ -1960,11 +2011,14 @@ function AdminDashboard() {
             {
               filteredEnquiries.length
             }{" "}
-            enquiries
+            {buildRequests ? t("requests") : t("enquiries")}
           </div>
 
         </div>
 
+        <p className="enquiry-reply-hint">
+          {t("Use Email, WhatsApp, or Call to contact the user. After reaching them, update the enquiry status to Contacted.")}
+        </p>
 
         <div className="property-table-card">
 
@@ -1975,7 +2029,7 @@ function AdminDashboard() {
               <div className="spinner"></div>
 
               <p>
-                Loading enquiries...
+                {t("Loading enquiries...")}
               </p>
 
             </div>
@@ -1985,16 +2039,19 @@ function AdminDashboard() {
             <div className="empty-state">
 
               <div className="empty-icon">
-                Enquiries
+                {t("Enquiries")}
               </div>
 
               <h3>
-                No Enquiries Found
+                {t(buildRequests
+                  ? "No Build Requests Found"
+                  : "No Enquiries Found")}
               </h3>
 
               <p>
-                No user enquiries
-                are available.
+                {t(buildRequests
+                  ? "Build on Your Land submissions will appear here."
+                  : "No user enquiries are available.")}
               </p>
 
             </div>
@@ -2003,18 +2060,19 @@ function AdminDashboard() {
 
             <div className="table-wrapper">
 
-              <table>
+              <table className="enquiries-table">
 
                 <thead>
 
                   <tr>
-                    <th>User</th>
-                    <th>Phone</th>
-                    <th>Property</th>
-                    <th>Message</th>
-                    <th>Date</th>
-                    <th>Status</th>
-                    <th>Action</th>
+                    <th>{t("User")}</th>
+                    <th>{t("Phone")}</th>
+                    <th>{t("Property")}</th>
+                    <th>{t("Message")}</th>
+                    <th>{t("Date")}</th>
+                    <th>{t("Status")}</th>
+                    <th>{t("Reply")}</th>
+                    <th>{t("Action")}</th>
                   </tr>
 
                 </thead>
@@ -2023,7 +2081,17 @@ function AdminDashboard() {
                 <tbody>
 
                   {filteredEnquiries.map(
-                    (enquiry) => (
+                    (enquiry) => {
+                      const replyDetails =
+                        getEnquiryReplyDetails(enquiry, t);
+                      const encodedSubject =
+                        encodeURIComponent(replyDetails.subject);
+                      const encodedMessage =
+                        encodeURIComponent(replyDetails.message);
+                      const whatsappNumber =
+                        getWhatsAppNumber(enquiry.phone);
+
+                      return (
 
                       <tr
                         key={
@@ -2064,14 +2132,14 @@ function AdminDashboard() {
                             enquiry.propertyTitle ||
                             enquiry.propertyId
                               ?.title ||
-                            "General Enquiry"
+                            t("General Enquiry")
                           }
                         </td>
 
 
                         <td>
 
-                          <div className="enquiry-message">
+                          <div className="enquiry-message enquiry-message-preserve">
                             {
                               enquiry.message
                             }
@@ -2079,15 +2147,14 @@ function AdminDashboard() {
 
                         </td>
 
-
                         <td>
                           {enquiry.createdAt
                             ? new Date(
                                 enquiry.createdAt
                               ).toLocaleDateString(
-                                "en-IN"
+                                language === "hi" ? "hi-IN" : language === "mr" ? "mr-IN" : "en-IN"
                               )
-                            : "N/A"}
+                            : t("N/A")}
                         </td>
 
 
@@ -2108,19 +2175,55 @@ function AdminDashboard() {
                           >
 
                             <option value="New">
-                              New
+                              {t("New")}
                             </option>
 
                             <option value="Contacted">
-                              Contacted
+                              {t("Contacted")}
                             </option>
 
                             <option value="Closed">
-                              Closed
+                              {t("Closed")}
                             </option>
 
                           </select>
 
+                        </td>
+
+                        <td>
+                          <div className="enquiry-reply-actions">
+                            {enquiry.email && (
+                              <a
+                                className="enquiry-reply-link email"
+                                href={`mailto:${encodeURIComponent(enquiry.email)}?subject=${encodedSubject}&body=${encodedMessage}`}
+                                aria-label={`Reply to ${enquiry.name || "user"} by email`}
+                              >
+                                {t("Email")}
+                              </a>
+                            )}
+
+                            {whatsappNumber && (
+                              <a
+                                className="enquiry-reply-link whatsapp"
+                                href={`https://wa.me/${whatsappNumber}?text=${encodedMessage}`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                aria-label={`Reply to ${enquiry.name || "user"} on WhatsApp`}
+                              >
+                                {t("WhatsApp")}
+                              </a>
+                            )}
+
+                            {enquiry.phone && (
+                              <a
+                                className="enquiry-reply-link call"
+                                href={`tel:${String(enquiry.phone).replace(/[^\d+]/g, "")}`}
+                                aria-label={`Call ${enquiry.name || "user"}`}
+                              >
+                                {t("Call")}
+                              </a>
+                            )}
+                          </div>
                         </td>
 
 
@@ -2134,14 +2237,15 @@ function AdminDashboard() {
                               )
                             }
                           >
-                            Delete
+                            {t("Delete")}
                           </button>
 
                         </td>
 
                       </tr>
 
-                    )
+                      );
+                    }
                   )}
 
                 </tbody>
@@ -2161,7 +2265,7 @@ function AdminDashboard() {
 
 
   /* =====================================================
-     PROPERTY MANAGEMENT
+     {t("PROPERTY MANAGEMENT")}
   ===================================================== */
 
   const PropertyManagement = () => {
@@ -2178,12 +2282,11 @@ function AdminDashboard() {
             </span>
 
             <h1>
-              Properties
+              {t("Properties")}
             </h1>
 
             <p>
-              Manage all properties
-              from one place.
+              {t("Manage all properties from one place.")}
             </p>
 
           </div>
@@ -2195,7 +2298,7 @@ function AdminDashboard() {
               openAddProperty
             }
           >
-            Add New Property
+            {t("Add New Property")}
           </button>
 
         </div>
@@ -2208,12 +2311,12 @@ function AdminDashboard() {
           <div className="search-box">
 
             <span>
-              Search
+              {t("Search")}
             </span>
 
             <input
               type="text"
-              placeholder="Search by title, location or type..."
+              placeholder={t("Search by title, location or type...")}
               value={search}
               onChange={(e) =>
                 setSearch(
@@ -2230,7 +2333,7 @@ function AdminDashboard() {
                   setSearch("")
                 }
               >
-                Clear
+                {t("Clear")}
               </button>
             )}
 
@@ -2247,19 +2350,19 @@ function AdminDashboard() {
           >
 
             <option value="All">
-              All Status
+              {t("All Status")}
             </option>
 
             <option value="Pending">
-              Pending
+              {t("Pending")}
             </option>
 
             <option value="Available">
-              Available
+              {t("Available")}
             </option>
 
             <option value="Sold">
-              Sold
+              {t("Sold")}
             </option>
 
           </select>
@@ -2269,7 +2372,7 @@ function AdminDashboard() {
             {
               filteredProperties.length
             }{" "}
-            properties
+            {t("properties")}
           </div>
 
         </div>
@@ -2277,7 +2380,7 @@ function AdminDashboard() {
 
         {search.trim() !== "" && (
           <div className="search-result-info">
-            Showing{" "}
+            {t("Showing")}{" "}
             {
               filteredProperties.length
             }{" "}
@@ -2305,7 +2408,7 @@ function AdminDashboard() {
               <div className="spinner"></div>
 
               <p>
-                Loading properties...
+                {t("Loading properties...")}
               </p>
 
             </div>
@@ -2315,17 +2418,15 @@ function AdminDashboard() {
             <div className="empty-state">
 
               <div className="empty-icon">
-                Property
+                {t("Property")}
               </div>
 
               <h3>
-                No Properties Found
+                {t("No Properties Found")}
               </h3>
 
               <p>
-                Try changing your
-                search or add a new
-                property.
+                {t("Try changing your search or add a new property.")}
               </p>
 
               <button
@@ -2333,7 +2434,7 @@ function AdminDashboard() {
                   openAddProperty
                 }
               >
-                Add Property
+                {t("Add Property")}
               </button>
 
             </div>
@@ -2349,27 +2450,27 @@ function AdminDashboard() {
                   <tr>
 
                     <th>
-                      Property
+                      {t("Property")}
                     </th>
 
                     <th>
-                      Type
+                      {t("Type")}
                     </th>
 
                     <th>
-                      Location
+                      {t("Location")}
                     </th>
 
                     <th>
-                      Price
+                      {t("Price")}
                     </th>
 
                     <th>
-                      Status
+                      {t("Status")}
                     </th>
 
                     <th>
-                      Actions
+                      {t("Actions")}
                     </th>
 
                   </tr>
@@ -2407,7 +2508,7 @@ function AdminDashboard() {
                               <strong>
                                 {
                                   property.title ||
-                                  "Untitled Property"
+                                  t("Untitled Property")
                                 }
                               </strong>
 
@@ -2416,12 +2517,12 @@ function AdminDashboard() {
                                   property.bedrooms ||
                                   0
                                 }{" "}
-                                Beds •{" "}
+                                {t("Beds")} •{" "}
                                 {
                                   property.bathrooms ||
                                   0
                                 }{" "}
-                                Baths
+                                {t("Baths")}
                               </small>
 
                             </div>
@@ -2435,12 +2536,12 @@ function AdminDashboard() {
 
                           <span className="type-badge">
 
-                            {
+                            {t(
                               property.property_type ||
                               property.propertyType ||
                               property.type ||
                               "House"
-                            }
+                            )}
 
                           </span>
 
@@ -2485,8 +2586,7 @@ function AdminDashboard() {
                             <span
                               className={`status-badge ${
                                 (
-                                  property.status ||
-                                  "Pending"
+                                  t(property.status || "Pending")
                                 ).toLowerCase()
                               }`}
                             >
@@ -2498,7 +2598,7 @@ function AdminDashboard() {
 
                             <select
                               className="property-status-select"
-                              aria-label={`Set status for ${property.title || "property"}`}
+                              aria-label={`Set status for ${property.title ||                               t("Property")}`}
                               value={property.status || "Pending"}
                               disabled={updatingStatusId === property._id}
                               onChange={(event) =>
@@ -2509,13 +2609,13 @@ function AdminDashboard() {
                               }
                             >
                               <option value="Pending">
-                                Pending
+                                {t("Pending")}
                               </option>
                               <option value="Available">
-                                Available
+                                {t("Available")}
                               </option>
                               <option value="Sold">
-                                Sold
+                                {t("Sold")}
                               </option>
                             </select>
                           </div>
@@ -2535,7 +2635,7 @@ function AdminDashboard() {
                                 )
                               }
                             >
-                              View
+                              {t("View")}
                             </button>
 
 
@@ -2547,7 +2647,7 @@ function AdminDashboard() {
                                 )
                               }
                             >
-                              Edit
+                              {t("Edit")}
                             </button>
 
 
@@ -2559,7 +2659,7 @@ function AdminDashboard() {
                                 )
                               }
                             >
-                              Delete
+                              {t("Delete")}
                             </button>
 
                           </div>
@@ -2601,6 +2701,7 @@ function AdminDashboard() {
 
       <AdminNavbar
         activeMenu={activeMenu}
+        buildRequestCount={buildRequestCount}
         setActiveMenu={
           setActiveMenu
         }
@@ -2633,6 +2734,10 @@ function AdminDashboard() {
 
         {activeMenu === "enquiries" && (
           <EnquiryManagement />
+        )}
+
+        {activeMenu === "build-requests" && (
+          <EnquiryManagement buildRequests />
         )}
 
       </main>
@@ -2710,14 +2815,11 @@ function AdminDashboard() {
                 <div>
 
                   <span className="dashboard-label">
-                    PROPERTY DETAILS
+                    {t("PROPERTY DETAILS")}
                   </span>
 
                   <h2>
-                    {
-                      selectedProperty.title ||
-                      "Property Details"
-                    }
+                    {selectedProperty.title || t("Property Details")}
                   </h2>
 
                 </div>
@@ -2754,7 +2856,7 @@ function AdminDashboard() {
                         src={getFullImageUrl(
                           image
                         )}
-                        alt={`Property ${
+                        alt={`${t("Property")} ${
                           index + 1
                         }`}
                       />
@@ -2768,7 +2870,7 @@ function AdminDashboard() {
                     src={getImageUrl(
                       selectedProperty
                     )}
-                    alt="Property"
+                    alt={t("Property")}
                   />
 
                 )}
@@ -2801,10 +2903,7 @@ function AdminDashboard() {
                     ).toLowerCase()
                   }`}
                 >
-                  {
-                    selectedProperty.status ||
-                    "Pending"
-                  }
+                  {t(selectedProperty.status || "Pending")}
                 </span>
 
 
@@ -2813,16 +2912,16 @@ function AdminDashboard() {
                   <div>
 
                     <span>
-                      Property Type
+                      {t("Property Type")}
                     </span>
 
                     <strong>
-                      {
+                      {t(
                         selectedProperty.property_type ||
                         selectedProperty.propertyType ||
                         selectedProperty.type ||
                         "House"
-                      }
+                      )}
                     </strong>
 
                   </div>
@@ -2831,7 +2930,7 @@ function AdminDashboard() {
                   <div>
 
                     <span>
-                      Location
+                      {t("Location")}
                     </span>
 
                     <strong>
@@ -2848,7 +2947,7 @@ function AdminDashboard() {
                   <div>
 
                     <span>
-                      Bedrooms
+                      {t("Bedrooms")}
                     </span>
 
                     <strong>
@@ -2864,7 +2963,7 @@ function AdminDashboard() {
                   <div>
 
                     <span>
-                      Bathrooms
+                      {t("Bathrooms")}
                     </span>
 
                     <strong>
@@ -2880,7 +2979,7 @@ function AdminDashboard() {
                   <div>
 
                     <span>
-                      Area
+                      {t("Area")}
                     </span>
 
                     <strong>
@@ -2888,7 +2987,7 @@ function AdminDashboard() {
                         selectedProperty.area_sqft ??
                         0
                       }{" "}
-                      Sq. Ft.
+                      {t("Sq. Ft.")}
                     </strong>
 
                   </div>
@@ -2897,14 +2996,14 @@ function AdminDashboard() {
                   <div>
 
                     <span>
-                      Featured
+                      {t("Featured")}
                     </span>
 
                     <strong>
                       {
                         selectedProperty.featured
-                          ? "Yes"
-                          : "No"
+                          ? t("Yes")
+                          : t("No")
                       }
                     </strong>
 
@@ -2918,14 +3017,11 @@ function AdminDashboard() {
                 <div className="admin-view-description">
 
                   <h3>
-                    Description
+                    {t("Description")}
                   </h3>
 
                   <p>
-                    {
-                      selectedProperty.description ||
-                      "No description available."
-                    }
+                    {selectedProperty.description || t("No description available.")}
                   </p>
 
                 </div>
@@ -2938,7 +3034,7 @@ function AdminDashboard() {
                   <div className="admin-view-video">
 
                     <h3>
-                      Property Video
+                      {t("Property Video")}
                     </h3>
 
                     <video
@@ -2960,7 +3056,7 @@ function AdminDashboard() {
                   <div className="admin-view-location">
 
                     <h3>
-                      Map Location
+                      {t("Map Location")}
                     </h3>
 
                     <p>
@@ -2987,7 +3083,7 @@ function AdminDashboard() {
                       )
                     }
                   >
-                    Edit Property
+                    {t("Edit Property")}
                   </button>
 
 
@@ -2998,7 +3094,7 @@ function AdminDashboard() {
                       closeViewProperty
                     }
                   >
-                    Close
+                    {t("Close")}
                   </button>
 
                 </div>
