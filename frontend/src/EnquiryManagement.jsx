@@ -1,0 +1,811 @@
+import React, { useMemo, useState } from "react";
+import { useLocale } from "./LocaleContext";
+import { isBuildLandRequest, isPropertyEnquiry } from "./enquiryUtils";
+
+const USER_STATUSES = [
+  "Pending",
+  "New",
+  "Contacted",
+  "Visit Scheduled",
+  "Site Visit Scheduled",
+  "Offer Made",
+  "Quotation Sent",
+  "Booking in Progress",
+  "Booking Confirmed",
+  "Rejected",
+  "In Progress",
+  "Completed",
+  "Closed",
+  "Cancelled",
+];
+
+const BUILD_STATUSES = [
+  "Pending",
+  "New",
+  "Contacted",
+  "Site Visit Scheduled",
+  "Quotation in Preparation",
+  "Quotation Sent",
+  "Approved",
+  "In Progress",
+  "Completed",
+  "Rejected",
+  "Cancelled",
+];
+
+const getWhatsAppNumber = (phone) => {
+  const digits = String(phone || "").replace(/\D/g, "");
+  if (digits.length === 10) return `91${digits}`;
+  if (digits.length === 11 && digits.startsWith("0")) {
+    return `91${digits.slice(1)}`;
+  }
+  return digits.length >= 11 ? digits : "";
+};
+
+const getBuildDetails = (enquiry) => {
+  const details = enquiry.buildDetails || {};
+  const legacy = {};
+  const fields = [
+    ["landLocation", /^land location:\s*(.*)$/i],
+    ["plotArea", /^land area:\s*(.*)$/i],
+    ["budget", /^estimated budget:\s*(.*)$/i],
+    ["homeType", /^preferred (?:home|house) type:\s*(.*)$/i],
+    ["homeSize", /^preferred home size:\s*(.*)$/i],
+    ["floors", /^number of floors:\s*(.*)$/i],
+    ["bedrooms", /^bedrooms:\s*(.*)$/i],
+    ["preferredDesign", /^preferred design:\s*(.*)$/i],
+    ["additionalRequirements", /^additional details:\s*(.*)$/i],
+  ];
+
+  String(enquiry.message || "").split(/\r?\n/).forEach((line) => {
+    fields.forEach(([key, expression]) => {
+      const match = line.match(expression);
+      if (match) legacy[key] = match[1].trim();
+    });
+  });
+
+  const savedDetails = Object.fromEntries(
+    Object.entries(details).filter(([, value]) => String(value || "").trim())
+  );
+  return { ...legacy, ...savedDetails };
+};
+
+const formatDate = (value, locale, includeTime = false) => {
+  if (!value) return "—";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "—";
+  return date.toLocaleString(locale, includeTime
+    ? { dateStyle: "medium", timeStyle: "short" }
+    : { dateStyle: "medium" });
+};
+
+const toDateTimeLocal = (value = new Date()) => {
+  const date = new Date(value);
+  return new Date(date.getTime() - date.getTimezoneOffset() * 60000)
+    .toISOString()
+    .slice(0, 16);
+};
+
+const toISOStringFromLocal = (value) => {
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? "" : date.toISOString();
+};
+
+const getImageUrl = (image) => {
+  if (!image) return "";
+  if (/^https?:\/\//i.test(image)) return image;
+  const baseUrl = "https://house-selling-website.onrender.com";
+  return `${baseUrl}${image.startsWith("/") ? "" : "/"}${image}`;
+};
+
+function ContactActions({ enquiry, isBuildRequest, t }) {
+  const whatsappNumber = getWhatsAppNumber(enquiry.phone);
+  const subject = encodeURIComponent(
+    isBuildRequest
+      ? t("Your Build Your Dream Home request")
+      : `${t("Your enquiry about")} ${enquiry.propertyTitle || enquiry.propertyId?.title || t("property")}`
+  );
+  const body = encodeURIComponent(
+    `${t("Hi")} ${enquiry.name || t("there")},\n\n${t("Thank you for contacting Shree Krishna Constructions. We would be happy to discuss your requirements.")}\n\n${t("Regards")},\n${t("Shree Krishna Constructions")}`
+  );
+
+  return (
+    <div className="request-contact-actions">
+      {enquiry.phone && (
+        <a className="enquiry-reply-link call" href={`tel:${String(enquiry.phone).replace(/[^\d+]/g, "")}`}>
+          {t("Call Customer")}
+        </a>
+      )}
+      {enquiry.email && (
+        <a className="enquiry-reply-link email" href={`mailto:${encodeURIComponent(enquiry.email)}?subject=${subject}&body=${body}`}>
+          {t("Send Email")}
+        </a>
+      )}
+      {whatsappNumber && (
+        <a className="enquiry-reply-link whatsapp" href={`https://wa.me/${whatsappNumber}?text=${body}`} target="_blank" rel="noopener noreferrer">
+          {t("WhatsApp")}
+        </a>
+      )}
+    </div>
+  );
+}
+
+function AdminNotes({ enquiry, onSave, saving, t, language }) {
+  const handleSubmit = async (event) => {
+    event.preventDefault();
+    const form = event.currentTarget;
+    const formData = new FormData(form);
+    const saved = await onSave(enquiry._id, {
+      adminNote: formData.get("adminNote"),
+    });
+    if (saved) form.reset();
+  };
+
+  return (
+    <section className="request-history">
+      <h3>{t("Internal Admin Notes")}</h3>
+      {(enquiry.adminNotes || []).map((entry, index) => (
+        <p key={`${entry.createdAt}-${index}`}>
+          {entry.note}
+          <small> · {formatDate(entry.createdAt, language, true)}</small>
+        </p>
+      ))}
+      <form className="request-management-form" onSubmit={handleSubmit}>
+        <label>
+          {t("Add internal note")}
+          <textarea name="adminNote" rows="2" maxLength="1000" required />
+        </label>
+        <button type="submit" className="enquiry-management-save" disabled={saving}>
+          {t("Save Note")}
+        </button>
+      </form>
+    </section>
+  );
+}
+
+function VisitHistory({ enquiry, onSave, saving, t, language, title }) {
+  const [editingVisitId, setEditingVisitId] = useState("");
+
+  const handleUpdate = async (event) => {
+    event.preventDefault();
+    const form = event.currentTarget;
+    const data = new FormData(form);
+    const saved = await onSave(enquiry._id, {
+      siteVisitUpdate: {
+        visitId: data.get("visitId"),
+        scheduledAt: toISOStringFromLocal(data.get("scheduledAt")),
+        location: data.get("location"),
+        instructions: data.get("instructions"),
+        notes: data.get("notes"),
+        status: data.get("status"),
+      },
+    });
+    if (saved) setEditingVisitId("");
+  };
+
+  if (!enquiry.siteVisits?.length) return null;
+
+  return (
+    <div className="request-history">
+      <h3>{t(title)}</h3>
+      {enquiry.siteVisits.map((visit) => (
+        <div className="request-visit-item" key={visit._id || visit.scheduledAt}>
+          <p>
+            <strong>{formatDate(visit.scheduledAt, language, true)} · {t(visit.status || "Scheduled")}</strong>
+            {visit.location && ` · ${visit.location}`}
+            {visit.notes && ` · ${visit.notes}`}
+            {visit.instructions && ` · ${visit.instructions}`}
+          </p>
+          {editingVisitId === visit._id ? (
+            <form className="request-management-form" onSubmit={handleUpdate}>
+              <input type="hidden" name="visitId" value={visit._id} />
+              <label>{t("Visit date and time")}<input name="scheduledAt" type="datetime-local" defaultValue={toDateTimeLocal(visit.scheduledAt)} required /></label>
+              <label>{t("Meeting location")}<input name="location" type="text" maxLength="300" defaultValue={visit.location || ""} /></label>
+              <label>{t("Instructions")}<textarea name="instructions" rows="2" maxLength="1000" defaultValue={visit.instructions || ""} /></label>
+              <label>{t("Visit notes")}<textarea name="notes" rows="2" maxLength="1000" defaultValue={visit.notes || ""} /></label>
+              <label>{t("Visit status")}
+                <select name="status" defaultValue={visit.status || "Scheduled"}>
+                  {["Scheduled", "Completed", "Cancelled"].map((status) => (
+                    <option value={status} key={status}>{t(status)}</option>
+                  ))}
+                </select>
+              </label>
+              <button type="submit" className="enquiry-management-save" disabled={saving}>{t("Save Visit")}</button>
+              <button type="button" className="view-action" onClick={() => setEditingVisitId("")}>{t("Cancel")}</button>
+            </form>
+          ) : (
+            <button
+              type="button"
+              className="edit-action"
+              disabled={saving}
+              onClick={() => setEditingVisitId(visit._id)}
+            >
+              {t("Edit Visit")}
+            </button>
+          )}
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function PropertyEnquiryCard({
+  enquiry,
+  onDelete,
+  onSave,
+  onStatusChange,
+  saving,
+  t,
+  language,
+}) {
+  const [detailsOpen, setDetailsOpen] = useState(false);
+  const [visitOpen, setVisitOpen] = useState(false);
+  const [offerOpen, setOfferOpen] = useState(false);
+  const property = enquiry.propertyId && typeof enquiry.propertyId === "object"
+    ? enquiry.propertyId
+    : null;
+  const image = property?.image || property?.images?.[0];
+  const canMakeOffer =
+    enquiry.requestType === "PropertyBooking" ||
+    (!enquiry.requestType && Boolean(enquiry.propertyId));
+  const statusOptions = USER_STATUSES.includes(enquiry.status)
+    ? USER_STATUSES
+    : [enquiry.status, ...USER_STATUSES].filter(Boolean);
+
+  const handleVisitSubmit = async (event) => {
+    event.preventDefault();
+    const form = event.currentTarget;
+    const data = new FormData(form);
+    const saved = await onSave(enquiry._id, {
+      siteVisit: {
+        scheduledAt: toISOStringFromLocal(data.get("scheduledAt")),
+        notes: data.get("notes"),
+        location: data.get("location"),
+        instructions: data.get("instructions"),
+        visitType: "Property Visit",
+      },
+      status: "Visit Scheduled",
+    });
+    if (saved) {
+      form.reset();
+      setVisitOpen(false);
+    }
+  };
+
+  const handleOfferSubmit = async (event) => {
+    event.preventDefault();
+    const data = new FormData(event.currentTarget);
+    await onSave(enquiry._id, {
+      propertyOffer: {
+        amount: data.get("amount"),
+        title: data.get("title"),
+        discountAmount: data.get("discountAmount"),
+        discountPercent: data.get("discountPercent"),
+        validUntil: data.get("validUntil") || null,
+        details: data.get("details"),
+        status: data.get("offerStatus"),
+      },
+      ...(data.get("offerStatus") === "Sent" ? { status: "Offer Made" } : {}),
+    });
+  };
+
+  return (
+    <article className="customer-request-card">
+      <div className="customer-request-card-header">
+        <div className="customer-request-customer">
+          <strong>{enquiry.name}</strong>
+          <span>{enquiry.email}</span>
+          <span>{enquiry.phone}</span>
+        </div>
+        <div className="customer-request-status">
+          <label>
+            {t("Enquiry / Booking Status")}
+            <select
+              value={enquiry.status || "New"}
+              onChange={(event) => onStatusChange(enquiry._id, event.target.value)}
+              disabled={saving}
+            >
+              {statusOptions.map((status) => (
+                <option value={status} key={status}>{t(status)}</option>
+              ))}
+            </select>
+          </label>
+          <small>{t("Submitted")}: {formatDate(enquiry.createdAt, language)}</small>
+        </div>
+      </div>
+
+      <div className="property-enquiry-information">
+        {image && (
+          <img src={getImageUrl(image)} alt={property?.title || enquiry.propertyTitle || t("Property")} />
+        )}
+        <div>
+          <strong>{property?.title || enquiry.propertyTitle || t("Property details unavailable")}</strong>
+          <span>{property?.location || t("Location unavailable")}</span>
+          {property?.property_type && <span>{t(property.property_type)}</span>}
+          {property?.price !== undefined && (
+            <b>₹{Number(property.price).toLocaleString("en-IN")}</b>
+          )}
+        </div>
+      </div>
+
+      <div className="customer-request-message">
+        <strong>{t("Enquiry Message")}</strong>
+        <p>{enquiry.message}</p>
+      </div>
+
+      <ContactActions enquiry={enquiry} isBuildRequest={false} t={t} />
+
+      <div className="customer-request-actions">
+        <button type="button" className="view-action" onClick={() => setDetailsOpen((open) => !open)}>
+          {detailsOpen ? t("Hide Details") : t("View Details")}
+        </button>
+        <button type="button" className="edit-action" onClick={() => setVisitOpen((open) => !open)}>
+          {t("Schedule Property Visit")}
+        </button>
+        {canMakeOffer && (
+          <button type="button" className="edit-action" onClick={() => setOfferOpen((open) => !open)}>
+            {enquiry.propertyOffer ? t("Update Property Offer") : t("Add Property Offer")}
+          </button>
+        )}
+        {enquiry.status !== "Closed" && (
+          <button type="button" className="edit-action" disabled={saving} onClick={() => onStatusChange(enquiry._id, "Closed")}>
+            {t("Close Enquiry")}
+          </button>
+        )}
+        <button type="button" className="delete-btn" disabled={saving} onClick={() => onDelete(enquiry._id)}>
+          {t("Delete Enquiry")}
+        </button>
+      </div>
+
+      <AdminNotes enquiry={enquiry} onSave={onSave} saving={saving} t={t} language={language} />
+
+      {detailsOpen && (
+        <div className="request-detail-panel">
+          <h3>{t("Property Enquiry Details")}</h3>
+          <p><strong>{t("Property")}: </strong>{property?.title || enquiry.propertyTitle || "—"}</p>
+          <p><strong>{t("Location")}: </strong>{property?.location || "—"}</p>
+          <p><strong>{t("Price")}: </strong>{property?.price === undefined ? "—" : `₹${Number(property.price).toLocaleString("en-IN")}`}</p>
+          {property?.description && <p><strong>{t("Description")}: </strong>{property.description}</p>}
+          <p><strong>{t("Message")}: </strong>{enquiry.message}</p>
+        </div>
+      )}
+
+      {visitOpen && (
+        <form className="request-management-form" onSubmit={handleVisitSubmit}>
+          <h3>{t("Schedule Property Visit")}</h3>
+          <label>{t("Visit date and time")}<input name="scheduledAt" type="datetime-local" min={toDateTimeLocal()} required /></label>
+          <label>{t("Meeting location")}<input name="location" type="text" maxLength="300" /></label>
+          <label>{t("Instructions")}<textarea name="instructions" rows="2" maxLength="1000" /></label>
+          <label>{t("Visit notes")}<textarea name="notes" rows="2" maxLength="1000" /></label>
+          <button type="submit" className="enquiry-management-save" disabled={saving}>{t("Save Visit")}</button>
+        </form>
+      )}
+
+      {offerOpen && canMakeOffer && (
+        <form className="request-management-form" onSubmit={handleOfferSubmit}>
+          <h3>{t("Property Offer")}</h3>
+          <label>{t("Offer title")}<input name="title" type="text" maxLength="120" defaultValue={enquiry.propertyOffer?.title || ""} /></label>
+          <label>{t("Offer amount (₹)")}<input name="amount" type="number" min="0" step="0.01" defaultValue={enquiry.propertyOffer?.amount ?? ""} required /></label>
+          <div className="request-management-form-grid">
+            <label>{t("Discount amount (₹)")}<input name="discountAmount" type="number" min="0" step="0.01" defaultValue={enquiry.propertyOffer?.discountAmount ?? 0} /></label>
+            <label>{t("Discount percentage")}<input name="discountPercent" type="number" min="0" max="100" step="0.01" defaultValue={enquiry.propertyOffer?.discountPercent ?? 0} /></label>
+          </div>
+          <label>{t("Offer valid until")}<input name="validUntil" type="date" defaultValue={enquiry.propertyOffer?.validUntil ? new Date(enquiry.propertyOffer.validUntil).toISOString().slice(0, 10) : ""} /></label>
+          <label>{t("Offer details")}<textarea name="details" rows="2" maxLength="2000" defaultValue={enquiry.propertyOffer?.details || ""} /></label>
+          <label>{t("Offer status")}
+            <select name="offerStatus" defaultValue={enquiry.propertyOffer?.status || "Draft"}>
+              {["Draft", "Sent", "Accepted", "Rejected"].map((status) => <option value={status} key={status}>{t(status)}</option>)}
+            </select>
+          </label>
+          <button type="submit" className="enquiry-management-save" disabled={saving}>{t("Save Offer")}</button>
+          {enquiry.propertyOffer && (
+            <p className="enquiry-management-meta">
+              {t("Last updated")}: {formatDate(enquiry.propertyOffer.updatedAt, language, true)}
+              {enquiry.email && (
+                <> · <a href={`mailto:${encodeURIComponent(enquiry.email)}?subject=${encodeURIComponent(t("Property offer"))}&body=${encodeURIComponent(`${t("Offer amount")}: ₹${Number(enquiry.propertyOffer.amount).toLocaleString("en-IN")}\n${enquiry.propertyOffer.details || ""}`)}`}>{t("Email Offer")}</a></>
+              )}
+            </p>
+          )}
+        </form>
+      )}
+
+      <VisitHistory
+        enquiry={enquiry}
+        onSave={onSave}
+        saving={saving}
+        t={t}
+        language={language}
+        title="Property Visit History"
+      />
+    </article>
+  );
+}
+
+function BuildRequestCard({
+  enquiry,
+  onDelete,
+  onSave,
+  onStatusChange,
+  saving,
+  t,
+  language,
+}) {
+  const [requirementsOpen, setRequirementsOpen] = useState(false);
+  const [visitOpen, setVisitOpen] = useState(false);
+  const [quotationOpen, setQuotationOpen] = useState(false);
+  const details = getBuildDetails(enquiry);
+  const statusOptions = BUILD_STATUSES.includes(enquiry.status)
+    ? BUILD_STATUSES
+    : [enquiry.status, ...BUILD_STATUSES].filter(Boolean);
+  const progress = [...(enquiry.progressUpdates || [])].sort(
+    (a, b) =>
+      new Date(a.updateDate || a.createdAt || 0) -
+      new Date(b.updateDate || b.createdAt || 0)
+  );
+
+  const handleVisitSubmit = async (event) => {
+    event.preventDefault();
+    const form = event.currentTarget;
+    const data = new FormData(form);
+    const saved = await onSave(enquiry._id, {
+      siteVisit: {
+        scheduledAt: toISOStringFromLocal(data.get("scheduledAt")),
+        notes: data.get("notes"),
+        location: data.get("location"),
+        instructions: data.get("instructions"),
+        visitType: "Land Inspection",
+      },
+      status: "Site Visit Scheduled",
+    });
+    if (saved) {
+      form.reset();
+      setVisitOpen(false);
+    }
+  };
+
+  const handleQuotationSubmit = async (event) => {
+    event.preventDefault();
+    const data = new FormData(event.currentTarget);
+    const quotationStatus = data.get("quotationStatus");
+    const enquiryStatus = {
+      Sent: "Quotation Sent",
+      Accepted: "Approved",
+      Rejected: "Rejected",
+    }[quotationStatus] || "Quotation in Preparation";
+
+    await onSave(enquiry._id, {
+      quotation: {
+        amount: data.get("amount"),
+        reference: data.get("reference"),
+        description: data.get("description"),
+        materialCost: data.get("materialCost"),
+        labourCost: data.get("labourCost"),
+        additionalCharges: data.get("additionalCharges"),
+        quotedAt: data.get("quotedAt"),
+        validUntil: data.get("validUntil") || null,
+        details: data.get("details"),
+        status: quotationStatus,
+      },
+      status: enquiryStatus,
+    });
+  };
+
+  const handleProgressSubmit = async (event) => {
+    event.preventDefault();
+    const form = event.currentTarget;
+    const data = new FormData(form);
+    const saved = await onSave(enquiry._id, {
+      progressUpdate: {
+        title: data.get("milestone"),
+        updateDate: data.get("updateDate"),
+        startDate: data.get("startDate") || null,
+        targetCompletionDate: data.get("targetCompletionDate") || null,
+        actualCompletionDate: data.get("actualCompletionDate") || null,
+        description: data.get("description"),
+        progress: data.get("progress"),
+        status: data.get("milestoneStatus"),
+        remarks: data.get("remarks"),
+      },
+    });
+    if (saved) form.reset();
+  };
+
+  return (
+    <article className="customer-request-card">
+      <div className="customer-request-card-header">
+        <div className="customer-request-customer">
+          <strong>{enquiry.name}</strong>
+          <span>{enquiry.email}</span>
+          <span>{enquiry.phone}</span>
+        </div>
+        <div className="customer-request-status">
+          <label>
+            {t("Construction Status")}
+            <select
+              value={enquiry.status || "New"}
+              onChange={(event) => onStatusChange(enquiry._id, event.target.value)}
+              disabled={saving}
+            >
+              {statusOptions.map((status) => <option value={status} key={status}>{t(status)}</option>)}
+            </select>
+          </label>
+          <small>{t("Submitted")}: {formatDate(enquiry.createdAt, language)}</small>
+        </div>
+      </div>
+
+      <div className="build-requirements-summary">
+        <span><strong>{t("Land location")}</strong>{details.landLocation || "—"}</span>
+        <span><strong>{t("Plot area")}</strong>{details.plotArea || "—"}</span>
+        <span><strong>{t("House type")}</strong>{details.homeType || details.homeSize || "—"}</span>
+        <span><strong>{t("Floors")}</strong>{details.floors || "—"}</span>
+        <span><strong>{t("Bedrooms")}</strong>{details.bedrooms || "—"}</span>
+        <span><strong>{t("Estimated budget")}</strong>{details.budget || "—"}</span>
+      </div>
+
+      <ContactActions enquiry={enquiry} isBuildRequest t={t} />
+
+      <div className="customer-request-actions">
+        <button type="button" className="view-action" onClick={() => setRequirementsOpen((open) => !open)}>
+          {requirementsOpen ? t("Hide Requirements") : t("View Full Requirements")}
+        </button>
+        <button type="button" className="edit-action" onClick={() => setVisitOpen((open) => !open)}>
+          {t("Schedule Land / Site Inspection")}
+        </button>
+        <button type="button" className="edit-action" onClick={() => setQuotationOpen((open) => !open)}>
+          {enquiry.quotation ? t("Update Quotation") : t("Add Construction Quotation")}
+        </button>
+        {enquiry.status !== "Cancelled" && (
+          <button type="button" className="edit-action" disabled={saving} onClick={() => onStatusChange(enquiry._id, "Cancelled")}>
+            {t("Cancel Request")}
+          </button>
+        )}
+        {enquiry.status !== "Closed" && (
+          <button type="button" className="edit-action" disabled={saving} onClick={() => onStatusChange(enquiry._id, "Closed")}>
+            {t("Close Request")}
+          </button>
+        )}
+        <button type="button" className="delete-btn" disabled={saving} onClick={() => onDelete(enquiry._id)}>
+          {t("Delete Request")}
+        </button>
+      </div>
+
+      <AdminNotes enquiry={enquiry} onSave={onSave} saving={saving} t={t} language={language} />
+
+      {requirementsOpen && (
+        <div className="request-detail-panel">
+          <h3>{t("Full Construction Requirements")}</h3>
+          <div className="build-requirements-summary">
+            <span><strong>{t("Land location")}</strong>{details.landLocation || "—"}</span>
+            <span><strong>{t("Plot area")}</strong>{details.plotArea || "—"}</span>
+            <span><strong>{t("Preferred house type")}</strong>{details.homeType || "—"}</span>
+            <span><strong>{t("Preferred home size")}</strong>{details.homeSize || "—"}</span>
+            <span><strong>{t("Number of floors")}</strong>{details.floors || "—"}</span>
+            <span><strong>{t("Bedrooms")}</strong>{details.bedrooms || "—"}</span>
+            <span><strong>{t("Estimated budget")}</strong>{details.budget || "—"}</span>
+            <span><strong>{t("Preferred design")}</strong>{details.preferredDesign || "—"}</span>
+          </div>
+          <p><strong>{t("Additional construction requirements")}: </strong>{details.additionalRequirements || "—"}</p>
+          <p><strong>{t("Original request")}: </strong>{enquiry.message}</p>
+        </div>
+      )}
+
+      {visitOpen && (
+        <form className="request-management-form" onSubmit={handleVisitSubmit}>
+          <h3>{t("Schedule Land / Site Inspection")}</h3>
+          <label>{t("Inspection date and time")}<input name="scheduledAt" type="datetime-local" min={toDateTimeLocal()} required /></label>
+          <label>{t("Meeting location")}<input name="location" type="text" maxLength="300" /></label>
+          <label>{t("Instructions")}<textarea name="instructions" rows="2" maxLength="1000" /></label>
+          <label>{t("Inspection notes")}<textarea name="notes" rows="2" maxLength="1000" /></label>
+          <button type="submit" className="enquiry-management-save" disabled={saving}>{t("Save Inspection")}</button>
+        </form>
+      )}
+
+      {quotationOpen && (
+        <form className="request-management-form" onSubmit={handleQuotationSubmit}>
+          <h3>{t("Construction Quotation")}</h3>
+          <div className="request-management-form-grid">
+            <label>{t("Quotation reference")}<input name="reference" type="text" maxLength="80" defaultValue={enquiry.quotation?.reference || ""} /></label>
+            <label>{t("Quotation date")}<input name="quotedAt" type="date" defaultValue={enquiry.quotation?.quotedAt ? new Date(enquiry.quotation.quotedAt).toISOString().slice(0, 10) : toDateTimeLocal().slice(0, 10)} /></label>
+          </div>
+          <label>{t("Construction or service description")}<textarea name="description" rows="2" maxLength="2000" defaultValue={enquiry.quotation?.description || ""} /></label>
+          <div className="request-management-form-grid">
+            <label>{t("Material cost (₹)")}<input name="materialCost" type="number" min="0" step="0.01" defaultValue={enquiry.quotation?.materialCost ?? 0} /></label>
+            <label>{t("Labour cost (₹)")}<input name="labourCost" type="number" min="0" step="0.01" defaultValue={enquiry.quotation?.labourCost ?? 0} /></label>
+            <label>{t("Additional charges (₹)")}<input name="additionalCharges" type="number" min="0" step="0.01" defaultValue={enquiry.quotation?.additionalCharges ?? 0} /></label>
+            <label>{t("Estimated total cost (₹)")}<input name="amount" type="number" min="0" step="0.01" defaultValue={enquiry.quotation?.amount ?? ""} required /></label>
+          </div>
+          <label>{t("Quotation valid until")}<input name="validUntil" type="date" defaultValue={enquiry.quotation?.validUntil ? new Date(enquiry.quotation.validUntil).toISOString().slice(0, 10) : ""} /></label>
+          <label>{t("Quotation details")}<textarea name="details" rows="3" maxLength="2000" defaultValue={enquiry.quotation?.details || ""} /></label>
+          <label>{t("Quotation status")}
+            <select name="quotationStatus" defaultValue={enquiry.quotation?.status || "Draft"}>
+              {["Draft", "Sent", "Accepted", "Rejected"].map((status) => <option value={status} key={status}>{t(status)}</option>)}
+            </select>
+          </label>
+          <button type="submit" className="enquiry-management-save" disabled={saving}>{t("Save Quotation")}</button>
+          {enquiry.quotation?.updatedAt && <p className="enquiry-management-meta">{t("Last updated")}: {formatDate(enquiry.quotation.updatedAt, language, true)}</p>}
+        </form>
+      )}
+
+      <form className="request-management-form" onSubmit={handleProgressSubmit}>
+        <h3>{t("Add Construction Progress Milestone")}</h3>
+        <div className="request-management-form-grid">
+          <label>{t("Milestone title")}<input name="milestone" type="text" maxLength="120" required /></label>
+          <label>{t("Update date")}<input name="updateDate" type="date" defaultValue={toDateTimeLocal().slice(0, 10)} required /></label>
+          <label>{t("Start date")}<input name="startDate" type="date" /></label>
+          <label>{t("Target completion date")}<input name="targetCompletionDate" type="date" /></label>
+          <label>{t("Actual completion date")}<input name="actualCompletionDate" type="date" /></label>
+          <label>{t("Completion percentage")}<input name="progress" type="number" min="0" max="100" defaultValue="0" required /></label>
+          <label>{t("Milestone status")}
+            <select name="milestoneStatus" defaultValue="Planned">
+              {["Planned", "In Progress", "Completed"].map((status) => <option value={status} key={status}>{t(status)}</option>)}
+            </select>
+          </label>
+        </div>
+        <label>{t("Description")}<textarea name="description" rows="2" maxLength="1000" /></label>
+        <label>{t("Remarks")}<textarea name="remarks" rows="2" maxLength="1000" /></label>
+        <button type="submit" className="enquiry-management-save" disabled={saving}>{t("Add Progress Milestone")}</button>
+      </form>
+
+      {(progress.length > 0 || enquiry.siteVisits?.length > 0) && (
+        <div className="request-history">
+          <VisitHistory
+            enquiry={enquiry}
+            onSave={onSave}
+            saving={saving}
+            t={t}
+            language={language}
+            title="Inspection History"
+          />
+          <h3>{t("Construction Progress History")}</h3>
+          {progress.map((update) => (
+            <div className="request-progress-item" key={update._id || `${update.title}-${update.updateDate}`}>
+              <div>
+                <strong>{update.title}</strong>
+                <span>{formatDate(update.updateDate || update.createdAt, language)}</span>
+              </div>
+              <span>{update.progress}% · {t(update.status)}</span>
+              {update.startDate && <span>{t("Start date")}: {formatDate(update.startDate, language)}</span>}
+              {update.targetCompletionDate && <span>{t("Target completion date")}: {formatDate(update.targetCompletionDate, language)}</span>}
+              {update.actualCompletionDate && <span>{t("Completed")}: {formatDate(update.actualCompletionDate, language)}</span>}
+              {update.description && <p>{update.description}</p>}
+              {update.remarks && <p>{t("Remarks")}: {update.remarks}</p>}
+            </div>
+          ))}
+        </div>
+      )}
+    </article>
+  );
+}
+
+function EnquiryManagement({
+  buildRequests,
+  enquiries,
+  loading,
+  error,
+  notice,
+  savingEnquiryId,
+  onRefresh,
+  onDelete,
+  onSave,
+  onStatusChange,
+}) {
+  const { t, language } = useLocale();
+  const [search, setSearch] = useState("");
+  const [statusFilter, setStatusFilter] = useState("All");
+  const statuses = buildRequests ? BUILD_STATUSES : USER_STATUSES;
+  const legacyStatuses = useMemo(
+    () => [...new Set(
+      enquiries
+        .filter((enquiry) => buildRequests
+          ? isBuildLandRequest(enquiry)
+          : isPropertyEnquiry(enquiry))
+        .map((enquiry) => enquiry.status)
+        .filter((status) => status && !statuses.includes(status))
+    )],
+    [buildRequests, enquiries, statuses]
+  );
+  const locale = language === "hi" ? "hi-IN" : language === "mr" ? "mr-IN" : "en-IN";
+
+  const records = useMemo(() => {
+    const query = search.trim().toLowerCase();
+    return enquiries
+      .filter((enquiry) => (
+        buildRequests ? isBuildLandRequest(enquiry) : isPropertyEnquiry(enquiry)
+      ))
+      .filter((enquiry) => (
+        statusFilter === "All" || String(enquiry.status || "New") === statusFilter
+      ))
+      .filter((enquiry) => {
+        if (!query) return true;
+        const details = getBuildDetails(enquiry);
+        return [
+          enquiry.name,
+          enquiry.email,
+          enquiry.phone,
+          enquiry._id,
+          enquiry.requestType,
+          enquiry.propertyTitle,
+          enquiry.propertyId?.title,
+          enquiry.message,
+          ...Object.values(details),
+        ].some((value) => String(value || "").toLowerCase().includes(query));
+      });
+  }, [buildRequests, enquiries, search, statusFilter]);
+
+  return (
+    <div className="dashboard-content">
+      <div className="dashboard-header">
+        <div>
+          <span className="dashboard-label">{t(buildRequests ? "CONSTRUCTION REQUESTS" : "USER ENQUIRIES")}</span>
+          <h1>{t(buildRequests ? "Build Requests" : "User Enquiries")}</h1>
+          <p>{t(buildRequests
+            ? "Manage land inspections, construction quotations, and project progress."
+            : "Manage customers interested in purchasing or booking listed properties.")}</p>
+        </div>
+        <button className="refresh-button" onClick={onRefresh} disabled={loading}>
+          {loading ? t("Loading...") : t("Refresh")}
+        </button>
+      </div>
+
+      {error && <div className="admin-message error" role="alert">{t(error)}</div>}
+      {notice && <div className="admin-message" role="status">{t(notice)}</div>}
+
+      <div className="request-list-toolbar">
+        <input
+          type="search"
+          value={search}
+          onChange={(event) => setSearch(event.target.value)}
+          placeholder={t(buildRequests ? "Search build requests..." : "Search user enquiries...")}
+          aria-label={t("Search customer requests")}
+        />
+        <select value={statusFilter} onChange={(event) => setStatusFilter(event.target.value)} aria-label={t("Filter by status")}>
+          <option value="All">{t("All statuses")}</option>
+          {legacyStatuses.map((status) => <option value={status} key={status}>{t(status)}</option>)}
+          {statuses.map((status) => <option value={status} key={status}>{t(status)}</option>)}
+        </select>
+        <span>{records.length} {t(buildRequests ? "requests" : "enquiries")}</span>
+      </div>
+
+      {loading ? (
+        <div className="loading"><div className="spinner" /><p>{t("Loading enquiries...")}</p></div>
+      ) : records.length === 0 ? (
+        <div className="empty-state">
+          <h3>{t(buildRequests ? "No Build Requests Found" : "No User Enquiries Found")}</h3>
+          <p>{t(buildRequests
+            ? "Build Your Dream Home submissions will appear here."
+            : "Property enquiries and booking requests will appear here.")}</p>
+        </div>
+      ) : (
+        <div className="customer-request-list">
+          {records.map((enquiry) => (
+            buildRequests ? (
+              <BuildRequestCard
+                key={enquiry._id}
+                enquiry={enquiry}
+                onDelete={onDelete}
+                onSave={onSave}
+                onStatusChange={onStatusChange}
+                saving={savingEnquiryId === enquiry._id}
+                t={t}
+                language={locale}
+              />
+            ) : (
+              <PropertyEnquiryCard
+                key={enquiry._id}
+                enquiry={enquiry}
+                onDelete={onDelete}
+                onSave={onSave}
+                onStatusChange={onStatusChange}
+                saving={savingEnquiryId === enquiry._id}
+                t={t}
+                language={locale}
+              />
+            )
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+export default EnquiryManagement;

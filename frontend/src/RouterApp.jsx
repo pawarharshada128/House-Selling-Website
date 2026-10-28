@@ -12,12 +12,13 @@ import Contact from "./Contact";
 import PropertyDetails from "./PropertyDetails";
 import Payment from "./Payment";
 import AdminDashboard from "./AdminDashboard";
+import MyEnquiries from "./MyEnquiries";
 
 import Navbar from "./Navbar";
 import Footer from "./Footer";
 
 function RouterApp() {
-  const location = useLocation();
+  useLocation();
 
   // =====================================================
   // GET LOGIN USER
@@ -59,60 +60,47 @@ function RouterApp() {
           }
         />
 
-        {/* ==========================================
-            ADMIN HOME
-            Do NOT show public App.jsx
-        =========================================== */}
-
         <Route
           path="/"
           element={
-            <Navigate
-              to="/admin-dashboard"
-              replace
-            />
+            <>
+              <Navbar />
+              <App />
+              <Footer />
+            </>
           }
         />
-
-        {/* ==========================================
-            BLOCK CONTACT
-        =========================================== */}
 
         <Route
           path="/contact"
           element={
-            <Navigate
-              to="/admin-dashboard"
-              replace
-            />
+            <>
+              <Navbar />
+              <Contact />
+              <Footer />
+            </>
           }
         />
-
-        {/* ==========================================
-            BLOCK PROPERTY DETAILS
-        =========================================== */}
 
         <Route
           path="/property/:id"
           element={
-            <Navigate
-              to="/admin-dashboard"
-              replace
-            />
+            <>
+              <Navbar />
+              <PropertyDetails />
+              <Footer />
+            </>
           }
         />
-
-        {/* ==========================================
-            BLOCK PAYMENT
-        =========================================== */}
 
         <Route
           path="/payment"
           element={
-            <Navigate
-              to="/admin-dashboard"
-              replace
-            />
+            <>
+              <Navbar />
+              <Payment />
+              <Footer />
+            </>
           }
         />
 
@@ -237,6 +225,21 @@ function RouterApp() {
           path="/payment"
           element={
             <Payment />
+          }
+        />
+
+        <Route
+          path="/my-enquiries"
+          element={
+            user?.role === "buyer" ? (
+              <MyEnquiries />
+            ) : (
+              <Navigate
+                to="/login"
+                replace
+                state={{ returnTo: "/my-enquiries" }}
+              />
+            )
           }
         />
 

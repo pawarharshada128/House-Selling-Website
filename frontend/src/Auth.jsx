@@ -92,12 +92,28 @@ function Auth({ onLogin, initialMode = "login" }) {
       // go to Contact page.
       // =================================================
 
-      if (location.state?.fromCart) {
+      if (data.user.role === "admin") {
+        navigate("/admin-dashboard", {
+          replace: true,
+        });
+      } else if (location.state?.fromCart) {
         navigate("/contact", {
           state: {
             property: location.state.property,
             fromCart: true,
           },
+        });
+      } else if (location.state?.returnTo) {
+        const requestedReturnTo = location.state.returnTo;
+        const returnTo =
+          typeof requestedReturnTo === "string" &&
+          requestedReturnTo.startsWith("/") &&
+          !requestedReturnTo.startsWith("//")
+            ? requestedReturnTo
+            : "/";
+        navigate(returnTo, {
+          replace: true,
+          state: location.state.returnState,
         });
       } else {
         // Normal login
@@ -182,17 +198,7 @@ function Auth({ onLogin, initialMode = "login" }) {
       // Change to login
       setIsRegister(false);
 
-      // Keep the cart information when going to login
-      if (location.state?.fromCart) {
-        navigate("/login", {
-          state: {
-            fromCart: true,
-            property: location.state.property,
-          },
-        });
-      } else {
-        navigate("/login");
-      }
+      navigate("/login", { state: location.state });
 
     } catch (error) {
       console.error(

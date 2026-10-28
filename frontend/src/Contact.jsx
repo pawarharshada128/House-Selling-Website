@@ -1,6 +1,6 @@
 import "./App.css";
-import { useLocation } from "react-router-dom";
-import { useState } from "react";
+import { useLocation, useNavigate } from "react-router-dom";
+import { useRef, useState } from "react";
 import { useLocale } from "./LocaleContext";
 
 // const API_URL = "http://localhost:5000/api";
@@ -8,6 +8,7 @@ const API_URL = "https://house-selling-website.onrender.com/api";
 // const SERVER_URL = "https://house-selling-website.onrender.com";
 function Contact() {
   const location = useLocation();
+  const navigate = useNavigate();
   const { t } = useLocale();
 
   const property = location.state?.property;
@@ -15,6 +16,7 @@ function Contact() {
   const [loading, setLoading] = useState(false);
   const [successMessage, setSuccessMessage] = useState("");
   const [errorMessage, setErrorMessage] = useState("");
+  const submissionPending = useRef(false);
 
   // =====================================================
   // SUBMIT ENQUIRY
@@ -22,7 +24,31 @@ function Contact() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (submissionPending.current) return;
 
+    const token = localStorage.getItem("token");
+    let user = null;
+    try {
+      user = JSON.parse(localStorage.getItem("user") || "null");
+    } catch (error) {
+      console.error("Unable to read saved user:", error);
+    }
+
+    if (!token || user?.role !== "buyer") {
+      if (user?.role === "admin") {
+        setErrorMessage("Sign in with a customer account to submit an enquiry.");
+      } else {
+        navigate("/login", {
+          state: {
+            returnTo: "/contact",
+            returnState: property ? { property } : undefined,
+          },
+        });
+      }
+      return;
+    }
+
+    submissionPending.current = true;
     setLoading(true);
     setSuccessMessage("");
     setErrorMessage("");
@@ -49,6 +75,7 @@ function Contact() {
 
           headers: {
             "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
           },
 
           body: JSON.stringify(formData),
@@ -64,9 +91,7 @@ function Contact() {
         );
       }
 
-      setSuccessMessage(
-        "Thank you. Your enquiry has been sent successfully."
-      );
+      setSuccessMessage(`Thank you. Your enquiry has been sent successfully. Reference ID: ${data.referenceId || data.enquiry?._id}`);
 
       form.reset();
 
@@ -81,6 +106,7 @@ function Contact() {
           "Failed to send enquiry."
       );
     } finally {
+      submissionPending.current = false;
       setLoading(false);
     }
   };

@@ -1,5 +1,5 @@
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useLocale } from "./LocaleContext";
 import "./App.css";
@@ -19,6 +19,7 @@ function HomePage() {
 
   const [buildRequestLoading, setBuildRequestLoading] = useState(false);
   const [buildRequestFeedback, setBuildRequestFeedback] = useState(null);
+  const buildRequestPending = useRef(false);
 
   useEffect(() => {
     const sectionId = location.state?.scrollTo;
@@ -44,6 +45,35 @@ function HomePage() {
   const handleBuildRequest = async (event) => {
     event.preventDefault();
 
+    if (buildRequestPending.current) return;
+
+    const token = localStorage.getItem("token");
+    let currentUser = null;
+    try {
+      currentUser = JSON.parse(localStorage.getItem("user") || "null");
+    } catch (error) {
+      console.error("Unable to read saved user:", error);
+    }
+
+    if (!token || currentUser?.role !== "buyer") {
+      if (currentUser?.role === "admin") {
+        setBuildRequestFeedback({
+          type: "error",
+          text: t("Sign in with a customer account to submit an enquiry."),
+        });
+        return;
+      }
+
+      navigate("/login", {
+        state: {
+          returnTo: "/",
+          returnState: { scrollTo: "build-on-your-land" },
+        },
+      });
+      return;
+    }
+
+    buildRequestPending.current = true;
     const form = event.currentTarget;
     const formData = new FormData(form);
     const requestDetails = [
@@ -51,8 +81,11 @@ function HomePage() {
       `Land location: ${formData.get("landLocation")}`,
       `Land area: ${formData.get("landArea") || "Not provided"} sq. ft.`,
       `Estimated budget: ${formData.get("budget") || "Not provided"}`,
+      `Preferred house type: ${formData.get("homeType") || "Not specified"}`,
       `Preferred home size: ${formData.get("homeSize") || "Not specified"}`,
+      `Number of floors: ${formData.get("floors") || "Not specified"}`,
       `Bedrooms: ${formData.get("bedrooms") || "Not specified"}`,
+      `Preferred design: ${formData.get("preferredDesign") || "Not specified"}`,
       `Additional details: ${formData.get("requirements") || "None provided"}`,
     ].join("\n");
 
@@ -64,6 +97,7 @@ function HomePage() {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({
           name: formData.get("name"),
@@ -71,6 +105,18 @@ function HomePage() {
           phone: formData.get("phone"),
           message: requestDetails,
           propertyTitle: "Build on Your Land",
+          requestType: "BuildRequest",
+          buildDetails: {
+            landLocation: String(formData.get("landLocation") || ""),
+            plotArea: String(formData.get("landArea") || ""),
+            homeType: String(formData.get("homeType") || ""),
+            homeSize: String(formData.get("homeSize") || ""),
+            floors: String(formData.get("floors") || ""),
+            bedrooms: String(formData.get("bedrooms") || ""),
+            budget: String(formData.get("budget") || ""),
+            preferredDesign: String(formData.get("preferredDesign") || ""),
+            additionalRequirements: String(formData.get("requirements") || ""),
+          },
         }),
       });
 
@@ -83,7 +129,7 @@ function HomePage() {
 
       setBuildRequestFeedback({
         type: "success",
-        text: t("Thanks! Our construction team will contact you to discuss your land and plans."),
+        text: `${t("Thanks! Our construction team will contact you to discuss your land and plans.")} ${t("Reference ID")}: ${data.referenceId || data.enquiry?._id}`,
       });
       form.reset();
     } catch (error) {
@@ -93,6 +139,7 @@ function HomePage() {
         text: error.message || "Unable to send your request. Please try again.",
       });
     } finally {
+      buildRequestPending.current = false;
       setBuildRequestLoading(false);
     }
   };
@@ -1308,12 +1355,36 @@ function HomePage() {
               </label>
 
               <label>
+                {t("Preferred house type")}
+                <select name="homeType" defaultValue="">
+                  <option value="">{t("Select house type")}</option>
+                  <option value="Independent House">{t("Independent House")}</option>
+                  <option value="Villa">{t("Villa")}</option>
+                  <option value="Duplex">{t("Duplex")}</option>
+                  <option value="Apartment">{t("Apartment")}</option>
+                  <option value="Other">{t("Other")}</option>
+                </select>
+              </label>
+
+              <label>
                 {t("Preferred home size")}
                 <select name="homeSize" defaultValue="">
                   <option value="">{t("Select home size")}</option>
                   <option value="Compact">{t("Compact")}</option>
                   <option value="Medium">{t("Medium")}</option>
                   <option value="Large">{t("Large")}</option>
+                  <option value="Not sure yet">{t("Not sure yet")}</option>
+                </select>
+              </label>
+
+              <label>
+                {t("Number of floors")}
+                <select name="floors" defaultValue="">
+                  <option value="">{t("Select number of floors")}</option>
+                  <option value="1">1</option>
+                  <option value="2">2</option>
+                  <option value="3">3</option>
+                  <option value="4+">4+</option>
                   <option value="Not sure yet">{t("Not sure yet")}</option>
                 </select>
               </label>
@@ -1328,6 +1399,16 @@ function HomePage() {
                   <option value="4+">{t("4 or more bedrooms")}</option>
                   <option value="Not sure yet">{t("Not sure yet")}</option>
                 </select>
+              </label>
+
+              <label className="build-land-form-full">
+                {t("Preferred design")}
+                <input
+                  name="preferredDesign"
+                  type="text"
+                  placeholder={t("e.g. contemporary, traditional, or share a reference")}
+                  maxLength={200}
+                />
               </label>
 
               <label className="build-land-form-full">

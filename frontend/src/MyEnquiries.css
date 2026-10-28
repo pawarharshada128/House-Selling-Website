@@ -1,0 +1,245 @@
+.my-enquiries-page {
+  min-height: 65vh;
+  padding: 48px max(20px, calc((100% - 1120px) / 2));
+  background: #f8f5f2;
+  color: #3e2723;
+}
+
+.my-enquiries-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  margin-bottom: 28px;
+}
+
+.my-enquiries-eyebrow,
+.my-enquiry-type {
+  color: #8b6510;
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.my-enquiries-header h1 {
+  margin: 8px 0;
+}
+
+.my-enquiries-header p {
+  margin: 0;
+  color: #75655d;
+}
+
+.my-enquiries-header button,
+.my-enquiries-empty button {
+  padding: 11px 18px;
+  border: 0;
+  border-radius: 8px;
+  background: #3f1612;
+  color: #fff;
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.my-enquiries-content {
+  max-width: 1120px;
+  margin: 0 auto;
+}
+
+.my-enquiries-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 20px;
+}
+
+.my-enquiries-filters button {
+  padding: 8px 14px;
+  border: 1px solid #d8c9bd;
+  border-radius: 999px;
+  background: #fff;
+  color: #3e2723;
+  font: inherit;
+  cursor: pointer;
+}
+
+.my-enquiries-filters button.active {
+  border-color: #3f1612;
+  background: #3f1612;
+  color: #fff;
+}
+
+.my-enquiry-list {
+  display: grid;
+  gap: 16px;
+}
+
+.my-enquiry-card,
+.my-enquiries-empty {
+  padding: 22px;
+  border: 1px solid #e4d9d0;
+  border-radius: 12px;
+  background: #fff;
+  box-shadow: 0 4px 16px rgba(46, 29, 24, 0.05);
+}
+
+.my-enquiry-card-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  padding-bottom: 14px;
+  border-bottom: 1px solid #eee7e2;
+}
+
+.my-enquiry-card-header h2 {
+  margin: 4px 0;
+  font-size: 1.2rem;
+}
+
+.my-enquiry-card-header p {
+  margin: 4px 0;
+  color: #75655d;
+  font-size: 0.9rem;
+}
+
+.my-enquiry-card code {
+  overflow-wrap: anywhere;
+}
+
+.my-enquiry-status {
+  flex: 0 0 auto;
+  padding: 7px 12px;
+  border-radius: 999px;
+  background: #fff1cf;
+  color: #76550a;
+  font-size: 0.82rem;
+  font-weight: 700;
+}
+
+.my-enquiry-status.completed,
+.my-enquiry-status.approved {
+  background: #e2f4e8;
+  color: #24663b;
+}
+
+.my-enquiry-status.cancelled,
+.my-enquiry-status.closed,
+.my-enquiry-status.rejected {
+  background: #fbe5e5;
+  color: #982f2f;
+}
+
+.my-enquiry-status.in-progress,
+.my-enquiry-status.visit-scheduled,
+.my-enquiry-status.site-visit-scheduled {
+  background: #e5eefb;
+  color: #285586;
+}
+
+.my-enquiry-section {
+  margin-top: 18px;
+}
+
+.my-enquiry-section h3 {
+  margin: 0 0 8px;
+  font-size: 1rem;
+}
+
+.my-enquiry-message {
+  margin: 0;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.my-enquiry-update {
+  margin: 8px 0;
+  padding: 12px 14px;
+  border-left: 3px solid #d4af37;
+  border-radius: 4px;
+  background: #faf8f5;
+}
+
+.my-enquiry-update p {
+  margin: 5px 0;
+  white-space: pre-wrap;
+}
+
+.estimate-label {
+  margin-left: 8px;
+  color: #75655d;
+  font-size: 0.75rem;
+  font-weight: 500;
+}
+
+.my-enquiry-timeline,
+.my-enquiry-history ol {
+  display: grid;
+  gap: 12px;
+  margin: 0;
+  padding-left: 22px;
+}
+
+.my-enquiry-timeline li,
+.my-enquiry-history li {
+  padding-left: 4px;
+}
+
+.my-enquiry-timeline li span,
+.my-enquiry-history li span {
+  display: block;
+  margin-top: 3px;
+  color: #75655d;
+  font-size: 0.86rem;
+}
+
+.my-enquiry-timeline li p,
+.my-enquiry-history li p {
+  margin: 5px 0 0;
+  white-space: pre-wrap;
+}
+
+.my-enquiry-history {
+  margin-top: 18px;
+}
+
+.my-enquiry-history summary {
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.my-enquiry-history ol {
+  margin-top: 12px;
+}
+
+.my-enquiries-state,
+.my-enquiries-empty {
+  padding: 28px;
+  text-align: center;
+}
+
+.my-enquiries-state.error {
+  color: #982f2f;
+}
+
+.my-enquiries-empty h2 {
+  margin-top: 0;
+}
+
+@media (max-width: 640px) {
+  .my-enquiries-page {
+    padding: 28px 14px;
+  }
+
+  .my-enquiries-header,
+  .my-enquiry-card-header {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .my-enquiries-header button {
+    align-self: flex-start;
+  }
+}

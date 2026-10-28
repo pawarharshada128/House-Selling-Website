@@ -1,5 +1,5 @@
-import React, { useEffect, useState } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import React, { useEffect, useRef, useState } from "react";
+import { useLocation, useNavigate, useParams } from "react-router-dom";
 
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
@@ -45,6 +45,7 @@ L.Icon.Default.mergeOptions({
 function PropertyDetails() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const location = useLocation();
   const { t } = useLocale();
 
   const [property, setProperty] = useState(null);
@@ -64,6 +65,7 @@ function PropertyDetails() {
   const [showBookingPopup, setShowBookingPopup] = useState(false);
   const [enquiryLoading, setEnquiryLoading] = useState(false);
   const [enquiryMessage, setEnquiryMessage] = useState("");
+  const enquiryPending = useRef(false);
 
   // ==============================
   // FETCH PROPERTY DETAILS
@@ -122,6 +124,16 @@ function PropertyDetails() {
 
     fetchProperty();
   }, [id, reloadCount]);
+
+  useEffect(() => {
+    if (location.state?.openBooking && property) {
+      setShowBookingPopup(true);
+      navigate(location.pathname, {
+        replace: true,
+        state: null,
+      });
+    }
+  }, [location.pathname, location.state, navigate, property]);
 
   useEffect(() => {
     if (!showImageViewer) {
@@ -194,12 +206,22 @@ function PropertyDetails() {
 
   const handleBookHome = () => {
     const token = localStorage.getItem("token");
+    let user = null;
+    try {
+      user = JSON.parse(localStorage.getItem("user") || "null");
+    } catch (error) {
+      console.error("Unable to read saved user:", error);
+    }
 
-    if (!token) {
+    if (!token || user?.role !== "buyer") {
+      if (user?.role === "admin") {
+        setEnquiryMessage("Sign in with a customer account to submit an enquiry.");
+        return;
+      }
       navigate("/login", {
         state: {
-          fromBooking: true,
-          property: property,
+          returnTo: `/property/${property._id}`,
+          returnState: { openBooking: true },
         },
       });
 
@@ -216,7 +238,9 @@ function PropertyDetails() {
 
   const handleBookingEnquiry = async (e) => {
     e.preventDefault();
+    if (enquiryPending.current) return;
 
+    enquiryPending.current = true;
     setEnquiryLoading(true);
     setEnquiryMessage("");
 
@@ -229,7 +253,9 @@ function PropertyDetails() {
       message: form.message.value,
       propertyId: property._id,
       propertyTitle: property.title,
+      requestType: "PropertyBooking",
     };
+    const token = localStorage.getItem("token");
 
     try {
       const response = await fetch(
@@ -239,6 +265,7 @@ function PropertyDetails() {
 
           headers: {
             "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
           },
 
           body: JSON.stringify(enquiryData),
@@ -254,9 +281,7 @@ function PropertyDetails() {
         );
       }
 
-      setEnquiryMessage(
-        "Your enquiry has been submitted successfully."
-      );
+      setEnquiryMessage(`Your enquiry has been submitted successfully. Reference ID: ${data.referenceId || data.enquiry?._id}`);
 
       form.reset();
 
@@ -271,6 +296,7 @@ function PropertyDetails() {
           "Failed to submit enquiry."
       );
     } finally {
+      enquiryPending.current = false;
       setEnquiryLoading(false);
     }
   };

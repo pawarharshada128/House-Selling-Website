@@ -160,13 +160,18 @@ function Navbar() {
 
             {/* FAVORITES: BUYERS ONLY */}
             {isBuyer && (
-              <button
-                type="button"
-                className="favorites-nav-button"
-                onClick={handleFavorites}
-              >
-                {t("Favorites")}
-              </button>
+              <>
+                <Link to="/my-enquiries" onClick={closeMenu}>
+                  {t("My Enquiries")}
+                </Link>
+                <button
+                  type="button"
+                  className="favorites-nav-button"
+                  onClick={handleFavorites}
+                >
+                  {t("Favorites")}
+                </button>
+              </>
             )}
 
             {/* LOGIN AND SIGNUP */}

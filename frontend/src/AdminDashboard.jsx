@@ -1,6 +1,7 @@
 import React, {
   useEffect,
   useMemo,
+  useRef,
   useState,
 } from "react";
 
@@ -9,6 +10,8 @@ import { useNavigate } from "react-router-dom";
 import PropertyForm from "./PropertyForm";
 import ProjectForm from "./ProjectForm";
 import AdminNavbar from "./AdminNavbar";
+import CustomerRequestManagement from "./EnquiryManagement";
+import { isBuildLandRequest } from "./enquiryUtils";
 import { useLocale } from "./LocaleContext";
 
 import "./AdminDashboard.css";
@@ -23,20 +26,6 @@ const API_URL =
 
 const SERVER_URL =
   "https://house-selling-website.onrender.com";
-
-const isBuildLandRequest = (enquiry) => {
-  const title = String(enquiry.propertyTitle || "")
-    .trim()
-    .toLowerCase();
-  const message = String(enquiry.message || "")
-    .trim()
-    .toLowerCase();
-
-  return (
-    title === "build on your land" ||
-    message.startsWith("build on your land request")
-  );
-};
 
 const getEnquiryReplyDetails = (enquiry, t) => {
   const isBuildRequest = isBuildLandRequest(enquiry);
@@ -95,7 +84,7 @@ function AdminDashboard() {
   ===================================================== */
 
   const [activeMenu, setActiveMenu] =
-    useState("home");
+    useState("dashboard");
 
   const [showPropertyModal, setShowPropertyModal] =
     useState(false);
@@ -137,8 +126,17 @@ function AdminDashboard() {
   const [enquiryLoading, setEnquiryLoading] =
     useState(false);
 
+  const [enquiryError, setEnquiryError] =
+    useState("");
+
   const [enquiryStatusFilter, setEnquiryStatusFilter] =
     useState("All");
+
+  const [managingEnquiryId, setManagingEnquiryId] =
+    useState(null);
+
+  const [savingEnquiryId, setSavingEnquiryId] =
+    useState(null);
 
 
   /* =====================================================
@@ -186,6 +184,29 @@ function AdminDashboard() {
     user = null;
   }
 
+  const authRedirected = useRef(false);
+
+  const handleUnauthorized = () => {
+    if (authRedirected.current) {
+      return;
+    }
+
+    authRedirected.current = true;
+    localStorage.removeItem("token");
+    localStorage.removeItem("user");
+    navigate("/login", { replace: true });
+  };
+
+  const authorizedFetch = async (url, options) => {
+    const response = await fetch(url, options);
+
+    if (response.status === 401) {
+      handleUnauthorized();
+    }
+
+    return response;
+  };
+
 
   /* =====================================================
      ADMIN CHECK + INITIAL LOAD
@@ -197,10 +218,7 @@ function AdminDashboard() {
       !token ||
       user?.role !== "admin"
     ) {
-      navigate("/login", {
-        replace: true,
-      });
-
+      handleUnauthorized();
       return;
     }
 
@@ -234,7 +252,7 @@ function AdminDashboard() {
 
     try {
 
-      const response = await fetch(
+      const response = await authorizedFetch(
         `${API_URL}/admin/dashboard`,
         {
           headers: {
@@ -361,8 +379,9 @@ function AdminDashboard() {
     try {
 
       setEnquiryLoading(true);
+      setEnquiryError("");
 
-      const response = await fetch(
+      const response = await authorizedFetch(
         `${API_URL}/enquiries`,
         {
           headers: {
@@ -402,6 +421,9 @@ function AdminDashboard() {
       setMessage(
         "Unable to load user enquiries."
       );
+      setEnquiryError(
+        error.message || "Unable to load customer requests."
+      );
 
     } finally {
 
@@ -417,10 +439,12 @@ function AdminDashboard() {
   ===================================================== */
 
   const handleDeleteEnquiry = async (id) => {
+    const enquiry = enquiries.find((entry) => entry._id === id);
+    const isBuildRequest = isBuildRequestRecord(enquiry || {});
 
     const confirmDelete =
       window.confirm(
-        "Are you sure you want to delete this enquiry?"
+        `Are you sure you want to permanently delete this ${isBuildRequest ? "build request" : "property enquiry"}?`
       );
 
     if (!confirmDelete) {
@@ -429,7 +453,7 @@ function AdminDashboard() {
 
     try {
 
-      const response = await fetch(
+      const response = await authorizedFetch(
         `${API_URL}/enquiries/${id}`,
         {
           method: "DELETE",
@@ -483,10 +507,18 @@ function AdminDashboard() {
     id,
     status
   ) => {
+    if (
+      status === "Booking Confirmed" &&
+      !window.confirm(
+        "Confirm this booking only if the actual booking procedure has been completed."
+      )
+    ) {
+      return;
+    }
 
     try {
 
-      const response = await fetch(
+      const response = await authorizedFetch(
         `${API_URL}/enquiries/${id}`,
         {
           method: "PUT",
@@ -524,6 +556,7 @@ function AdminDashboard() {
               enquiry._id === id
                 ? {
                     ...enquiry,
+                    ...(data.enquiry || {}),
                     status,
                   }
                 : enquiry
@@ -548,6 +581,42 @@ function AdminDashboard() {
 
     }
 
+  };
+
+  const saveEnquiryManagement = async (id, updates) => {
+    setSavingEnquiryId(id);
+    try {
+      const response = await authorizedFetch(
+        `${API_URL}/enquiries/${id}`,
+        {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify(updates),
+        }
+      );
+
+      const data = await response.json();
+      if (!response.ok) {
+        throw new Error(data.message || "Failed to save enquiry updates.");
+      }
+
+      setEnquiries((previous) =>
+        previous.map((enquiry) =>
+          enquiry._id === id ? data.enquiry : enquiry
+        )
+      );
+      showMessage(data.message || "Enquiry updated successfully.");
+      return true;
+    } catch (error) {
+      console.error("Save enquiry management error:", error);
+      showMessage(error.message || "Failed to save enquiry updates.");
+      return false;
+    } finally {
+      setSavingEnquiryId(null);
+    }
   };
 
 
@@ -653,7 +722,7 @@ function AdminDashboard() {
 
     try {
 
-      const response = await fetch(
+      const response = await authorizedFetch(
         `${API_URL}/properties/${id}`,
         {
           method: "DELETE",
@@ -714,7 +783,7 @@ function AdminDashboard() {
 
     try {
 
-      const response = await fetch(
+      const response = await authorizedFetch(
         `${API_URL}/properties/${id}/status`,
         {
           method: "PUT",
@@ -1920,7 +1989,7 @@ function AdminDashboard() {
      ENQUIRY MANAGEMENT
   ===================================================== */
 
-  const EnquiryManagement = ({ buildRequests = false }) => {
+  const _LegacyEnquiryManagement = ({ buildRequests = false }) => {
 
     return (
       <div className="dashboard-content">
@@ -2000,9 +2069,18 @@ function AdminDashboard() {
               {t("Contacted")}
             </option>
 
-            <option value="Closed">
-              {t("Closed")}
-            </option>
+            {[
+              "Site Visit Scheduled",
+              "Quotation Sent",
+              "In Progress",
+              "Completed",
+              "Cancelled",
+              "Closed",
+            ].map((status) => (
+              <option value={status} key={status}>
+                {t(status)}
+              </option>
+            ))}
 
           </select>
 
@@ -2017,7 +2095,7 @@ function AdminDashboard() {
         </div>
 
         <p className="enquiry-reply-hint">
-          {t("Use Email, WhatsApp, or Call to contact the user. After reaching them, update the enquiry status to Contacted.")}
+          {t("Use Email, WhatsApp, or Call to contact customers. Open Manage to schedule visits, maintain quotations, and track construction progress.")}
         </p>
 
         <div className="property-table-card">
@@ -2090,9 +2168,21 @@ function AdminDashboard() {
                         encodeURIComponent(replyDetails.message);
                       const whatsappNumber =
                         getWhatsAppNumber(enquiry.phone);
+                      const quotationEmailBody = enquiry.quotation
+                        ? encodeURIComponent([
+                            `${t("Hi")} ${enquiry.name || t("there")},`,
+                            "",
+                            t("Please find your quotation details below."),
+                            `${t("Amount")}: ₹${Number(enquiry.quotation.amount).toLocaleString("en-IN")}`,
+                            enquiry.quotation.details || "",
+                            "",
+                            t("Regards,"),
+                            t("Shree Krishna Constructions"),
+                          ].filter(Boolean).join("\n"))
+                        : "";
 
                       return (
-
+                      <React.Fragment key={enquiry._id}>
                       <tr
                         key={
                           enquiry._id
@@ -2182,9 +2272,18 @@ function AdminDashboard() {
                               {t("Contacted")}
                             </option>
 
-                            <option value="Closed">
-                              {t("Closed")}
-                            </option>
+                            {[
+                              "Site Visit Scheduled",
+                              "Quotation Sent",
+                              "In Progress",
+                              "Completed",
+                              "Cancelled",
+                              "Closed",
+                            ].map((status) => (
+                              <option value={status} key={status}>
+                                {t(status)}
+                              </option>
+                            ))}
 
                           </select>
 
@@ -2230,7 +2329,25 @@ function AdminDashboard() {
                         <td>
 
                           <button
+                            className="edit-action"
+                            type="button"
+                            aria-expanded={managingEnquiryId === enquiry._id}
+                            onClick={() =>
+                              setManagingEnquiryId(
+                                managingEnquiryId === enquiry._id
+                                  ? null
+                                  : enquiry._id
+                              )
+                            }
+                          >
+                            {managingEnquiryId === enquiry._id
+                              ? t("Close")
+                              : t("Manage")}
+                          </button>
+
+                          <button
                             className="delete-btn"
+                            type="button"
                             onClick={() =>
                               handleDeleteEnquiry(
                                 enquiry._id
@@ -2244,6 +2361,221 @@ function AdminDashboard() {
 
                       </tr>
 
+                      {managingEnquiryId === enquiry._id && (
+                        <tr className="enquiry-management-row" key={`${enquiry._id}-management`}>
+                          <td colSpan={8}>
+                            <div className="enquiry-management">
+                              <div className="enquiry-management-heading">
+                                <div>
+                                  <h3>{t("Booking and Request Management")}</h3>
+                                  <p>{t("Customer details and updates are saved to MongoDB.")}</p>
+                                </div>
+                                <span className="enquiry-type-badge">
+                                  {t(
+                                    isBuildLandRequest(enquiry)
+                                      ? "Build Your Dream Home"
+                                      : enquiry.requestType === "General" && !enquiry.propertyId
+                                        ? "General Enquiry"
+                                        : "Property Booking"
+                                  )}
+                                </span>
+                              </div>
+
+                              <div className="enquiry-management-grid">
+                                <form
+                                  className="enquiry-management-card"
+                                  onSubmit={async (event) => {
+                                    event.preventDefault();
+                                    const form = event.currentTarget;
+                                    const values = new FormData(form);
+                                    const saved = await saveEnquiryManagement(enquiry._id, {
+                                      siteVisit: {
+                                        scheduledAt: values.get("scheduledAt"),
+                                        notes: values.get("notes"),
+                                      },
+                                    });
+                                    if (saved) form.reset();
+                                  }}
+                                >
+                                  <h4>{t("Schedule a Site Visit")}</h4>
+                                  <label>
+                                    {t("Date and time")}
+                                    <input
+                                      name="scheduledAt"
+                                      type="datetime-local"
+                                      required
+                                    />
+                                  </label>
+                                  <label>
+                                    {t("Visit notes")}
+                                    <textarea name="notes" rows="2" maxLength="1000" />
+                                  </label>
+                                  <button
+                                    type="submit"
+                                    className="enquiry-management-save"
+                                    disabled={savingEnquiryId === enquiry._id}
+                                  >
+                                    {t("Save Site Visit")}
+                                  </button>
+                                  {enquiry.siteVisits?.length > 0 && (
+                                    <ul className="enquiry-management-history">
+                                      {enquiry.siteVisits.map((visit) => (
+                                        <li key={visit._id}>
+                                          <strong>
+                                            {new Date(visit.scheduledAt).toLocaleString(
+                                              language === "hi" ? "hi-IN" : language === "mr" ? "mr-IN" : "en-IN"
+                                            )}
+                                          </strong>
+                                          <span>{t(visit.status)}</span>
+                                          {visit.notes && <p>{visit.notes}</p>}
+                                        </li>
+                                      ))}
+                                    </ul>
+                                  )}
+                                </form>
+
+                                <form
+                                  className="enquiry-management-card"
+                                  onSubmit={async (event) => {
+                                    event.preventDefault();
+                                    const form = event.currentTarget;
+                                    const values = new FormData(form);
+                                    await saveEnquiryManagement(enquiry._id, {
+                                      quotation: {
+                                        amount: values.get("amount"),
+                                        details: values.get("details"),
+                                        status: values.get("quotationStatus"),
+                                      },
+                                    });
+                                  }}
+                                >
+                                  <h4>{t("Quotation")}</h4>
+                                  <label>
+                                    {t("Amount (₹)")}
+                                    <input
+                                      name="amount"
+                                      type="number"
+                                      min="0"
+                                      step="0.01"
+                                      required
+                                      defaultValue={enquiry.quotation?.amount ?? ""}
+                                    />
+                                  </label>
+                                  <label>
+                                    {t("Quotation details")}
+                                    <textarea
+                                      name="details"
+                                      rows="2"
+                                      maxLength="2000"
+                                      defaultValue={enquiry.quotation?.details || ""}
+                                    />
+                                  </label>
+                                  <label>
+                                    {t("Quotation status")}
+                                    <select
+                                      name="quotationStatus"
+                                      defaultValue={enquiry.quotation?.status || "Draft"}
+                                    >
+                                      {["Draft", "Sent", "Accepted", "Rejected"].map((status) => (
+                                        <option key={status} value={status}>{t(status)}</option>
+                                      ))}
+                                    </select>
+                                  </label>
+                                  <button
+                                    type="submit"
+                                    className="enquiry-management-save"
+                                    disabled={savingEnquiryId === enquiry._id}
+                                  >
+                                    {t("Save Quotation")}
+                                  </button>
+                                  {enquiry.quotation && (
+                                    <>
+                                      <p className="enquiry-management-meta">
+                                        {t("Last updated")}: {new Date(enquiry.quotation.updatedAt).toLocaleString(
+                                          language === "hi" ? "hi-IN" : language === "mr" ? "mr-IN" : "en-IN"
+                                        )}
+                                      </p>
+                                      {enquiry.email && (
+                                        <a
+                                          className="enquiry-reply-link email"
+                                          href={`mailto:${encodeURIComponent(enquiry.email)}?subject=${encodeURIComponent(t("Your quotation from Shree Krishna Constructions"))}&body=${quotationEmailBody}`}
+                                        >
+                                          {t("Compose Quotation Email")}
+                                        </a>
+                                      )}
+                                    </>
+                                  )}
+                                </form>
+
+                                <form
+                                  className="enquiry-management-card"
+                                  onSubmit={async (event) => {
+                                    event.preventDefault();
+                                    const form = event.currentTarget;
+                                    const values = new FormData(form);
+                                    const saved = await saveEnquiryManagement(enquiry._id, {
+                                      progressUpdate: {
+                                        title: values.get("progressTitle"),
+                                        description: values.get("progressDescription"),
+                                        progress: values.get("progress"),
+                                        status: values.get("progressStatus"),
+                                      },
+                                    });
+                                    if (saved) form.reset();
+                                  }}
+                                >
+                                  <h4>{t("Construction Progress")}</h4>
+                                  <label>
+                                    {t("Milestone")}
+                                    <input name="progressTitle" type="text" required maxLength="120" />
+                                  </label>
+                                  <label>
+                                    {t("Update details")}
+                                    <textarea name="progressDescription" rows="2" maxLength="1000" />
+                                  </label>
+                                  <div className="enquiry-management-inline">
+                                    <label>
+                                      {t("Progress (%)")}
+                                      <input name="progress" type="number" min="0" max="100" defaultValue="0" required />
+                                    </label>
+                                    <label>
+                                      {t("Status")}
+                                      <select name="progressStatus" defaultValue="Planned">
+                                        {["Planned", "In Progress", "Completed"].map((status) => (
+                                          <option key={status} value={status}>{t(status)}</option>
+                                        ))}
+                                      </select>
+                                    </label>
+                                  </div>
+                                  <button
+                                    type="submit"
+                                    className="enquiry-management-save"
+                                    disabled={savingEnquiryId === enquiry._id}
+                                  >
+                                    {t("Add Progress Update")}
+                                  </button>
+                                  {enquiry.progressUpdates?.length > 0 && (
+                                    <ul className="enquiry-management-history">
+                                      {enquiry.progressUpdates.map((update) => (
+                                        <li key={update._id}>
+                                          <strong>{update.title} · {update.progress}%</strong>
+                                          <span>{t(update.status)}</span>
+                                          {update.description && <p>{update.description}</p>}
+                                          <small>{new Date(update.updatedAt).toLocaleDateString(
+                                            language === "hi" ? "hi-IN" : language === "mr" ? "mr-IN" : "en-IN"
+                                          )}</small>
+                                        </li>
+                                      ))}
+                                    </ul>
+                                  )}
+                                </form>
+                              </div>
+                            </div>
+                          </td>
+                        </tr>
+                      )}
+
+                      </React.Fragment>
                       );
                     }
                   )}
@@ -2733,11 +3065,33 @@ function AdminDashboard() {
         )}
 
         {activeMenu === "enquiries" && (
-          <EnquiryManagement />
+          <CustomerRequestManagement
+            buildRequests={false}
+            enquiries={enquiries}
+            loading={enquiryLoading}
+            error={enquiryError}
+            notice={message}
+            savingEnquiryId={savingEnquiryId}
+            onRefresh={loadEnquiries}
+            onDelete={handleDeleteEnquiry}
+            onSave={saveEnquiryManagement}
+            onStatusChange={updateEnquiryStatus}
+          />
         )}
 
         {activeMenu === "build-requests" && (
-          <EnquiryManagement buildRequests />
+          <CustomerRequestManagement
+            buildRequests
+            enquiries={enquiries}
+            loading={enquiryLoading}
+            error={enquiryError}
+            notice={message}
+            savingEnquiryId={savingEnquiryId}
+            onRefresh={loadEnquiries}
+            onDelete={handleDeleteEnquiry}
+            onSave={saveEnquiryManagement}
+            onStatusChange={updateEnquiryStatus}
+          />
         )}
 
       </main>
