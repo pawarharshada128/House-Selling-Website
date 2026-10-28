@@ -9,8 +9,22 @@ const router = express.Router();
 router.post("/register", async (req, res) => {
   try {
     const { name, email, password } = req.body;
+    const normalizedEmail = typeof email === "string" ? email.trim().toLowerCase() : "";
 
-    const existingUser = await User.findOne({ email });
+    if (
+      typeof name !== "string" ||
+      !name.trim() ||
+      !normalizedEmail ||
+      !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalizedEmail) ||
+      typeof password !== "string" ||
+      password.length < 6
+    ) {
+      return res.status(400).json({
+        message: "Please provide a valid name, email, and password of at least 6 characters.",
+      });
+    }
+
+    const existingUser = await User.findOne({ email: normalizedEmail });
 
     if (existingUser) {
       return res.status(400).json({
@@ -21,8 +35,8 @@ router.post("/register", async (req, res) => {
     const hashedPassword = await bcrypt.hash(password, 10);
 
     const user = await User.create({
-      name,
-      email,
+      name: name.trim(),
+      email: normalizedEmail,
       password: hashedPassword,
       role: "buyer",
     });
@@ -46,8 +60,15 @@ router.post("/register", async (req, res) => {
 router.post("/login", async (req, res) => {
   try {
     const { email, password } = req.body;
+    const normalizedEmail = typeof email === "string" ? email.trim().toLowerCase() : "";
 
-    const user = await User.findOne({ email });
+    if (!normalizedEmail || typeof password !== "string") {
+      return res.status(401).json({
+        message: "Invalid email or password",
+      });
+    }
+
+    const user = await User.findOne({ email: normalizedEmail });
 
     if (!user) {
       return res.status(401).json({
@@ -99,4 +120,3 @@ const token = jwt.sign(
 });
 
 module.exports = router;
-

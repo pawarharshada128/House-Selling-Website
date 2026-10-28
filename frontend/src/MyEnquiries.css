@@ -201,6 +201,21 @@
   white-space: pre-wrap;
 }
 
+.my-enquiry-progress {
+  height: 9px;
+  margin: 8px 0;
+  overflow: hidden;
+  border-radius: 999px;
+  background: #e8dfd8;
+}
+
+.my-enquiry-progress span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, #7a3025, #d2a83c);
+}
+
 .my-enquiry-history {
   margin-top: 18px;
 }

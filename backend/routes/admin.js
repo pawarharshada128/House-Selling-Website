@@ -7,6 +7,8 @@ const adminMiddleware = require("../middleware/adminMiddleware");
 
 const Property = require("../models/Property");
 const User = require("../models/User");
+const Enquiry = require("../models/Enquiry");
+const Wishlist = require("../models/Wishlist");
 
 
 // =====================================================
@@ -73,6 +75,15 @@ router.get(
           role: "buyer",
         });
 
+      const inquiries = await Enquiry.countDocuments();
+      const bookings = await Enquiry.countDocuments({
+        $or: [
+          { requestType: "PropertyBooking" },
+          { requestType: { $exists: false }, propertyId: { $ne: null } },
+        ],
+      });
+      const favorites = await Wishlist.countDocuments();
+
 
       // -----------------------------------------------
       // SEND RESPONSE
@@ -93,11 +104,11 @@ router.get(
 
         buyers: totalBuyers,
 
-        inquiries: 0,
+        inquiries,
 
-        bookings: 0,
+        bookings,
 
-        favorites: 0,
+        favorites,
 
         revenue: 0,
 

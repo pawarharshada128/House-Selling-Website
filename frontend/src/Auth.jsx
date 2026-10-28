@@ -7,13 +7,18 @@ function Auth({ onLogin, initialMode = "login" }) {
   const { t } = useLocale();
   const location = useLocation();
   const navigate = useNavigate();
+  const rememberedEmail = localStorage.getItem("rememberedEmail");
 
   const [isRegister, setIsRegister] = useState(
     location.pathname === "/signup" || initialMode === "register"
   );
 
   const [name, setName] = useState("");
-  const [email, setEmail] = useState("");
+  const [email, setEmail] = useState(
+    location.pathname === "/signup" || initialMode === "register"
+      ? ""
+      : rememberedEmail || ""
+  );
   const [password, setPassword] = useState("");
 
   const [showPassword, setShowPassword] = useState(false);
@@ -43,15 +48,13 @@ function Auth({ onLogin, initialMode = "login" }) {
             "Content-Type": "application/json",
           },
           body: JSON.stringify({
-            email: email.trim(),
+            email: email.trim().toLowerCase(),
             password,
           }),
         }
       );
 
       const data = await response.json();
-
-      console.log("Login response:", data);
 
       if (!response.ok) {
         alert(
@@ -75,7 +78,7 @@ function Auth({ onLogin, initialMode = "login" }) {
       if (rememberMe) {
         localStorage.setItem(
           "rememberedEmail",
-          email.trim()
+          email.trim().toLowerCase()
         );
       } else {
         localStorage.removeItem("rememberedEmail");
@@ -166,15 +169,13 @@ function Auth({ onLogin, initialMode = "login" }) {
           },
           body: JSON.stringify({
             name: name.trim(),
-            email: email.trim(),
+            email: email.trim().toLowerCase(),
             password,
           }),
         }
       );
 
       const data = await response.json();
-
-      console.log("Register response:", data);
 
       if (!response.ok) {
         alert(
@@ -252,9 +253,6 @@ function Auth({ onLogin, initialMode = "login" }) {
   // =====================================================
   // REMEMBERED EMAIL
   // =====================================================
-
-  const rememberedEmail =
-    localStorage.getItem("rememberedEmail");
 
   // =====================================================
   // UI
@@ -408,12 +406,7 @@ function Auth({ onLogin, initialMode = "login" }) {
                 id="email"
                 type="email"
                 placeholder={t("Enter your email")}
-                value={
-                  email ||
-                  (!isRegister
-                    ? rememberedEmail || ""
-                    : "")
-                }
+                value={email}
                 onChange={(e) =>
                   setEmail(e.target.value)
                 }

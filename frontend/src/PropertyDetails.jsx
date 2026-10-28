@@ -57,6 +57,16 @@ function PropertyDetails() {
   const [descriptionExpanded, setDescriptionExpanded] = useState(false);
   const [shortlistLoading, setShortlistLoading] = useState(false);
   const [actionMessage, setActionMessage] = useState("");
+  const [statusSaving, setStatusSaving] = useState(false);
+  const [statusMessage, setStatusMessage] = useState("");
+  const [isAdmin] = useState(() => {
+    try {
+      return JSON.parse(localStorage.getItem("user") || "null")?.role === "admin";
+    } catch (error) {
+      console.error("Unable to read saved user:", error);
+      return false;
+    }
+  });
 
   // ==============================
   // BOOKING POPUP STATES
@@ -527,6 +537,40 @@ function PropertyDetails() {
     ? property.status.toLowerCase()
     : "pending";
 
+  const handlePropertyStatusChange = async (event) => {
+    const status = event.target.value;
+    const token = localStorage.getItem("token");
+    if (!token || !isAdmin) {
+      setStatusMessage(t("Admin sign-in is required to update property status."));
+      return;
+    }
+
+    setStatusSaving(true);
+    setStatusMessage("");
+    try {
+      const response = await fetch(`${API_URL}/properties/${property._id}/status`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ status }),
+      });
+      const data = await response.json();
+      if (!response.ok) {
+        throw new Error(data.message || t("Failed to update property status."));
+      }
+
+      setProperty(data.property || { ...property, status });
+      setStatusMessage(data.message || t("Property status updated successfully."));
+    } catch (error) {
+      console.error("Property status update error:", error);
+      setStatusMessage(error.message || t("Failed to update property status."));
+    } finally {
+      setStatusSaving(false);
+    }
+  };
+
   // ==============================
   // PAYMENT CALCULATIONS
   // ==============================
@@ -752,6 +796,23 @@ function PropertyDetails() {
             </span>
 
           </div>
+          {isAdmin && (
+            <div className="property-status-admin">
+              <label htmlFor="property-status-update">{t("Update property status")}</label>
+              <select
+                id="property-status-update"
+                value={property.status || "Pending"}
+                onChange={handlePropertyStatusChange}
+                disabled={statusSaving}
+              >
+                {["Pending", "Available", "Sold", "Rejected"].map((status) => (
+                  <option value={status} key={status}>{t(status)}</option>
+                ))}
+              </select>
+              {statusSaving && <span role="status">{t("Saving...")}</span>}
+              {statusMessage && <p role="status" aria-live="polite">{statusMessage}</p>}
+            </div>
+          )}
 
           {/* DESCRIPTION */}
 
@@ -798,7 +859,7 @@ function PropertyDetails() {
             >
               {property.status === "Sold"
                 ? t("Property Sold")
-                : t("Book Home")}
+                : t("Send Enquiry")}
             </button>
 
             <button
@@ -1075,7 +1136,7 @@ function PropertyDetails() {
       {/* ==============================
           COORDINATES
       ============================== */}
-
+{/* 
       {hasCoordinates && (
         <div
           className="details-container"
@@ -1104,7 +1165,7 @@ function PropertyDetails() {
           </p>
 
         </div>
-      )}
+      )} */}
 
       {/* ==============================
           BOOK HOME POPUP

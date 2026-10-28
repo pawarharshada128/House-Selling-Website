@@ -37,7 +37,10 @@ The application also provides property images/videos and map-based location feat
 
 - Admin Login
 - Admin Dashboard
-- Add New Property
+ - Manage User Enquiries separately from Build Requests
+ - Contact customers, schedule property visits or land inspections, and manage property offers or construction quotations
+ - Track construction milestones for Build Requests without showing construction progress on property enquiries
+ - Add New Property
 - Update Property
 - Delete Property
 - Manage Property Status
@@ -227,6 +230,17 @@ http://localhost:5173
 | GET | `/api/properties/search` | Search properties |
 | PUT | `/api/properties/:id/status` | Update property status |
 
+### Customer Enquiries and Bookings
+
+| Method | Endpoint | Description |
+|---|---|---|
+| POST | `/api/enquiries` | Submit a property enquiry or Build Your Dream Home request |
+| GET | `/api/enquiries` | List enquiries with property details (admin only) |
+| PUT | `/api/enquiries/:id` | Update status, save a type-appropriate site visit/offer/quotation/progress update (admin only) |
+| DELETE | `/api/enquiries/:id` | Delete an enquiry or request (admin only) |
+
+Build request submissions include structured land, house type/size, floor, bedroom, budget, design, and additional requirement fields. Existing message-only build requests continue to display using their saved message text.
+
 ### Wishlist
 
 | Method | Endpoint | Description |
@@ -278,6 +292,7 @@ Main collections include:
 Users
 Properties
 Wishlists
+Enquiries (including booking and construction-request management)
 ```
 
 Property information includes:
@@ -405,6 +420,4 @@ This project was developed as a **Full-Stack Web Development project** using mod
 - Admin dashboard
 - Map integration
 - Git/GitHub project management
-
-
 

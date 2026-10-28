@@ -38,11 +38,10 @@ function AdminNavbar({
   };
 
   // =====================================================
-  // HOME
+  // VIEW WEBSITE
   // =====================================================
 
-  const handleHome = () => {
-    setActiveMenu("home");
+  const handleViewWebsite = () => {
     navigate("/");
     closeMenu();
   };
@@ -87,7 +86,7 @@ function AdminNavbar({
 
       <div
         className="admin-navbar-logo"
-        onClick={handleHome}
+        onClick={handleViewWebsite}
       >
         <img
           src="/logo.jpeg"
@@ -126,18 +125,12 @@ function AdminNavbar({
         }`}
       >
 
-        {/* HOME */}
-
         <button
           type="button"
-          className={
-            activeMenu === "home"
-              ? "admin-nav-active"
-              : ""
-          }
-          onClick={handleHome}
+          className="admin-view-website-button"
+          onClick={handleViewWebsite}
         >
-          {t("Home")}
+          {t("View Website")}
         </button>
 
         {/* DASHBOARD */}
@@ -220,12 +213,12 @@ function AdminNavbar({
 
         {/* NEW PROJECT */}
 
-        <button
+        {/* <button
           type="button"
           onClick={handleAddProject}
         >
           {t("New Project")}
-        </button>
+        </button> */}
 
         <LanguageSelector className="admin-language-selector" />
 

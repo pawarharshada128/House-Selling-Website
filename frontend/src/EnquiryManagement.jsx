@@ -31,7 +31,12 @@ const BUILD_STATUSES = [
   "Completed",
   "Rejected",
   "Cancelled",
+  "Closed",
 ];
+
+const isActiveConstructionRequest = (enquiry) =>
+  ["Site Visit Scheduled", "Quotation in Preparation", "Quotation Sent", "Approved", "In Progress"]
+    .includes(enquiry.status);
 
 const getWhatsAppNumber = (phone) => {
   const digits = String(phone || "").replace(/\D/g, "");
@@ -142,8 +147,8 @@ function AdminNotes({ enquiry, onSave, saving, t, language }) {
   };
 
   return (
-    <section className="request-history">
-      <h3>{t("Internal Admin Notes")}</h3>
+    <details className="request-history">
+      <summary>{t("Internal Admin Notes")} ({enquiry.adminNotes?.length || 0})</summary>
       {(enquiry.adminNotes || []).map((entry, index) => (
         <p key={`${entry.createdAt}-${index}`}>
           {entry.note}
@@ -156,10 +161,10 @@ function AdminNotes({ enquiry, onSave, saving, t, language }) {
           <textarea name="adminNote" rows="2" maxLength="1000" required />
         </label>
         <button type="submit" className="enquiry-management-save" disabled={saving}>
-          {t("Save Note")}
+          {saving ? t("Saving...") : t("Save Note")}
         </button>
       </form>
-    </section>
+    </details>
   );
 }
 
@@ -241,13 +246,18 @@ function PropertyEnquiryCard({
   const [detailsOpen, setDetailsOpen] = useState(false);
   const [visitOpen, setVisitOpen] = useState(false);
   const [offerOpen, setOfferOpen] = useState(false);
+  const [offerAmount, setOfferAmount] = useState(Number(enquiry.propertyOffer?.amount || 0));
+  const [offerDiscountAmount, setOfferDiscountAmount] = useState(Number(enquiry.propertyOffer?.discountAmount || 0));
+  const [offerDiscountPercent, setOfferDiscountPercent] = useState(Number(enquiry.propertyOffer?.discountPercent || 0));
   const property = enquiry.propertyId && typeof enquiry.propertyId === "object"
     ? enquiry.propertyId
     : null;
   const image = property?.image || property?.images?.[0];
   const canMakeOffer =
     enquiry.requestType === "PropertyBooking" ||
-    (!enquiry.requestType && Boolean(enquiry.propertyId));
+    enquiry.type === "PropertyBooking" ||
+    (!enquiry.requestType && !enquiry.type && Boolean(enquiry.propertyId));
+  const nextScheduledVisit = enquiry.siteVisits?.find((visit) => visit.status === "Scheduled");
   const statusOptions = USER_STATUSES.includes(enquiry.status)
     ? USER_STATUSES
     : [enquiry.status, ...USER_STATUSES].filter(Boolean);
@@ -274,8 +284,9 @@ function PropertyEnquiryCard({
 
   const handleOfferSubmit = async (event) => {
     event.preventDefault();
-    const data = new FormData(event.currentTarget);
-    await onSave(enquiry._id, {
+    const form = event.currentTarget;
+    const data = new FormData(form);
+    const saved = await onSave(enquiry._id, {
       propertyOffer: {
         amount: data.get("amount"),
         title: data.get("title"),
@@ -287,6 +298,12 @@ function PropertyEnquiryCard({
       },
       ...(data.get("offerStatus") === "Sent" ? { status: "Offer Made" } : {}),
     });
+    if (saved) {
+      setOfferAmount(Number(data.get("amount") || 0));
+      setOfferDiscountAmount(Number(data.get("discountAmount") || 0));
+      setOfferDiscountPercent(Number(data.get("discountPercent") || 0));
+      setOfferOpen(false);
+    }
   };
 
   return (
@@ -296,8 +313,12 @@ function PropertyEnquiryCard({
           <strong>{enquiry.name}</strong>
           <span>{enquiry.email}</span>
           <span>{enquiry.phone}</span>
+          <span>{t("Reference ID")}: <code>{enquiry._id}</code></span>
         </div>
         <div className="customer-request-status">
+          <span className={`enquiry-status-badge ${String(enquiry.status || "Pending").toLowerCase().replaceAll(" ", "-")}`}>
+            {t(enquiry.status || "Pending")}
+          </span>
           <label>
             {t("Enquiry / Booking Status")}
             <select
@@ -311,6 +332,7 @@ function PropertyEnquiryCard({
             </select>
           </label>
           <small>{t("Submitted")}: {formatDate(enquiry.createdAt, language)}</small>
+          <small>{t("Latest update")}: {formatDate(enquiry.updatedAt, language, true)}</small>
         </div>
       </div>
 
@@ -332,18 +354,24 @@ function PropertyEnquiryCard({
         <strong>{t("Enquiry Message")}</strong>
         <p>{enquiry.message}</p>
       </div>
+      {nextScheduledVisit && (
+        <p className="enquiry-management-meta">
+          <strong>{t("Next property visit")}:</strong> {formatDate(nextScheduledVisit.scheduledAt, language, true)}
+          {nextScheduledVisit.location ? ` · ${nextScheduledVisit.location}` : ""}
+        </p>
+      )}
 
       <ContactActions enquiry={enquiry} isBuildRequest={false} t={t} />
 
       <div className="customer-request-actions">
-        <button type="button" className="view-action" onClick={() => setDetailsOpen((open) => !open)}>
+        <button type="button" className="view-action" aria-expanded={detailsOpen} onClick={() => setDetailsOpen((open) => !open)}>
           {detailsOpen ? t("Hide Details") : t("View Details")}
         </button>
-        <button type="button" className="edit-action" onClick={() => setVisitOpen((open) => !open)}>
+        <button type="button" className="edit-action" disabled={saving} onClick={() => setVisitOpen((open) => !open)}>
           {t("Schedule Property Visit")}
         </button>
         {canMakeOffer && (
-          <button type="button" className="edit-action" onClick={() => setOfferOpen((open) => !open)}>
+          <button type="button" className="edit-action" disabled={saving} onClick={() => setOfferOpen((open) => !open)}>
             {enquiry.propertyOffer ? t("Update Property Offer") : t("Add Property Offer")}
           </button>
         )}
@@ -352,12 +380,33 @@ function PropertyEnquiryCard({
             {t("Close Enquiry")}
           </button>
         )}
-        <button type="button" className="delete-btn" disabled={saving} onClick={() => onDelete(enquiry._id)}>
+        <button type="button" className="delete-btn" disabled={saving} onClick={() => {
+          if (window.confirm(t("Delete this enquiry? This action cannot be undone."))) onDelete(enquiry._id);
+        }}>
           {t("Delete Enquiry")}
         </button>
       </div>
 
       <AdminNotes enquiry={enquiry} onSave={onSave} saving={saving} t={t} language={language} />
+
+      {enquiry.propertyOffer && (
+        <details className="request-history">
+          <summary>{t("Property Offer")} · {t(enquiry.propertyOffer.status)}</summary>
+          <div className="request-visit-item">
+            {enquiry.propertyOffer.title && <p><strong>{enquiry.propertyOffer.title}</strong></p>}
+            <p><strong>{t("Offer amount")}:</strong> ₹{Number(enquiry.propertyOffer.amount || 0).toLocaleString("en-IN")}</p>
+            {Number(enquiry.propertyOffer.discountAmount) > 0 && <p>{t("Discount amount")}: ₹{Number(enquiry.propertyOffer.discountAmount).toLocaleString("en-IN")}</p>}
+            {Number(enquiry.propertyOffer.discountPercent) > 0 && <p>{t("Discount percentage")}: {enquiry.propertyOffer.discountPercent}%</p>}
+            <p><strong>{t("Calculated final amount")}:</strong> ₹{Math.max(0,
+              Number(enquiry.propertyOffer.amount || 0) -
+              Number(enquiry.propertyOffer.discountAmount || 0) -
+              Number(enquiry.propertyOffer.amount || 0) * Number(enquiry.propertyOffer.discountPercent || 0) / 100
+            ).toLocaleString("en-IN")}</p>
+            {enquiry.propertyOffer.details && <p>{enquiry.propertyOffer.details}</p>}
+            {enquiry.propertyOffer.validUntil && <p>{t("Valid until")}: {formatDate(enquiry.propertyOffer.validUntil, language)}</p>}
+          </div>
+        </details>
+      )}
 
       {detailsOpen && (
         <div className="request-detail-panel">
@@ -385,11 +434,14 @@ function PropertyEnquiryCard({
         <form className="request-management-form" onSubmit={handleOfferSubmit}>
           <h3>{t("Property Offer")}</h3>
           <label>{t("Offer title")}<input name="title" type="text" maxLength="120" defaultValue={enquiry.propertyOffer?.title || ""} /></label>
-          <label>{t("Offer amount (₹)")}<input name="amount" type="number" min="0" step="0.01" defaultValue={enquiry.propertyOffer?.amount ?? ""} required /></label>
+          <label>{t("Offer amount (₹)")}<input name="amount" type="number" min="0" step="0.01" value={offerAmount || ""} onChange={(event) => setOfferAmount(Number(event.target.value) || 0)} required /></label>
           <div className="request-management-form-grid">
-            <label>{t("Discount amount (₹)")}<input name="discountAmount" type="number" min="0" step="0.01" defaultValue={enquiry.propertyOffer?.discountAmount ?? 0} /></label>
-            <label>{t("Discount percentage")}<input name="discountPercent" type="number" min="0" max="100" step="0.01" defaultValue={enquiry.propertyOffer?.discountPercent ?? 0} /></label>
+            <label>{t("Discount amount (₹)")}<input name="discountAmount" type="number" min="0" step="0.01" value={offerDiscountAmount} onChange={(event) => setOfferDiscountAmount(Number(event.target.value) || 0)} /></label>
+            <label>{t("Discount percentage")}<input name="discountPercent" type="number" min="0" max="100" step="0.01" value={offerDiscountPercent} onChange={(event) => setOfferDiscountPercent(Number(event.target.value) || 0)} /></label>
           </div>
+          <p className="enquiry-management-meta">{t("Calculated final amount")}: ₹{Math.max(0,
+            offerAmount - offerDiscountAmount - offerAmount * offerDiscountPercent / 100
+          ).toLocaleString("en-IN")}</p>
           <label>{t("Offer valid until")}<input name="validUntil" type="date" defaultValue={enquiry.propertyOffer?.validUntil ? new Date(enquiry.propertyOffer.validUntil).toISOString().slice(0, 10) : ""} /></label>
           <label>{t("Offer details")}<textarea name="details" rows="2" maxLength="2000" defaultValue={enquiry.propertyOffer?.details || ""} /></label>
           <label>{t("Offer status")}
@@ -397,7 +449,7 @@ function PropertyEnquiryCard({
               {["Draft", "Sent", "Accepted", "Rejected"].map((status) => <option value={status} key={status}>{t(status)}</option>)}
             </select>
           </label>
-          <button type="submit" className="enquiry-management-save" disabled={saving}>{t("Save Offer")}</button>
+          <button type="submit" className="enquiry-management-save" disabled={saving}>{saving ? t("Saving...") : t("Save Offer")}</button>
           {enquiry.propertyOffer && (
             <p className="enquiry-management-meta">
               {t("Last updated")}: {formatDate(enquiry.propertyOffer.updatedAt, language, true)}
@@ -409,14 +461,19 @@ function PropertyEnquiryCard({
         </form>
       )}
 
-      <VisitHistory
-        enquiry={enquiry}
-        onSave={onSave}
-        saving={saving}
-        t={t}
-        language={language}
-        title="Property Visit History"
-      />
+      {enquiry.siteVisits?.length > 0 && (
+        <details className="request-history">
+          <summary>{t("Property Visit History")} ({enquiry.siteVisits.length})</summary>
+          <VisitHistory
+            enquiry={enquiry}
+            onSave={onSave}
+            saving={saving}
+            t={t}
+            language={language}
+            title="Property Visit History"
+          />
+        </details>
+      )}
     </article>
   );
 }
@@ -433,7 +490,16 @@ function BuildRequestCard({
   const [requirementsOpen, setRequirementsOpen] = useState(false);
   const [visitOpen, setVisitOpen] = useState(false);
   const [quotationOpen, setQuotationOpen] = useState(false);
+  const [progressOpen, setProgressOpen] = useState(false);
+  const [progressValue, setProgressValue] = useState(0);
+  const [progressDateError, setProgressDateError] = useState("");
+  const [quotationTotal, setQuotationTotal] = useState(
+    Number(enquiry.quotation?.materialCost || 0) +
+    Number(enquiry.quotation?.labourCost || 0) +
+    Number(enquiry.quotation?.additionalCharges || 0)
+  );
   const details = getBuildDetails(enquiry);
+  const nextScheduledVisit = enquiry.siteVisits?.find((visit) => visit.status === "Scheduled");
   const statusOptions = BUILD_STATUSES.includes(enquiry.status)
     ? BUILD_STATUSES
     : [enquiry.status, ...BUILD_STATUSES].filter(Boolean);
@@ -442,6 +508,14 @@ function BuildRequestCard({
       new Date(a.updateDate || a.createdAt || 0) -
       new Date(b.updateDate || b.createdAt || 0)
   );
+  const updateQuotationTotal = (event) => {
+    const form = event.currentTarget.form;
+    setQuotationTotal(
+      Number(form.elements.materialCost.value || 0) +
+      Number(form.elements.labourCost.value || 0) +
+      Number(form.elements.additionalCharges.value || 0)
+    );
+  };
 
   const handleVisitSubmit = async (event) => {
     event.preventDefault();
@@ -465,7 +539,8 @@ function BuildRequestCard({
 
   const handleQuotationSubmit = async (event) => {
     event.preventDefault();
-    const data = new FormData(event.currentTarget);
+    const form = event.currentTarget;
+    const data = new FormData(form);
     const quotationStatus = data.get("quotationStatus");
     const enquiryStatus = {
       Sent: "Quotation Sent",
@@ -473,9 +548,9 @@ function BuildRequestCard({
       Rejected: "Rejected",
     }[quotationStatus] || "Quotation in Preparation";
 
-    await onSave(enquiry._id, {
+    const saved = await onSave(enquiry._id, {
       quotation: {
-        amount: data.get("amount"),
+        amount: quotationTotal,
         reference: data.get("reference"),
         description: data.get("description"),
         materialCost: data.get("materialCost"),
@@ -488,12 +563,34 @@ function BuildRequestCard({
       },
       status: enquiryStatus,
     });
+    if (saved) {
+      setQuotationTotal(
+        Number(data.get("materialCost") || 0) +
+        Number(data.get("labourCost") || 0) +
+        Number(data.get("additionalCharges") || 0)
+      );
+      setQuotationOpen(false);
+    }
   };
 
   const handleProgressSubmit = async (event) => {
     event.preventDefault();
     const form = event.currentTarget;
     const data = new FormData(form);
+    const startDate = data.get("startDate");
+    const targetDate = data.get("targetCompletionDate");
+    const actualDate = data.get("actualCompletionDate");
+    const progressNumber = Number(data.get("progress"));
+    if (!Number.isFinite(progressNumber) || progressNumber < 0 || progressNumber > 100) {
+      setProgressDateError(t("Completion percentage must be between 0 and 100."));
+      return;
+    }
+    if ((startDate && targetDate && startDate > targetDate) ||
+      (actualDate && startDate && actualDate < startDate)) {
+      setProgressDateError(t("Check milestone dates: the target must follow the start date and actual completion cannot precede it."));
+      return;
+    }
+    setProgressDateError("");
     const saved = await onSave(enquiry._id, {
       progressUpdate: {
         title: data.get("milestone"),
@@ -507,7 +604,12 @@ function BuildRequestCard({
         remarks: data.get("remarks"),
       },
     });
-    if (saved) form.reset();
+    if (saved) {
+      form.reset();
+      setProgressValue(0);
+      setProgressDateError("");
+      setProgressOpen(false);
+    }
   };
 
   return (
@@ -517,8 +619,12 @@ function BuildRequestCard({
           <strong>{enquiry.name}</strong>
           <span>{enquiry.email}</span>
           <span>{enquiry.phone}</span>
+          <span>{t("Reference ID")}: <code>{enquiry._id}</code></span>
         </div>
         <div className="customer-request-status">
+          <span className={`enquiry-status-badge ${String(enquiry.status || "Pending").toLowerCase().replaceAll(" ", "-")}`}>
+            {t(enquiry.status || "Pending")}
+          </span>
           <label>
             {t("Construction Status")}
             <select
@@ -530,6 +636,7 @@ function BuildRequestCard({
             </select>
           </label>
           <small>{t("Submitted")}: {formatDate(enquiry.createdAt, language)}</small>
+          <small>{t("Latest update")}: {formatDate(enquiry.updatedAt, language, true)}</small>
         </div>
       </div>
 
@@ -541,18 +648,27 @@ function BuildRequestCard({
         <span><strong>{t("Bedrooms")}</strong>{details.bedrooms || "—"}</span>
         <span><strong>{t("Estimated budget")}</strong>{details.budget || "—"}</span>
       </div>
+      {nextScheduledVisit && (
+        <p className="enquiry-management-meta">
+          <strong>{t("Next land inspection")}:</strong> {formatDate(nextScheduledVisit.scheduledAt, language, true)}
+          {nextScheduledVisit.location ? ` · ${nextScheduledVisit.location}` : ""}
+        </p>
+      )}
 
       <ContactActions enquiry={enquiry} isBuildRequest t={t} />
 
       <div className="customer-request-actions">
-        <button type="button" className="view-action" onClick={() => setRequirementsOpen((open) => !open)}>
+        <button type="button" className="view-action" aria-expanded={requirementsOpen} onClick={() => setRequirementsOpen((open) => !open)}>
           {requirementsOpen ? t("Hide Requirements") : t("View Full Requirements")}
         </button>
-        <button type="button" className="edit-action" onClick={() => setVisitOpen((open) => !open)}>
+        <button type="button" className="edit-action" disabled={saving} onClick={() => setVisitOpen((open) => !open)}>
           {t("Schedule Land / Site Inspection")}
         </button>
-        <button type="button" className="edit-action" onClick={() => setQuotationOpen((open) => !open)}>
+        <button type="button" className="edit-action" disabled={saving} onClick={() => setQuotationOpen((open) => !open)}>
           {enquiry.quotation ? t("Update Quotation") : t("Add Construction Quotation")}
+        </button>
+        <button type="button" className="edit-action" disabled={saving} aria-expanded={progressOpen} onClick={() => setProgressOpen((open) => !open)}>
+          {t("Add Construction Progress Milestone")}
         </button>
         {enquiry.status !== "Cancelled" && (
           <button type="button" className="edit-action" disabled={saving} onClick={() => onStatusChange(enquiry._id, "Cancelled")}>
@@ -564,12 +680,29 @@ function BuildRequestCard({
             {t("Close Request")}
           </button>
         )}
-        <button type="button" className="delete-btn" disabled={saving} onClick={() => onDelete(enquiry._id)}>
+        <button type="button" className="delete-btn" disabled={saving} onClick={() => {
+          if (window.confirm(t("Delete this construction request? This action cannot be undone."))) onDelete(enquiry._id);
+        }}>
           {t("Delete Request")}
         </button>
       </div>
 
       <AdminNotes enquiry={enquiry} onSave={onSave} saving={saving} t={t} language={language} />
+
+      {enquiry.quotation && (
+        <details className="request-history">
+          <summary>{t("Construction Quotation")} · {t(enquiry.quotation.status)}</summary>
+          <div className="request-visit-item">
+            {enquiry.quotation.reference && <p><strong>{t("Reference")}:</strong> {enquiry.quotation.reference}</p>}
+            <p><strong>{t("Estimated total")}:</strong> ₹{Number(enquiry.quotation.amount || 0).toLocaleString("en-IN")}</p>
+            <p>{t("Material cost")}: ₹{Number(enquiry.quotation.materialCost || 0).toLocaleString("en-IN")} · {t("Labour cost")}: ₹{Number(enquiry.quotation.labourCost || 0).toLocaleString("en-IN")} · {t("Additional charges")}: ₹{Number(enquiry.quotation.additionalCharges || 0).toLocaleString("en-IN")}</p>
+            {enquiry.quotation.description && <p>{enquiry.quotation.description}</p>}
+            {enquiry.quotation.details && <p>{enquiry.quotation.details}</p>}
+            {enquiry.quotation.quotedAt && <p>{t("Quotation date")}: {formatDate(enquiry.quotation.quotedAt, language)}</p>}
+            {enquiry.quotation.validUntil && <p>{t("Valid until")}: {formatDate(enquiry.quotation.validUntil, language)}</p>}
+          </div>
+        </details>
+      )}
 
       {requirementsOpen && (
         <div className="request-detail-panel">
@@ -609,11 +742,12 @@ function BuildRequestCard({
           </div>
           <label>{t("Construction or service description")}<textarea name="description" rows="2" maxLength="2000" defaultValue={enquiry.quotation?.description || ""} /></label>
           <div className="request-management-form-grid">
-            <label>{t("Material cost (₹)")}<input name="materialCost" type="number" min="0" step="0.01" defaultValue={enquiry.quotation?.materialCost ?? 0} /></label>
-            <label>{t("Labour cost (₹)")}<input name="labourCost" type="number" min="0" step="0.01" defaultValue={enquiry.quotation?.labourCost ?? 0} /></label>
-            <label>{t("Additional charges (₹)")}<input name="additionalCharges" type="number" min="0" step="0.01" defaultValue={enquiry.quotation?.additionalCharges ?? 0} /></label>
-            <label>{t("Estimated total cost (₹)")}<input name="amount" type="number" min="0" step="0.01" defaultValue={enquiry.quotation?.amount ?? ""} required /></label>
+            <label>{t("Material cost (₹)")}<input name="materialCost" type="number" min="0" step="0.01" defaultValue={enquiry.quotation?.materialCost ?? 0} onInput={updateQuotationTotal} /></label>
+            <label>{t("Labour cost (₹)")}<input name="labourCost" type="number" min="0" step="0.01" defaultValue={enquiry.quotation?.labourCost ?? 0} onInput={updateQuotationTotal} /></label>
+            <label>{t("Additional charges (₹)")}<input name="additionalCharges" type="number" min="0" step="0.01" defaultValue={enquiry.quotation?.additionalCharges ?? 0} onInput={updateQuotationTotal} /></label>
+            <label>{t("Estimated total cost (₹)")}<input name="amount" type="number" value={quotationTotal} readOnly required /></label>
           </div>
+          <p className="enquiry-management-meta">{t("Calculated estimate")}: ₹{quotationTotal.toLocaleString("en-IN")}</p>
           <label>{t("Quotation valid until")}<input name="validUntil" type="date" defaultValue={enquiry.quotation?.validUntil ? new Date(enquiry.quotation.validUntil).toISOString().slice(0, 10) : ""} /></label>
           <label>{t("Quotation details")}<textarea name="details" rows="3" maxLength="2000" defaultValue={enquiry.quotation?.details || ""} /></label>
           <label>{t("Quotation status")}
@@ -621,12 +755,12 @@ function BuildRequestCard({
               {["Draft", "Sent", "Accepted", "Rejected"].map((status) => <option value={status} key={status}>{t(status)}</option>)}
             </select>
           </label>
-          <button type="submit" className="enquiry-management-save" disabled={saving}>{t("Save Quotation")}</button>
+          <button type="submit" className="enquiry-management-save" disabled={saving}>{saving ? t("Saving...") : t("Save Quotation")}</button>
           {enquiry.quotation?.updatedAt && <p className="enquiry-management-meta">{t("Last updated")}: {formatDate(enquiry.quotation.updatedAt, language, true)}</p>}
         </form>
       )}
 
-      <form className="request-management-form" onSubmit={handleProgressSubmit}>
+      {progressOpen && <form className="request-management-form" onSubmit={handleProgressSubmit}>
         <h3>{t("Add Construction Progress Milestone")}</h3>
         <div className="request-management-form-grid">
           <label>{t("Milestone title")}<input name="milestone" type="text" maxLength="120" required /></label>
@@ -634,20 +768,26 @@ function BuildRequestCard({
           <label>{t("Start date")}<input name="startDate" type="date" /></label>
           <label>{t("Target completion date")}<input name="targetCompletionDate" type="date" /></label>
           <label>{t("Actual completion date")}<input name="actualCompletionDate" type="date" /></label>
-          <label>{t("Completion percentage")}<input name="progress" type="number" min="0" max="100" defaultValue="0" required /></label>
+          <label>{t("Completion percentage")}<input name="progress" type="number" min="0" max="100" value={progressValue} onChange={(event) => setProgressValue(Math.min(100, Math.max(0, Number(event.target.value))))} required /></label>
           <label>{t("Milestone status")}
             <select name="milestoneStatus" defaultValue="Planned">
               {["Planned", "In Progress", "Completed"].map((status) => <option value={status} key={status}>{t(status)}</option>)}
             </select>
           </label>
         </div>
+        {progressDateError && <p className="enquiry-form-error" role="alert">{progressDateError}</p>}
+        <div className="milestone-progress" role="progressbar" aria-label={t("Construction milestone progress")} aria-valuenow={progressValue} aria-valuemin="0" aria-valuemax="100">
+          <div className="milestone-progress-track"><span style={{ width: `${progressValue}%` }} /></div>
+          <strong>{progressValue}%</strong>
+        </div>
         <label>{t("Description")}<textarea name="description" rows="2" maxLength="1000" /></label>
         <label>{t("Remarks")}<textarea name="remarks" rows="2" maxLength="1000" /></label>
-        <button type="submit" className="enquiry-management-save" disabled={saving}>{t("Add Progress Milestone")}</button>
-      </form>
+        <button type="submit" className="enquiry-management-save" disabled={saving}>{saving ? t("Saving...") : t("Add Progress Milestone")}</button>
+      </form>}
 
       {(progress.length > 0 || enquiry.siteVisits?.length > 0) && (
-        <div className="request-history">
+        <details className="request-history">
+          <summary>{t("Visits and construction progress history")}</summary>
           <VisitHistory
             enquiry={enquiry}
             onSave={onSave}
@@ -671,7 +811,7 @@ function BuildRequestCard({
               {update.remarks && <p>{t("Remarks")}: {update.remarks}</p>}
             </div>
           ))}
-        </div>
+        </details>
       )}
     </article>
   );
@@ -692,6 +832,7 @@ function EnquiryManagement({
   const { t, language } = useLocale();
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("All");
+  const [sortOrder, setSortOrder] = useState("newest");
   const statuses = buildRequests ? BUILD_STATUSES : USER_STATUSES;
   const legacyStatuses = useMemo(
     () => [...new Set(
@@ -706,15 +847,46 @@ function EnquiryManagement({
   );
   const locale = language === "hi" ? "hi-IN" : language === "mr" ? "mr-IN" : "en-IN";
 
+  const matchingType = useMemo(
+    () => enquiries.filter((enquiry) => (
+      buildRequests ? isBuildLandRequest(enquiry) : isPropertyEnquiry(enquiry)
+    )),
+    [buildRequests, enquiries]
+  );
+  const summaryCards = useMemo(() => {
+    const count = (predicate) => matchingType.filter(predicate).length;
+    const pending = (enquiry) => ["Pending", "New"].includes(enquiry.status || "Pending");
+    const scheduledVisits = (enquiry) => enquiry.siteVisits?.some((visit) => visit.status === "Scheduled");
+    if (buildRequests) {
+      return [
+        { label: "Total Enquiries", value: matchingType.length, filter: "All" },
+        { label: "Pending Enquiries", value: count(pending), filter: "__pending__" },
+        { label: "Inspections Scheduled", value: count(scheduledVisits), filter: "__visits__" },
+        { label: "Quotations Sent", value: count((enquiry) => enquiry.quotation?.status === "Sent"), filter: "Quotation Sent" },
+        { label: "Active Construction Projects", value: count(isActiveConstructionRequest), filter: "__active__" },
+        { label: "Completed Requests", value: count((enquiry) => enquiry.status === "Completed"), filter: "Completed" },
+      ];
+    }
+    return [
+      { label: "Total Enquiries", value: matchingType.length, filter: "All" },
+      { label: "Pending Enquiries", value: count(pending), filter: "__pending__" },
+      { label: "Visits Scheduled", value: count(scheduledVisits), filter: "__visits__" },
+      { label: "Offers Sent", value: count((enquiry) => enquiry.propertyOffer?.status === "Sent"), filter: "Offer Made" },
+      { label: "Confirmed Bookings", value: count((enquiry) => enquiry.status === "Booking Confirmed"), filter: "Booking Confirmed" },
+    ];
+  }, [buildRequests, matchingType]);
+
   const records = useMemo(() => {
     const query = search.trim().toLowerCase();
-    return enquiries
-      .filter((enquiry) => (
-        buildRequests ? isBuildLandRequest(enquiry) : isPropertyEnquiry(enquiry)
-      ))
-      .filter((enquiry) => (
-        statusFilter === "All" || String(enquiry.status || "New") === statusFilter
-      ))
+    return matchingType
+      .filter((enquiry) => {
+        const status = String(enquiry.status || "Pending");
+        if (statusFilter === "All") return true;
+        if (statusFilter === "__pending__") return ["Pending", "New"].includes(status);
+        if (statusFilter === "__visits__") return enquiry.siteVisits?.some((visit) => visit.status === "Scheduled");
+        if (statusFilter === "__active__") return isActiveConstructionRequest(enquiry);
+        return status === statusFilter;
+      })
       .filter((enquiry) => {
         if (!query) return true;
         const details = getBuildDetails(enquiry);
@@ -726,11 +898,25 @@ function EnquiryManagement({
           enquiry.requestType,
           enquiry.propertyTitle,
           enquiry.propertyId?.title,
+          enquiry.propertyId?.location,
+          enquiry.propertyId?.property_type,
           enquiry.message,
           ...Object.values(details),
         ].some((value) => String(value || "").toLowerCase().includes(query));
+      })
+      .sort((a, b) => {
+        if (sortOrder === "oldest") return new Date(a.createdAt || 0) - new Date(b.createdAt || 0);
+        if (sortOrder === "updated") return new Date(b.updatedAt || b.createdAt || 0) - new Date(a.updatedAt || a.createdAt || 0);
+        if (sortOrder === "name") return String(a.name || "").localeCompare(String(b.name || ""), locale);
+        return new Date(b.createdAt || 0) - new Date(a.createdAt || 0);
       });
-  }, [buildRequests, enquiries, search, statusFilter]);
+  }, [locale, matchingType, search, sortOrder, statusFilter]);
+
+  const clearFilters = () => {
+    setSearch("");
+    setStatusFilter("All");
+    setSortOrder("newest");
+  };
 
   return (
     <div className="dashboard-content">
@@ -750,6 +936,21 @@ function EnquiryManagement({
       {error && <div className="admin-message error" role="alert">{t(error)}</div>}
       {notice && <div className="admin-message" role="status">{t(notice)}</div>}
 
+      <section className="enquiry-summary-grid" aria-label={t("Enquiry summary")}>
+        {summaryCards.map((card) => (
+          <button
+            type="button"
+            className={`enquiry-summary-card ${statusFilter === card.filter ? "active" : ""}`}
+            key={card.label}
+            aria-pressed={statusFilter === card.filter}
+            onClick={() => setStatusFilter(card.filter)}
+          >
+            <span>{t(card.label)}</span>
+            <strong>{card.value}</strong>
+          </button>
+        ))}
+      </section>
+
       <div className="request-list-toolbar">
         <input
           type="search"
@@ -760,10 +961,20 @@ function EnquiryManagement({
         />
         <select value={statusFilter} onChange={(event) => setStatusFilter(event.target.value)} aria-label={t("Filter by status")}>
           <option value="All">{t("All statuses")}</option>
+          <option value="__pending__">{t("Pending / New")}</option>
+          <option value="__visits__">{t("Scheduled visits")}</option>
+          {buildRequests && <option value="__active__">{t("Active Construction Projects")}</option>}
           {legacyStatuses.map((status) => <option value={status} key={status}>{t(status)}</option>)}
           {statuses.map((status) => <option value={status} key={status}>{t(status)}</option>)}
         </select>
-        <span>{records.length} {t(buildRequests ? "requests" : "enquiries")}</span>
+        <select value={sortOrder} onChange={(event) => setSortOrder(event.target.value)} aria-label={t("Sort enquiries")}>
+          <option value="newest">{t("Newest first")}</option>
+          <option value="oldest">{t("Oldest first")}</option>
+          <option value="updated">{t("Recently updated")}</option>
+          <option value="name">{t("Customer name")}</option>
+        </select>
+        <button type="button" className="clear-enquiry-filters" onClick={clearFilters}>{t("Clear Filters")}</button>
+        <span aria-live="polite">{records.length} {t(buildRequests ? "requests" : "enquiries")}</span>
       </div>
 
       {loading ? (

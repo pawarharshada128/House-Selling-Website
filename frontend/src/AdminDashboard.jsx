@@ -516,6 +516,7 @@ function AdminDashboard() {
       return;
     }
 
+    setSavingEnquiryId(id);
     try {
 
       const response = await authorizedFetch(
@@ -579,6 +580,8 @@ function AdminDashboard() {
           "Failed to update enquiry."
       );
 
+    } finally {
+      setSavingEnquiryId(null);
     }
 
   };
@@ -810,6 +813,11 @@ function AdminDashboard() {
             ? data.property
             : property
         )
+      );
+      setSelectedProperty((currentProperty) =>
+        currentProperty?._id === id
+          ? data.property
+          : currentProperty
       );
 
       await loadDashboard();
@@ -2696,6 +2704,9 @@ function AdminDashboard() {
             <option value="Sold">
               {t("Sold")}
             </option>
+            <option value="Rejected">
+              {t("Rejected")}
+            </option>
 
           </select>
 
@@ -3259,6 +3270,24 @@ function AdminDashboard() {
                 >
                   {t(selectedProperty.status || "Pending")}
                 </span>
+
+                <div className="admin-view-status-control">
+                  <label htmlFor="admin-view-property-status">{t("Update property status")}</label>
+                  <select
+                    id="admin-view-property-status"
+                    className="property-status-select"
+                    value={selectedProperty.status || "Pending"}
+                    disabled={updatingStatusId === selectedProperty._id}
+                    onChange={(event) => handleStatusChange(selectedProperty._id, event.target.value)}
+                  >
+                    {["Pending", "Available", "Sold", "Rejected"].map((status) => (
+                      <option value={status} key={status}>{t(status)}</option>
+                    ))}
+                  </select>
+                  {updatingStatusId === selectedProperty._id && (
+                    <span role="status">{t("Saving...")}</span>
+                  )}
+                </div>
 
 
                 <div className="admin-view-info-grid">

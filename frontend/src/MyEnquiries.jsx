@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useLocale } from "./LocaleContext";
+import { isBuildLandRequest } from "./enquiryUtils";
 import "./MyEnquiries.css";
 
 const API_URL = "https://house-selling-website.onrender.com/api";
@@ -25,7 +26,7 @@ const formatDate = (value, language, withTime = false) => {
 };
 
 const enquiryType = (enquiry) => {
-  if (enquiry.requestType === "BuildRequest") return "Construction Request";
+  if (isBuildLandRequest(enquiry)) return "Construction Request";
   if (enquiry.requestType === "PropertyBooking" || enquiry.propertyId) return "Property Enquiry";
   return "General Enquiry";
 };
@@ -238,7 +239,14 @@ function MyEnquiries() {
                           <li key={update._id || `${update.title}-${update.updateDate}`}>
                             <strong>{update.title}</strong>
                             <span>{formatDate(update.updateDate || update.createdAt, language)} · {t(update.status)} · {update.progress}%</span>
+                            <div className="my-enquiry-progress" role="progressbar" aria-valuenow={Math.min(100, Math.max(0, Number(update.progress || 0)))} aria-valuemin="0" aria-valuemax="100">
+                              <span style={{ width: `${Math.min(100, Math.max(0, Number(update.progress || 0)))}%` }} />
+                            </div>
+                            {update.startDate && <span>{t("Start date")}: {formatDate(update.startDate, language)}</span>}
+                            {update.targetCompletionDate && <span>{t("Target completion date")}: {formatDate(update.targetCompletionDate, language)}</span>}
+                            {update.actualCompletionDate && <span>{t("Actual completion date")}: {formatDate(update.actualCompletionDate, language)}</span>}
                             {update.description && <p>{update.description}</p>}
+                            {update.remarks && <p><strong>{t("Remarks")}:</strong> {update.remarks}</p>}
                           </li>
                         ))}
                     </ol>
