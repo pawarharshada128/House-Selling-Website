@@ -61,30 +61,26 @@ const buildReviewTitle = (enquiry) => {
 };
 
 const getRatingSummary = async () => {
-  const [summary = { count: 0, average: 0 }, grouped] = await Promise.all([
-    Review.aggregate([
-      { $match: { status: "Approved" } },
-      {
-        $group: {
-          _id: null,
-          count: { $sum: 1 },
-          average: { $avg: "$rating" },
-        },
-      },
-    ]),
-    Review.aggregate([
-      { $match: { status: "Approved" } },
-      { $group: { _id: "$rating", count: { $sum: 1 } } },
-    ]),
+  const grouped = await Review.aggregate([
+    { $match: { status: "Approved" } },
+    { $group: { _id: "$rating", count: { $sum: 1 } } },
   ]);
   const distribution = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 };
   grouped.forEach(({ _id, count }) => {
     distribution[_id] = count;
   });
+  const count = Object.values(distribution).reduce(
+    (total, ratingCount) => total + ratingCount,
+    0
+  );
+  const ratingTotal = Object.entries(distribution).reduce(
+    (total, [rating, ratingCount]) => total + Number(rating) * ratingCount,
+    0
+  );
 
   return {
-    average: Number(summary.average || 0),
-    count: summary.count,
+    average: count ? ratingTotal / count : 0,
+    count,
     distribution,
   };
 };
