@@ -181,6 +181,14 @@ function AdminNavbar({
           {t("User Enquiries")}
         </button>
 
+        <button
+          type="button"
+          className={activeMenu === "reviews" ? "admin-nav-active" : ""}
+          onClick={() => handleMenu("reviews")}
+        >
+          {t("Reviews")}
+        </button>
+
         {/* BUILD ON YOUR LAND REQUESTS */}
 
         <button

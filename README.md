@@ -31,6 +31,8 @@ The application also provides property images/videos and map-based location feat
 - View Property Location on Map
 - View Property Images
 - View Property Videos
+- View approved customer reviews, ratings, and rating distribution
+- Submit reviews for completed property bookings or construction requests
 - Responsive Design
 
  Admin Features
@@ -40,6 +42,7 @@ The application also provides property images/videos and map-based location feat
  - Manage User Enquiries separately from Build Requests
  - Contact customers, schedule property visits or land inspections, and manage property offers or construction quotations
  - Track construction milestones for Build Requests without showing construction progress on property enquiries
+ - Moderate customer reviews and manage pending, approved, and rejected submissions
  - Add New Property
 - Update Property
 - Delete Property
@@ -207,6 +210,14 @@ The frontend will normally run on:
 http://localhost:5173
 ```
 
+### Reviews: Local Testing and Deployment
+
+1. Start MongoDB, then run `npm install` and `npm run dev` from `backend/` with `MONGO_URI` and `JWT_SECRET` configured.
+2. From `frontend/`, run `npm install` and `npm run dev`. The frontend defaults to the current Render API URL; set `VITE_API_URL=http://localhost:5000/api` in a frontend `.env` file to test against a local backend.
+3. Sign in as a buyer with a customer-linked property booking or construction request that an admin has marked `Completed`. Submit a review from the home page; it should be pending and should not affect public ratings yet.
+4. Sign in as an admin, open **Reviews**, approve the pending review, and verify that it appears publicly and updates the average/count/distribution. Test reject, filters, search, and delete confirmation as well.
+5. For deployment, redeploy the backend on Render with its existing MongoDB and JWT environment variables. Deploy the frontend as usual; set `VITE_API_URL` to the Render API base (ending in `/api`) only if it differs from the current default. Ensure the backend CORS allowlist includes the deployed frontend origin.
+
 ---
 
  API Endpoints
@@ -240,6 +251,21 @@ http://localhost:5173
 | DELETE | `/api/enquiries/:id` | Delete an enquiry or request (admin only) |
 
 Build request submissions include structured land, house type/size, floor, bedroom, budget, design, and additional requirement fields. Existing message-only build requests continue to display using their saved message text.
+
+### Reviews and Ratings
+
+| Method | Endpoint | Access | Description |
+|---|---|---|---|
+| GET | `/api/reviews?sort=newest&page=1&limit=6` | Public | Paginated approved reviews and rating summary; sort supports `newest`, `oldest`, `highest`, and `lowest` |
+| GET | `/api/reviews/summary` | Public | Approved-review average, count, and 1–5 star distribution |
+| GET | `/api/reviews/eligible` | Buyer | Completed customer-linked booking/construction records not yet reviewed |
+| GET | `/api/reviews/mine` | Buyer | Current buyer's reviews and moderation states |
+| POST | `/api/reviews` | Buyer | Submit a pending review using `enquiryId`, `rating`, `title`, and `description` |
+| GET | `/api/reviews/admin?status=Pending&rating=5&search=name&page=1&limit=15` | Admin | Filter/search all review submissions |
+| PATCH | `/api/reviews/:id/status` | Admin | Approve or reject a pending review (`{ "status": "Approved" }` or `"Rejected"`) |
+| DELETE | `/api/reviews/:id` | Admin | Permanently delete a review |
+
+Eligibility is derived on the server from the signed-in buyer's own `Enquiry` record with status `Completed` and type `PropertyBooking` or `BuildRequest`. The submission endpoint derives the verified flag itself and enforces one review per completed enquiry. Reviews remain pending until admin approval; only approved reviews affect public ratings or display.
 
 ### Wishlist
 
@@ -293,6 +319,7 @@ Users
 Properties
 Wishlists
 Enquiries (including booking and construction-request management)
+Reviews (customer-linked completed enquiry, rating, and moderation status)
 ```
 
 Property information includes:
@@ -340,7 +367,6 @@ The following features can be added in future versions:
 - Notifications
 - Property Offers
 - Property Comparison
-- Reviews and Ratings
 - Advanced Sorting
 - Property Analytics
 - Online Payment Integration
@@ -420,4 +446,3 @@ This project was developed as a **Full-Stack Web Development project** using mod
 - Admin dashboard
 - Map integration
 - Git/GitHub project management
-

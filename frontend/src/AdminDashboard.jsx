@@ -11,6 +11,8 @@ import PropertyForm from "./PropertyForm";
 import ProjectForm from "./ProjectForm";
 import AdminNavbar from "./AdminNavbar";
 import CustomerRequestManagement from "./EnquiryManagement";
+import AdminReviewManagement from "./AdminReviewManagement";
+import { API_URL, SERVER_URL } from "./apiConfig";
 import { isBuildLandRequest } from "./enquiryUtils";
 import { useLocale } from "./LocaleContext";
 
@@ -20,12 +22,6 @@ import "./AdminDashboard.css";
 /* =====================================================
    API
 ===================================================== */
-
-const API_URL =
-  "https://house-selling-website.onrender.com/api";
-
-const SERVER_URL =
-  "https://house-selling-website.onrender.com";
 
 const getEnquiryReplyDetails = (enquiry, t) => {
   const isBuildRequest = isBuildLandRequest(enquiry);
@@ -1308,7 +1304,7 @@ function AdminDashboard() {
             </button>
 
 
-            <button
+            {/* <button
               className="quick-card"
               onClick={() =>
                 setShowProjectModal(
@@ -1323,7 +1319,7 @@ function AdminDashboard() {
               <small>
                 {t("Add a construction project")}
               </small>
-            </button>
+            </button> */}
 
 
             <button
@@ -3103,6 +3099,10 @@ function AdminDashboard() {
             onSave={saveEnquiryManagement}
             onStatusChange={updateEnquiryStatus}
           />
+        )}
+
+        {activeMenu === "reviews" && (
+          <AdminReviewManagement />
         )}
 
       </main>

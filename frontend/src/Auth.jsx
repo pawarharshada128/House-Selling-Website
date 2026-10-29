@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import "./App.css";
 import { useLocale } from "./LocaleContext";
+import { API_URL } from "./apiConfig";
 
 function Auth({ onLogin, initialMode = "login" }) {
   const { t } = useLocale();
@@ -41,7 +42,7 @@ function Auth({ onLogin, initialMode = "login" }) {
 
     try {
       const response = await fetch(
-        "https://house-selling-website.onrender.com/api/auth/login",
+        `${API_URL}/auth/login`,
         {
           method: "POST",
           headers: {
@@ -161,7 +162,7 @@ function Auth({ onLogin, initialMode = "login" }) {
 
     try {
       const response = await fetch(
-        "https://house-selling-website.onrender.com/api/auth/register",
+        `${API_URL}/auth/register`,
         {
           method: "POST",
           headers: {

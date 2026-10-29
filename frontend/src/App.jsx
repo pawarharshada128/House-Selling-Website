@@ -2,11 +2,9 @@
 import { useEffect, useRef, useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useLocale } from "./LocaleContext";
+import { API_URL, SERVER_URL } from "./apiConfig";
+import ReviewsSection from "./ReviewsSection";
 import "./App.css";
-
-// const API_URL = "http://localhost:5000/api";
-const API_URL = "https://house-selling-website.onrender.com/api";
-const SERVER_URL = "https://house-selling-website.onrender.com";
 
 function App() {
   return <HomePage />;
@@ -1524,6 +1522,8 @@ function HomePage() {
         </div>
 
       </section>
+
+      <ReviewsSection />
 
     </div>
   );
