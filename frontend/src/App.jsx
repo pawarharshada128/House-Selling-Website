@@ -25,18 +25,49 @@ function HomePage() {
       return undefined;
     }
 
-    const frameId = window.requestAnimationFrame(() => {
-      document.getElementById(sectionId)?.scrollIntoView({
-        behavior: "smooth",
-        block: "start",
-      });
+    let frameId = 0;
+    let attempts = 0;
+    const scrollWhenReady = () => {
+      const section = document.getElementById(sectionId);
+      if (section) {
+        navigate(location.pathname, {
+          replace: true,
+          state: null,
+          preventScrollReset: true,
+        });
+        window.requestAnimationFrame(() => {
+          window.requestAnimationFrame(() => {
+            const target = document.getElementById(sectionId);
+            if (!target) return;
+            const navHeight =
+              document.querySelector(".navbar")?.getBoundingClientRect().height || 0;
+            const top =
+              window.scrollY +
+              target.getBoundingClientRect().top -
+              navHeight -
+              8;
+            window.scrollTo({
+              top: Math.max(0, top),
+              behavior: "instant",
+            });
+          });
+        });
+        return;
+      }
 
-      navigate(location.pathname, {
-        replace: true,
-        state: null,
-      });
-    });
+      attempts += 1;
+      if (attempts < 10) {
+        frameId = window.requestAnimationFrame(scrollWhenReady);
+      } else {
+        navigate(location.pathname, {
+          replace: true,
+          state: null,
+          preventScrollReset: true,
+        });
+      }
+    };
 
+    frameId = window.requestAnimationFrame(scrollWhenReady);
     return () => window.cancelAnimationFrame(frameId);
   }, [location.pathname, location.state, navigate]);
 
