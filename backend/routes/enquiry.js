@@ -581,6 +581,12 @@ router.put(
         });
       }
 
+      if (updates.status === "Booking Confirmed") {
+        return res.status(409).json({
+          message: "Confirm this enquiry through its eligible booking.",
+        });
+      }
+
       if (
         updates.statusRemark !== undefined &&
         (typeof updates.statusRemark !== "string" || updates.statusRemark.length > 1000)

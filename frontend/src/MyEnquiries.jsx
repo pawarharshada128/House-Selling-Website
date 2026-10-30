@@ -595,6 +595,15 @@ function MyEnquiries() {
               );
               const offer = enquiry.propertyOffer;
               const booking = bookingsByEnquiry[String(enquiry._id)];
+              const verifiedAmount = booking?.payments?.reduce(
+                (total, payment) => payment.verificationStatus === "Verified"
+                  ? total + Number(payment.amount || 0)
+                  : total,
+                0
+              ) || 0;
+              const bookingBalance = booking
+                ? Math.max(0, Number(booking.agreedAmount || 0) - verifiedAmount)
+                : 0;
               const quotation = enquiry.quotation;
               const visibleOffer = offer && offer.status !== "Draft";
               const visibleQuotation = quotation && quotation.status !== "Draft";
@@ -827,7 +836,8 @@ function MyEnquiries() {
                             <p><strong>{t("Booking reference")}:</strong> {booking.bookingReference}</p>
                             <p><strong>{t("Booking status")}:</strong> {t(booking.bookingStatus)}</p>
                             <p><strong>{t("Agreed amount")}:</strong> {formatCurrency(booking.agreedAmount)}</p>
-                            <p><strong>{t("Verified payments")}:</strong> {formatCurrency(booking.verifiedAmount)}</p>
+                            <p><strong>{t("Total verified amount paid")}:</strong> {formatCurrency(verifiedAmount)}</p>
+                            <p><strong>{t("Remaining balance")}:</strong> {formatCurrency(bookingBalance)}</p>
                             {formatDate(booking.confirmedAt, language) && (
                               <p><strong>{t("Confirmed")}:</strong> {formatDate(booking.confirmedAt, language)}</p>
                             )}
@@ -836,7 +846,7 @@ function MyEnquiries() {
                                 <strong>{t("Payment history")}</strong>
                                 {booking.payments.map((payment) => (
                                   <p key={payment._id}>
-                                    {formatCurrency(payment.amount)} · {t(payment.paymentMethod)} ·{" "}
+                                    {formatDate(payment.paymentDate, language)} · {formatCurrency(payment.amount)} · {t(payment.paymentMethod)} ·{" "}
                                     {t(payment.verificationStatus)}
                                     {payment.transactionReference ? ` · ${payment.transactionReference}` : ""}
                                   </p>

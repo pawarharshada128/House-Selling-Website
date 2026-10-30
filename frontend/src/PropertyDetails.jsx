@@ -15,17 +15,9 @@ import markerIcon2x from "leaflet/dist/images/marker-icon-2x.png";
 import markerIcon from "leaflet/dist/images/marker-icon.png";
 import markerShadow from "leaflet/dist/images/marker-shadow.png";
 import { useLocale } from "./LocaleContext";
+import { API_URL, SERVER_URL } from "./apiConfig";
 
 import "./App.css";
-
-// ==============================
-// API URL
-// ==============================
-
-// const API_URL = "http://localhost:5000/api";
-// const SERVER_URL = "http://localhost:5000";
-const API_URL = "https://house-selling-website.onrender.com/api";
-const SERVER_URL = "https://house-selling-website.onrender.com";
 // ==============================
 // LEAFLET MARKER ICON FIX
 // ==============================

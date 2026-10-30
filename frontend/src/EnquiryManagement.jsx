@@ -1,6 +1,7 @@
 import React, { useMemo, useState } from "react";
 import { useLocale } from "./LocaleContext";
 import { isBuildLandRequest, isPropertyEnquiry } from "./enquiryUtils";
+import { SERVER_URL } from "./apiConfig";
 
 const USER_STATUSES = [
   "Pending",
@@ -13,7 +14,6 @@ const USER_STATUSES = [
   "Offer Rejected",
   "Quotation Sent",
   "Booking in Progress",
-  "Booking Confirmed",
   "Rejected",
   "In Progress",
   "Completed",
@@ -113,8 +113,7 @@ const toISOStringFromLocal = (value) => {
 const getImageUrl = (image) => {
   if (!image) return "";
   if (/^https?:\/\//i.test(image)) return image;
-  const baseUrl = "https://house-selling-website.onrender.com";
-  return `${baseUrl}${image.startsWith("/") ? "" : "/"}${image}`;
+  return `${SERVER_URL}${image.startsWith("/") ? "" : "/"}${image}`;
 };
 
 function ContactActions({ enquiry, isBuildRequest, t }) {

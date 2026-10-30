@@ -3080,6 +3080,7 @@ function AdminDashboard() {
 
         {activeMenu === "bookings" && (
           <BookingManagement
+            properties={properties}
             onBookingUpdated={loadDashboard}
           />
         )}

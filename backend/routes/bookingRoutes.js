@@ -32,7 +32,7 @@ const populateAdminBooking = (query) =>
   query
     .populate("property", "title location price image images status")
     .populate("buyer", "name email phone")
-    .populate("enquiry", "name email phone propertyTitle status");
+    .populate("enquiry", "name email phone propertyTitle status propertyOffer");
 
 // Admins can view every booking and its complete payment audit history.
 router.get("/", authMiddleware, adminMiddleware, async (req, res) => {
@@ -652,6 +652,116 @@ router.post(
       });
     } catch (error) {
       sendRouteError(res, error, "Failed to confirm booking.");
+    } finally {
+      await session?.endSession();
+    }
+  }
+);
+
+router.post(
+  "/:id/cancel",
+  authMiddleware,
+  adminMiddleware,
+  async (req, res) => {
+    let session;
+    try {
+      requireObjectId(req.params.id, "booking ID");
+      session = await mongoose.startSession();
+      let cancelledBookingId;
+      await session.withTransaction(async () => {
+        const booking = await Booking.findById(req.params.id).session(session);
+        if (!booking) {
+          const error = new Error("Booking not found.");
+          error.statusCode = 404;
+          throw error;
+        }
+        if (["Confirmed", "Completed", "Cancelled"].includes(booking.bookingStatus)) {
+          const error = new Error(
+            "Only active, unconfirmed bookings can be cancelled."
+          );
+          error.statusCode = 409;
+          throw error;
+        }
+
+        const otherActiveBooking = await Booking.exists({
+          property: booking.property,
+          _id: { $ne: booking._id },
+          bookingStatus: { $ne: "Cancelled" },
+        }).session(session);
+        if (otherActiveBooking) {
+          const error = new Error(
+            "Another active booking exists for this property; it cannot be released."
+          );
+          error.statusCode = 409;
+          throw error;
+        }
+
+        const property = await Property.findOneAndUpdate(
+          {
+            _id: booking.property,
+            status: "Reserved",
+            reservedBooking: booking._id,
+          },
+          { $set: { status: "Available", reservedBooking: null } },
+          { new: true, session }
+        );
+        if (!property) {
+          const error = new Error(
+            "The property is not reserved by this booking; cancellation was not applied."
+          );
+          error.statusCode = 409;
+          throw error;
+        }
+
+        const bookingUpdate = await Booking.updateOne(
+          { _id: booking._id, bookingStatus: booking.bookingStatus },
+          { $set: { bookingStatus: "Cancelled" } },
+          { session }
+        );
+        if (!bookingUpdate.modifiedCount) {
+          const error = new Error("Booking status changed; try again.");
+          error.statusCode = 409;
+          throw error;
+        }
+
+        const enquiry = await Enquiry.findOne({
+          _id: booking.enquiry,
+          bookingId: booking._id,
+        }).session(session);
+        if (!enquiry) {
+          const error = new Error("The booking's enquiry link could not be verified.");
+          error.statusCode = 409;
+          throw error;
+        }
+        const previousStatus = enquiry.status;
+        enquiry.status = "Cancelled";
+        enquiry.statusHistory.push({
+          previousStatus,
+          status: "Cancelled",
+          changedBy: req.user.id,
+          remarks: "Booking cancelled by an administrator.",
+        });
+        await enquiry.save({ session });
+        cancelledBookingId = booking._id;
+      });
+
+      const booking = await populateAdminBooking(
+        Booking.findById(cancelledBookingId)
+      );
+      const payments = await Payment.find({ booking: cancelledBookingId })
+        .populate("verifiedBy", "name email")
+        .sort({ paymentDate: -1 });
+      res.json({
+        message: "Booking cancelled and its property reservation released.",
+        booking: { ...booking.toObject(), payments },
+      });
+    } catch (error) {
+      if (/Transaction numbers are only allowed|replica set|mongos|does not support transactions/i
+        .test(error.message || "")) {
+        error.statusCode = 503;
+        error.message = "Safe booking cancellation requires MongoDB transaction support.";
+      }
+      sendRouteError(res, error, "Failed to cancel booking.");
     } finally {
       await session?.endSession();
     }

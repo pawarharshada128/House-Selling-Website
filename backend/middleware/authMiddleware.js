@@ -20,10 +20,13 @@ const authMiddleware = (req, res, next) => {
       });
     }
 
-    const decoded = jwt.verify(
-      token,
-      process.env.JWT_SECRET || "house-selling-secret"
-    );
+    if (!process.env.JWT_SECRET) {
+      return res.status(500).json({
+        message: "Authentication is not configured.",
+      });
+    }
+
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
 
     req.user = decoded;
 

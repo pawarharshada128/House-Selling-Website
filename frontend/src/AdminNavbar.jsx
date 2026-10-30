@@ -171,13 +171,13 @@ function AdminNavbar({
           {t("User Enquiries")}
         </button>
 
-        <button
+        {/* <button
           type="button"
           className={activeMenu === "bookings" ? "admin-nav-active" : ""}
           onClick={() => handleMenu("bookings")}
         >
           {t("Bookings & Payments")}
-        </button>
+        </button> */}
 
         <button
           type="button"

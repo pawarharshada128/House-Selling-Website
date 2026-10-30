@@ -1,10 +1,6 @@
 import React, { useState } from "react";
 import { useLocale } from "./LocaleContext";
-
-// const API_URL = "http://localhost:5000/api";
-// const SERVER_URL = "http://localhost:5000";
-const API_URL = "https://house-selling-website.onrender.com/api";
-const SERVER_URL = "https://house-selling-website.onrender.com";
+import { API_URL, SERVER_URL } from "./apiConfig";
 function PropertyForm({ property, onClose, onSuccess }) {
   const { t } = useLocale();
   const isEditing = Boolean(property);

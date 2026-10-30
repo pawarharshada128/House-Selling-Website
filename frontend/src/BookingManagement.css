@@ -149,6 +149,16 @@
   background: #8a2c27;
 }
 
+.booking-confirm-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.booking-management .booking-cancel-button {
+  background: #8a2c27;
+}
+
 .booking-payment-form {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -202,6 +212,381 @@
   color: #75655d;
 }
 
+.cancelled-booking-history {
+  margin-top: 24px;
+  border-top: 1px solid #e8ded6;
+  padding-top: 16px;
+}
+
+.cancelled-booking-history > summary,
+.cancelled-booking-list details > summary {
+  width: fit-content;
+  color: #684d17;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.cancelled-booking-list {
+  display: grid;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.cancelled-booking-list > article {
+  display: grid;
+  gap: 12px;
+  padding: 14px 0;
+  border-bottom: 1px solid #eee6e0;
+}
+
+.cancelled-booking-list > article > div {
+  display: grid;
+  gap: 4px;
+}
+
+.cancelled-booking-list > article span,
+.cancelled-booking-list > article p {
+  color: #75655d;
+  font-size: 0.86rem;
+  overflow-wrap: anywhere;
+}
+
+.cancelled-booking-list details p {
+  margin-top: 8px;
+}
+
+.booking-section-header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  margin: 24px 0 12px;
+  color: #30221e;
+}
+
+.booking-section-header > span {
+  color: #75655d;
+  font-size: 0.85rem;
+}
+
+.payment-verification-list {
+  display: grid;
+  gap: 8px;
+}
+
+.payment-verification-item {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  align-items: center;
+  gap: 16px;
+  padding: 14px 16px;
+  border: 1px solid #e8ded6;
+  border-radius: 8px;
+  background: #fff;
+}
+
+.payment-verification-item > div:first-child {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+
+.payment-verification-item > div:first-child span {
+  color: #75655d;
+  font-size: 0.85rem;
+  overflow-wrap: anywhere;
+}
+
+.payment-verification-item > strong {
+  color: #47211a;
+  white-space: nowrap;
+}
+
+.active-bookings-heading {
+  margin-top: 30px;
+}
+
+.sold-records {
+  margin: 30px 0 42px;
+  padding-top: 24px;
+  border-top: 1px solid #e8ded6;
+}
+
+.sold-records-header {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 18px;
+}
+
+.sold-records-header > div > span {
+  color: #8b6510;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+}
+
+.sold-records-header h2 {
+  margin-top: 5px;
+  color: #30221e;
+  font-size: 1.55rem;
+}
+
+.sold-records-header > p {
+  color: #75655d;
+}
+
+.sold-summary-cards {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+  margin-bottom: 18px;
+}
+
+.sold-summary-cards article {
+  display: grid;
+  gap: 8px;
+  min-width: 0;
+  padding: 16px;
+  border: 1px solid #e8dccb;
+  border-radius: 8px;
+  background: #fbf8f2;
+}
+
+.sold-summary-cards span,
+.sold-payment-summary span {
+  color: #75655d;
+  font-size: 0.82rem;
+}
+
+.sold-summary-cards strong {
+  color: #47211a;
+  font-size: 1.15rem;
+  overflow-wrap: anywhere;
+}
+
+.sold-record-filters {
+  display: grid;
+  grid-template-columns: minmax(230px, 2fr) repeat(4, minmax(130px, 1fr));
+  gap: 10px;
+  margin: 18px 0;
+  padding: 14px;
+  border: 1px solid #e8ded6;
+  border-radius: 8px;
+  background: #faf8f6;
+}
+
+.sold-record-filters label {
+  display: grid;
+  align-content: end;
+  gap: 6px;
+  min-width: 0;
+  color: #5e4b43;
+  font-size: 0.78rem;
+  font-weight: 600;
+}
+
+.sold-record-filters input,
+.sold-record-filters select {
+  width: 100%;
+  min-width: 0;
+  min-height: 40px;
+  padding: 8px 10px;
+  border: 1px solid #d8ccc3;
+  border-radius: 6px;
+  background: #fff;
+  color: #30221e;
+  font: inherit;
+}
+
+.sold-record-list {
+  display: grid;
+  gap: 14px;
+}
+
+.sold-record-card {
+  min-width: 0;
+  padding: 18px;
+  border: 1px solid #e8ded6;
+  border-radius: 8px;
+  background: #fff;
+}
+
+.sold-record-property {
+  display: grid;
+  grid-template-columns: 132px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 16px;
+}
+
+.sold-record-property > img,
+.sold-record-image-placeholder {
+  width: 132px;
+  height: 96px;
+  border-radius: 6px;
+  object-fit: cover;
+  background: #f1e9dd;
+}
+
+.sold-record-image-placeholder {
+  display: grid;
+  place-items: center;
+  color: #75655d;
+  font-size: 0.8rem;
+}
+
+.sold-record-property h3 {
+  margin: 4px 0;
+  color: #30221e;
+  font-size: 1.15rem;
+}
+
+.sold-record-property p {
+  color: #75655d;
+}
+
+.sold-payment-status {
+  display: inline-flex;
+  align-items: center;
+  width: fit-content;
+  padding: 5px 9px;
+  border-radius: 5px;
+  background: #f3eadc;
+  color: #684d17;
+  font-size: 0.78rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.sold-payment-status-fully-paid,
+.sold-payment-status-verified {
+  background: #e1f3e5;
+  color: #216333;
+}
+
+.sold-payment-status-partially-paid,
+.sold-payment-status-pending {
+  background: #fff2d6;
+  color: #76530b;
+}
+
+.sold-payment-status-rejected {
+  background: #fde7e5;
+  color: #8a2c27;
+}
+
+.sold-record-details {
+  display: grid;
+  grid-template-columns: minmax(0, 1.5fr) minmax(250px, 1fr);
+  gap: 20px;
+  margin-top: 18px;
+  padding: 16px 0;
+  border-top: 1px solid #eee6e0;
+  border-bottom: 1px solid #eee6e0;
+}
+
+.sold-record-details dl {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.sold-record-details dl > div {
+  min-width: 0;
+}
+
+.sold-record-details dt {
+  margin-bottom: 4px;
+  color: #75655d;
+  font-size: 0.76rem;
+}
+
+.sold-record-details dd {
+  color: #30221e;
+  font-size: 0.9rem;
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
+.sold-payment-summary {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.sold-payment-summary > div {
+  display: grid;
+  align-content: start;
+  gap: 5px;
+  min-width: 0;
+}
+
+.sold-payment-summary strong {
+  color: #47211a;
+  font-size: 0.98rem;
+  overflow-wrap: anywhere;
+}
+
+.sold-payment-summary .sold-progress {
+  grid-column: 1 / -1;
+}
+
+.sold-progress > div {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.sold-progress progress {
+  width: 100%;
+  height: 8px;
+  accent-color: #b28a2e;
+}
+
+.sold-payment-history {
+  margin-top: 14px;
+}
+
+.sold-payment-history summary {
+  width: fit-content;
+  color: #684d17;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.sold-payment-table-wrap {
+  width: 100%;
+  margin-top: 12px;
+  overflow-x: auto;
+}
+
+.sold-payment-table-wrap table {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: left;
+}
+
+.sold-payment-table-wrap th,
+.sold-payment-table-wrap td {
+  padding: 11px 12px;
+  border-bottom: 1px solid #eee6e0;
+  vertical-align: middle;
+  font-size: 0.86rem;
+}
+
+.sold-payment-table-wrap th {
+  background: #faf8f6;
+  color: #5e4b43;
+  font-size: 0.78rem;
+  white-space: nowrap;
+}
+
+.sold-payment-table-wrap td {
+  color: #30221e;
+  overflow-wrap: anywhere;
+}
+
 @media (max-width: 700px) {
   .booking-management {
     padding: 22px 14px 44px;
@@ -224,5 +609,76 @@
 
   .booking-payment-actions {
     width: 100%;
+  }
+
+  .booking-confirm-actions {
+    width: 100%;
+  }
+
+  .booking-confirm-actions button {
+    flex: 1 1 auto;
+  }
+
+  .payment-verification-item {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+
+  .payment-verification-item .booking-payment-actions {
+    grid-column: 1 / -1;
+  }
+
+  .sold-records-header {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .sold-summary-cards {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .sold-record-filters {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .sold-record-filters .sold-search-filter {
+    grid-column: 1 / -1;
+  }
+
+  .sold-record-property {
+    grid-template-columns: 92px minmax(0, 1fr);
+    gap: 12px;
+  }
+
+  .sold-record-property > img,
+  .sold-record-image-placeholder {
+    width: 92px;
+    height: 76px;
+  }
+
+  .sold-record-property > .sold-payment-status {
+    grid-column: 2;
+  }
+
+  .sold-record-details {
+    grid-template-columns: 1fr;
+  }
+
+  .sold-record-details dl {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .sold-payment-summary {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 420px) {
+  .sold-summary-cards,
+  .sold-record-filters {
+    grid-template-columns: 1fr;
+  }
+
+  .sold-record-filters .sold-search-filter {
+    grid-column: auto;
   }
 }

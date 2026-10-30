@@ -2,10 +2,7 @@ import "./App.css";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useRef, useState } from "react";
 import { useLocale } from "./LocaleContext";
-
-// const API_URL = "http://localhost:5000/api";
-const API_URL = "https://house-selling-website.onrender.com/api";
-// const SERVER_URL = "https://house-selling-website.onrender.com";
+import { API_URL } from "./apiConfig";
 function Contact() {
   const location = useLocation();
   const navigate = useNavigate();
