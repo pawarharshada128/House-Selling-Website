@@ -8,9 +8,9 @@ import React, {
 import { useNavigate } from "react-router-dom";
 
 import PropertyForm from "./PropertyForm";
-import ProjectForm from "./ProjectForm";
 import AdminNavbar from "./AdminNavbar";
 import CustomerRequestManagement from "./EnquiryManagement";
+import BookingManagement from "./BookingManagement";
 import AdminReviewManagement from "./AdminReviewManagement";
 import { API_URL, SERVER_URL } from "./apiConfig";
 import { isBuildLandRequest } from "./enquiryUtils";
@@ -83,9 +83,6 @@ function AdminDashboard() {
     useState("dashboard");
 
   const [showPropertyModal, setShowPropertyModal] =
-    useState(false);
-
-  const [showProjectModal, setShowProjectModal] =
     useState(false);
 
   const [selectedProperty, setSelectedProperty] =
@@ -322,8 +319,13 @@ function AdminDashboard() {
 
       setLoading(true);
 
-      const response = await fetch(
-        `${API_URL}/properties`
+      const response = await authorizedFetch(
+        `${API_URL}/properties`,
+        {
+          headers: {
+            Authorization: `Bearer ${token || ""}`,
+          },
+        }
       );
 
       if (!response.ok) {
@@ -618,6 +620,33 @@ function AdminDashboard() {
     }
   };
 
+  const initiateBooking = async (enquiryId) => {
+    setSavingEnquiryId(enquiryId);
+    try {
+      const response = await authorizedFetch(
+        `${API_URL}/bookings/from-enquiry/${enquiryId}`,
+        {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${token || ""}`,
+          },
+        }
+      );
+      const data = await response.json();
+      if (!response.ok) {
+        throw new Error(data.message || "Failed to initiate booking.");
+      }
+      showMessage(data.message || "Booking initiated successfully.");
+      setActiveMenu("bookings");
+      await Promise.all([loadEnquiries(), loadDashboard()]);
+    } catch (error) {
+      console.error("Initiate booking error:", error);
+      showMessage(error.message || "Failed to initiate booking.");
+    } finally {
+      setSavingEnquiryId(null);
+    }
+  };
+
 
   /* =====================================================
      FILTER ENQUIRIES
@@ -899,22 +928,6 @@ function AdminDashboard() {
         wasEditing
           ? "Property updated successfully."
           : "Property added successfully."
-      );
-
-    };
-
-
-  /* =====================================================
-     PROJECT SUCCESS
-  ===================================================== */
-
-  const handleProjectSuccess =
-    () => {
-
-      setShowProjectModal(false);
-
-      showMessage(
-        "Project added successfully."
       );
 
     };
@@ -1304,24 +1317,6 @@ function AdminDashboard() {
             </button>
 
 
-            {/* <button
-              className="quick-card"
-              onClick={() =>
-                setShowProjectModal(
-                  true
-                )
-              }
-            >
-              <strong>
-                {t("New Project")}
-              </strong>
-
-              <small>
-                {t("Add a construction project")}
-              </small>
-            </button> */}
-
-
             <button
               className="quick-card"
               onClick={() =>
@@ -1708,24 +1703,6 @@ function AdminDashboard() {
 
               <small>
                 {t("Add a new property")}
-              </small>
-            </button>
-
-
-            <button
-              className="quick-card"
-              onClick={() =>
-                setShowProjectModal(
-                  true
-                )
-              }
-            >
-              <strong>
-                {t("New Project")}
-              </strong>
-
-              <small>
-                {t("Add construction project")}
               </small>
             </button>
 
@@ -3047,9 +3024,6 @@ function AdminDashboard() {
         onAddProperty={
           openAddProperty
         }
-        onAddProject={() =>
-          setShowProjectModal(true)
-        }
       />
 
 
@@ -3083,6 +3057,8 @@ function AdminDashboard() {
             onDelete={handleDeleteEnquiry}
             onSave={saveEnquiryManagement}
             onStatusChange={updateEnquiryStatus}
+            onInitiateBooking={initiateBooking}
+            onSelectType={setActiveMenu}
           />
         )}
 
@@ -3098,6 +3074,13 @@ function AdminDashboard() {
             onDelete={handleDeleteEnquiry}
             onSave={saveEnquiryManagement}
             onStatusChange={updateEnquiryStatus}
+            onSelectType={setActiveMenu}
+          />
+        )}
+
+        {activeMenu === "bookings" && (
+          <BookingManagement
+            onBookingUpdated={loadDashboard}
           />
         )}
 
@@ -3125,27 +3108,6 @@ function AdminDashboard() {
 
           onSuccess={
             handlePropertySuccess
-          }
-        />
-
-      )}
-
-
-      {/* =================================================
-          PROJECT MODAL
-      ================================================= */}
-
-      {showProjectModal && (
-
-        <ProjectForm
-          onClose={() =>
-            setShowProjectModal(
-              false
-            )
-          }
-
-          onSuccess={
-            handleProjectSuccess
           }
         />
 
@@ -3277,10 +3239,14 @@ function AdminDashboard() {
                     id="admin-view-property-status"
                     className="property-status-select"
                     value={selectedProperty.status || "Pending"}
-                    disabled={updatingStatusId === selectedProperty._id}
+                    disabled={
+                      updatingStatusId === selectedProperty._id ||
+                      Boolean(selectedProperty.reservedBooking) ||
+                      selectedProperty.status === "Reserved"
+                    }
                     onChange={(event) => handleStatusChange(selectedProperty._id, event.target.value)}
                   >
-                    {["Pending", "Available", "Sold", "Rejected"].map((status) => (
+                    {["Pending", "Available", "Reserved", "Sold", "Rejected"].map((status) => (
                       <option value={status} key={status}>{t(status)}</option>
                     ))}
                   </select>

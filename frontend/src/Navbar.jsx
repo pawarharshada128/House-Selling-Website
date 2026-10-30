@@ -185,7 +185,7 @@ function Navbar() {
           className="navbar-logo-image"
         />
 
-        <span>{t("Shree Krishna Builders")}</span>
+        <span>{t("Shree Krishna Constructions")}</span>
       </div>
 
       {/* MOBILE MENU BUTTON */}

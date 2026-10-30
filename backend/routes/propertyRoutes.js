@@ -35,24 +35,50 @@ const adminMiddleware = require("../middleware/adminMiddleware");
 //     });
 //   }
 // });
-router.get("/", async (req, res) => {
+const sendProperties = async (req, res, includeAll) => {
   try {
-    const properties = await Property.find({})
-      .sort({ createdAt: -1 });
-
-    console.log("Properties fetched from MongoDB:", properties.length);
-
+    const properties = await Property.find(
+      includeAll ? {} : { status: "Available" }
+    ).sort({ createdAt: -1 });
     res.status(200).json(properties);
-
   } catch (error) {
     console.error("GET PROPERTIES ERROR:", error);
-
     res.status(500).json({
       message: "Failed to fetch properties",
-      error: error.message
+      error: error.message,
     });
   }
+};
+
+router.get("/", (req, res) => {
+  if (!req.headers.authorization) {
+    return sendProperties(req, res, false);
+  }
+
+  return authMiddleware(req, res, () => {
+    if (req.user.role !== "admin") {
+      return sendProperties(req, res, false);
+    }
+
+    return adminMiddleware(req, res, () => sendProperties(req, res, true));
+  });
 });
+
+router.get(
+  "/admin/all",
+  authMiddleware,
+  adminMiddleware,
+  async (req, res) => {
+    try {
+      const properties = await Property.find({})
+        .sort({ createdAt: -1 });
+      res.status(200).json(properties);
+    } catch (error) {
+      console.error("GET ADMIN PROPERTIES ERROR:", error);
+      res.status(500).json({ message: "Failed to fetch admin properties." });
+    }
+  }
+);
 
 
 // =====================================================
@@ -276,6 +302,12 @@ router.put(
         });
       }
 
+      if (property.status === "Reserved" || property.status === "Sold" || property.reservedBooking) {
+        return res.status(409).json({
+          message: "Reserved or sold properties cannot be edited.",
+        });
+      }
+
 
       const {
   title,
@@ -365,8 +397,37 @@ property.longitude =
 property.map_location =
   map_location ??
   property.map_location;
-      const updatedProperty =
-        await property.save();
+      const updatedProperty = await Property.findOneAndUpdate(
+        {
+          _id: id,
+          status: { $nin: ["Reserved", "Sold"] },
+          reservedBooking: null,
+        },
+        {
+          $set: {
+            title: property.title,
+            property_type: property.property_type,
+            location: property.location,
+            price: property.price,
+            bedrooms: property.bedrooms,
+            bathrooms: property.bathrooms,
+            area_sqft: property.area_sqft,
+            description: property.description,
+            image: property.image,
+            images: property.images,
+            video: property.video,
+            latitude: property.latitude,
+            longitude: property.longitude,
+            map_location: property.map_location,
+          },
+        },
+        { new: true, runValidators: true }
+      );
+      if (!updatedProperty) {
+        return res.status(409).json({
+          message: "Reserved or sold properties cannot be edited.",
+        });
+      }
 
 
       res.status(200).json({
@@ -432,21 +493,24 @@ router.put(
       }
 
 
-      const property =
-        await Property.findById(id);
-
-
-      if (!property) {
-        return res.status(404).json({
-          message: "Property not found",
+      const updatedProperty = await Property.findOneAndUpdate(
+        {
+          _id: id,
+          status: { $ne: "Reserved" },
+          reservedBooking: null,
+        },
+        { $set: { status } },
+        { new: true, runValidators: true }
+      );
+      if (!updatedProperty) {
+        const propertyExists = await Property.exists({ _id: id });
+        if (!propertyExists) {
+          return res.status(404).json({ message: "Property not found" });
+        }
+        return res.status(409).json({
+          message: "A reserved property cannot be changed manually.",
         });
       }
-
-
-      property.status = status;
-
-      const updatedProperty =
-        await property.save();
 
 
       res.status(200).json({
@@ -497,18 +561,20 @@ router.delete(
       }
 
 
-      const property =
-        await Property.findById(id);
-
-
+      const property = await Property.findOneAndDelete({
+        _id: id,
+        status: { $ne: "Reserved" },
+        reservedBooking: null,
+      });
       if (!property) {
-        return res.status(404).json({
-          message: "Property not found",
+        const propertyExists = await Property.exists({ _id: id });
+        if (!propertyExists) {
+          return res.status(404).json({ message: "Property not found" });
+        }
+        return res.status(409).json({
+          message: "A reserved property cannot be deleted.",
         });
       }
-
-
-      await Property.findByIdAndDelete(id);
 
 
       res.status(200).json({

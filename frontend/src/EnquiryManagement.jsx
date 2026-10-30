@@ -9,6 +9,8 @@ const USER_STATUSES = [
   "Visit Scheduled",
   "Site Visit Scheduled",
   "Offer Made",
+  "Offer Accepted",
+  "Offer Rejected",
   "Quotation Sent",
   "Booking in Progress",
   "Booking Confirmed",
@@ -82,6 +84,18 @@ const formatDate = (value, locale, includeTime = false) => {
   return date.toLocaleString(locale, includeTime
     ? { dateStyle: "medium", timeStyle: "short" }
     : { dateStyle: "medium" });
+};
+
+const isWithinDateRange = (enquiry, startDate, endDate) => {
+  if (!startDate && !endDate) return true;
+  const createdAt = new Date(enquiry.createdAt);
+  if (Number.isNaN(createdAt.getTime())) return false;
+  const year = createdAt.getFullYear();
+  const month = String(createdAt.getMonth() + 1).padStart(2, "0");
+  const day = String(createdAt.getDate()).padStart(2, "0");
+  const createdDate = `${year}-${month}-${day}`;
+  return (!startDate || createdDate >= startDate) &&
+    (!endDate || createdDate <= endDate);
 };
 
 const toDateTimeLocal = (value = new Date()) => {
@@ -168,6 +182,35 @@ function AdminNotes({ enquiry, onSave, saving, t, language }) {
   );
 }
 
+function StatusHistory({ enquiry, t, language }) {
+  const history = [...(enquiry.statusHistory || [])].sort(
+    (left, right) =>
+      new Date(left.changedAt || 0) - new Date(right.changedAt || 0)
+  );
+
+  if (!history.length) return null;
+
+  return (
+    <details className="request-history">
+      <summary>{t("Status history")} ({history.length})</summary>
+      {history.map((entry, index) => (
+        <div className="request-visit-item" key={`${entry.changedAt}-${index}`}>
+          <p>
+            {entry.previousStatus && (
+              <>
+                <strong>{t("Previous status")}:</strong> {t(entry.previousStatus)} ·{" "}
+              </>
+            )}
+            <strong>{t("Current status")}:</strong> {t(entry.status)}
+          </p>
+          <p>{formatDate(entry.changedAt, language, true)}</p>
+          {entry.remarks && <p><strong>{t("Remarks")}:</strong> {entry.remarks}</p>}
+        </div>
+      ))}
+    </details>
+  );
+}
+
 function VisitHistory({ enquiry, onSave, saving, t, language, title }) {
   const [editingVisitId, setEditingVisitId] = useState("");
 
@@ -239,6 +282,7 @@ function PropertyEnquiryCard({
   onDelete,
   onSave,
   onStatusChange,
+  onInitiateBooking,
   saving,
   t,
   language,
@@ -375,6 +419,20 @@ function PropertyEnquiryCard({
             {enquiry.propertyOffer ? t("Update Property Offer") : t("Add Property Offer")}
           </button>
         )}
+        {canMakeOffer &&
+          enquiry.propertyOffer?.status === "Accepted" &&
+          enquiry.propertyOffer?.customerResponse === "Accepted" &&
+          !enquiry.bookingId &&
+          onInitiateBooking && (
+            <button
+              type="button"
+              className="edit-action"
+              disabled={saving}
+              onClick={() => onInitiateBooking(enquiry._id)}
+            >
+              {t("Initiate Booking")}
+            </button>
+          )}
         {enquiry.status !== "Closed" && (
           <button type="button" className="edit-action" disabled={saving} onClick={() => onStatusChange(enquiry._id, "Closed")}>
             {t("Close Enquiry")}
@@ -388,6 +446,7 @@ function PropertyEnquiryCard({
       </div>
 
       <AdminNotes enquiry={enquiry} onSave={onSave} saving={saving} t={t} language={language} />
+      <StatusHistory enquiry={enquiry} t={t} language={language} />
 
       {enquiry.propertyOffer && (
         <details className="request-history">
@@ -688,6 +747,7 @@ function BuildRequestCard({
       </div>
 
       <AdminNotes enquiry={enquiry} onSave={onSave} saving={saving} t={t} language={language} />
+      <StatusHistory enquiry={enquiry} t={t} language={language} />
 
       {enquiry.quotation && (
         <details className="request-history">
@@ -828,11 +888,15 @@ function EnquiryManagement({
   onDelete,
   onSave,
   onStatusChange,
+  onInitiateBooking,
+  onSelectType,
 }) {
   const { t, language } = useLocale();
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("All");
   const [sortOrder, setSortOrder] = useState("newest");
+  const [startDate, setStartDate] = useState("");
+  const [endDate, setEndDate] = useState("");
   const statuses = buildRequests ? BUILD_STATUSES : USER_STATUSES;
   const legacyStatuses = useMemo(
     () => [...new Set(
@@ -855,26 +919,28 @@ function EnquiryManagement({
   );
   const summaryCards = useMemo(() => {
     const count = (predicate) => matchingType.filter(predicate).length;
+    const allPropertyEnquiries = enquiries.filter(isPropertyEnquiry).length;
+    const allBuildRequests = enquiries.filter(isBuildLandRequest).length;
     const pending = (enquiry) => ["Pending", "New"].includes(enquiry.status || "Pending");
     const scheduledVisits = (enquiry) => enquiry.siteVisits?.some((visit) => visit.status === "Scheduled");
-    if (buildRequests) {
-      return [
-        { label: "Total Enquiries", value: matchingType.length, filter: "All" },
-        { label: "Pending Enquiries", value: count(pending), filter: "__pending__" },
-        { label: "Inspections Scheduled", value: count(scheduledVisits), filter: "__visits__" },
-        { label: "Quotations Sent", value: count((enquiry) => enquiry.quotation?.status === "Sent"), filter: "Quotation Sent" },
-        { label: "Active Construction Projects", value: count(isActiveConstructionRequest), filter: "__active__" },
-        { label: "Completed Requests", value: count((enquiry) => enquiry.status === "Completed"), filter: "Completed" },
-      ];
-    }
     return [
-      { label: "Total Enquiries", value: matchingType.length, filter: "All" },
+      { label: "Total Enquiries", value: matchingType.length, filter: "All", kind: "current" },
+      { label: "Property Enquiries", value: allPropertyEnquiries, filter: "__property__", kind: "property" },
+      { label: "Construction Requests", value: allBuildRequests, filter: "__construction__", kind: "construction" },
       { label: "Pending Enquiries", value: count(pending), filter: "__pending__" },
-      { label: "Visits Scheduled", value: count(scheduledVisits), filter: "__visits__" },
-      { label: "Offers Sent", value: count((enquiry) => enquiry.propertyOffer?.status === "Sent"), filter: "Offer Made" },
-      { label: "Confirmed Bookings", value: count((enquiry) => enquiry.status === "Booking Confirmed"), filter: "Booking Confirmed" },
+      {
+        label: "In Progress",
+        value: count((enquiry) => [
+          "Contacted", "In Progress", "Booking in Progress", "Booking Confirmed",
+          "Offer Made", "Quotation in Preparation", "Quotation Sent", "Approved",
+        ].includes(enquiry.status)),
+        filter: "__in_progress__",
+      },
+      { label: buildRequests ? "Inspections Scheduled" : "Visits Scheduled", value: count(scheduledVisits), filter: "__visits__" },
+      { label: "Completed", value: count((enquiry) => enquiry.status === "Completed"), filter: "Completed" },
+      { label: "Rejected / Cancelled", value: count((enquiry) => ["Rejected", "Cancelled", "Closed"].includes(enquiry.status)), filter: "__closed__" },
     ];
-  }, [buildRequests, matchingType]);
+  }, [buildRequests, enquiries, matchingType]);
 
   const records = useMemo(() => {
     const query = search.trim().toLowerCase();
@@ -885,8 +951,15 @@ function EnquiryManagement({
         if (statusFilter === "__pending__") return ["Pending", "New"].includes(status);
         if (statusFilter === "__visits__") return enquiry.siteVisits?.some((visit) => visit.status === "Scheduled");
         if (statusFilter === "__active__") return isActiveConstructionRequest(enquiry);
+        if (statusFilter === "__in_progress__") {
+          return ["Contacted", "In Progress", "Booking in Progress", "Booking Confirmed",
+            "Offer Made", "Quotation in Preparation", "Quotation Sent", "Approved"]
+            .includes(status);
+        }
+        if (statusFilter === "__closed__") return ["Rejected", "Cancelled", "Closed"].includes(status);
         return status === statusFilter;
       })
+      .filter((enquiry) => isWithinDateRange(enquiry, startDate, endDate))
       .filter((enquiry) => {
         if (!query) return true;
         const details = getBuildDetails(enquiry);
@@ -910,12 +983,14 @@ function EnquiryManagement({
         if (sortOrder === "name") return String(a.name || "").localeCompare(String(b.name || ""), locale);
         return new Date(b.createdAt || 0) - new Date(a.createdAt || 0);
       });
-  }, [locale, matchingType, search, sortOrder, statusFilter]);
+  }, [endDate, locale, matchingType, search, sortOrder, startDate, statusFilter]);
 
   const clearFilters = () => {
     setSearch("");
     setStatusFilter("All");
     setSortOrder("newest");
+    setStartDate("");
+    setEndDate("");
   };
 
   return (
@@ -937,18 +1012,38 @@ function EnquiryManagement({
       {notice && <div className="admin-message" role="status">{t(notice)}</div>}
 
       <section className="enquiry-summary-grid" aria-label={t("Enquiry summary")}>
-        {summaryCards.map((card) => (
-          <button
-            type="button"
-            className={`enquiry-summary-card ${statusFilter === card.filter ? "active" : ""}`}
-            key={card.label}
-            aria-pressed={statusFilter === card.filter}
-            onClick={() => setStatusFilter(card.filter)}
-          >
-            <span>{t(card.label)}</span>
-            <strong>{card.value}</strong>
-          </button>
-        ))}
+        {summaryCards.map((card) => {
+          const isActive = card.kind === "current"
+            ? statusFilter === "All"
+            : card.kind === "property"
+              ? !buildRequests
+              : card.kind === "construction"
+                ? buildRequests
+                : statusFilter === card.filter;
+
+          return (
+            <button
+              type="button"
+              className={`enquiry-summary-card ${isActive ? "active" : ""}`}
+              key={card.label}
+              aria-pressed={isActive}
+              onClick={() => {
+                if (card.kind === "property") {
+                  setStatusFilter("All");
+                  onSelectType?.("enquiries");
+                } else if (card.kind === "construction") {
+                  setStatusFilter("All");
+                  onSelectType?.("build-requests");
+                } else {
+                  setStatusFilter(card.filter);
+                }
+              }}
+            >
+              <span>{t(card.label)}</span>
+              <strong>{card.value}</strong>
+            </button>
+          );
+        })}
       </section>
 
       <div className="request-list-toolbar">
@@ -973,6 +1068,26 @@ function EnquiryManagement({
           <option value="updated">{t("Recently updated")}</option>
           <option value="name">{t("Customer name")}</option>
         </select>
+        <label className="request-date-filter">
+          <span>{t("From date")}</span>
+          <input
+            type="date"
+            value={startDate}
+            max={endDate || undefined}
+            onChange={(event) => setStartDate(event.target.value)}
+            aria-label={t("From date")}
+          />
+        </label>
+        <label className="request-date-filter">
+          <span>{t("To date")}</span>
+          <input
+            type="date"
+            value={endDate}
+            min={startDate || undefined}
+            onChange={(event) => setEndDate(event.target.value)}
+            aria-label={t("To date")}
+          />
+        </label>
         <button type="button" className="clear-enquiry-filters" onClick={clearFilters}>{t("Clear Filters")}</button>
         <span aria-live="polite">{records.length} {t(buildRequests ? "requests" : "enquiries")}</span>
       </div>
@@ -1007,6 +1122,7 @@ function EnquiryManagement({
                 onDelete={onDelete}
                 onSave={onSave}
                 onStatusChange={onStatusChange}
+                onInitiateBooking={onInitiateBooking}
                 saving={savingEnquiryId === enquiry._id}
                 t={t}
                 language={locale}

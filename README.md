@@ -217,6 +217,7 @@ http://localhost:5173
 3. Sign in as a buyer with a customer-linked property booking or construction request that an admin has marked `Completed`. Submit a review from the home page; it should be pending and should not affect public ratings yet.
 4. Sign in as an admin, open **Reviews**, approve the pending review, and verify that it appears publicly and updates the average/count/distribution. Test reject, filters, search, and delete confirmation as well.
 5. For deployment, redeploy the backend on Render with its existing MongoDB and JWT environment variables. Deploy the frontend as usual; set `VITE_API_URL` to the Render API base (ending in `/api`) only if it differs from the current default. Ensure the backend CORS allowlist includes the deployed frontend origin.
+6. Booking and payment management is disabled by default to avoid requests to backends that do not yet provide those routes. After deploying the backend with `/api/bookings`, set `VITE_BOOKING_API_ENABLED=true` in the frontend deployment environment and redeploy the frontend.
 
 ---
 

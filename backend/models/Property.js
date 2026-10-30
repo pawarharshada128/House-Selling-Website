@@ -102,6 +102,7 @@ const propertySchema = new mongoose.Schema(
       enum: [
         "Pending",
         "Available",
+        "Reserved",
         "Sold",
         "Rejected",
       ],
@@ -125,6 +126,11 @@ const propertySchema = new mongoose.Schema(
     featured: {
       type: Boolean,
       default: false,
+    },
+    reservedBooking: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Booking",
+      default: null,
     },
   },
 

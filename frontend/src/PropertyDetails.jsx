@@ -215,6 +215,10 @@ function PropertyDetails() {
   // ==============================
 
   const handleBookHome = () => {
+    if (property.status !== "Available") {
+      setEnquiryMessage(t("This property is no longer available."));
+      return;
+    }
     const token = localStorage.getItem("token");
     let user = null;
     try {
@@ -796,6 +800,11 @@ function PropertyDetails() {
             </span>
 
           </div>
+          {property.status !== "Available" && (
+            <p className="property-unavailable-notice" role="status">
+              {t(property.status === "Reserved" ? "This property is currently reserved." : "This property is no longer available.")}
+            </p>
+          )}
           {isAdmin && (
             <div className="property-status-admin">
               <label htmlFor="property-status-update">{t("Update property status")}</label>
@@ -803,9 +812,9 @@ function PropertyDetails() {
                 id="property-status-update"
                 value={property.status || "Pending"}
                 onChange={handlePropertyStatusChange}
-                disabled={statusSaving}
+                disabled={statusSaving || Boolean(property.reservedBooking) || property.status === "Reserved"}
               >
-                {["Pending", "Available", "Sold", "Rejected"].map((status) => (
+                {["Pending", "Available", "Reserved", "Sold", "Rejected"].map((status) => (
                   <option value={status} key={status}>{t(status)}</option>
                 ))}
               </select>
@@ -855,11 +864,15 @@ function PropertyDetails() {
             <button
               className="shortlist-btn"
               onClick={handleBookHome}
-              disabled={property.status === "Sold"}
+              disabled={property.status !== "Available"}
             >
               {property.status === "Sold"
                 ? t("Property Sold")
-                : t("Send Enquiry")}
+                : property.status === "Reserved"
+                  ? t("Property Reserved")
+                  : property.status !== "Available"
+                    ? t("Unavailable")
+                    : t("Send Enquiry")}
             </button>
 
             <button
@@ -904,9 +917,15 @@ function PropertyDetails() {
           type="button"
           className="mobile-book-button"
           onClick={handleBookHome}
-          disabled={property.status === "Sold"}
+          disabled={property.status !== "Available"}
         >
-          {property.status === "Sold" ? t("Sold") : t("Enquire about this home")}
+          {property.status === "Sold"
+            ? t("Sold")
+            : property.status === "Reserved"
+              ? t("Reserved")
+              : property.status !== "Available"
+                ? t("Unavailable")
+                : t("Enquire about this home")}
         </button>
       </div>
 

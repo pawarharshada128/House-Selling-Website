@@ -3,6 +3,7 @@ const mongoose = require("mongoose");
 const router = express.Router();
 
 const Enquiry = require("../models/Enquiry");
+const Property = require("../models/Property");
 const User = require("../models/User");
 
 const authMiddleware = require("../middleware/authMiddleware");
@@ -219,6 +220,17 @@ router.post("/", authMiddleware, buyerMiddleware, async (req, res) => {
         message: "Invalid property ID.",
       });
     }
+    if (propertyId) {
+      const property = await Property.findOne({
+        _id: propertyId,
+        status: "Available",
+      }).select("_id");
+      if (!property) {
+        return res.status(409).json({
+          message: "This property is no longer available.",
+        });
+      }
+    }
 
     if (!mongoose.Types.ObjectId.isValid(req.user.id)) {
       return res.status(401).json({
@@ -301,6 +313,97 @@ router.get("/mine", authMiddleware, buyerMiddleware, async (req, res) => {
     });
   }
 });
+
+router.patch(
+  "/:id/property-offer-response",
+  authMiddleware,
+  buyerMiddleware,
+  async (req, res) => {
+    try {
+      const { response } = req.body || {};
+      if (!["Accepted", "Rejected"].includes(response)) {
+        return res.status(400).json({
+          message: "Choose Accepted or Rejected.",
+        });
+      }
+      if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+        return res.status(400).json({ message: "Invalid enquiry ID." });
+      }
+      const enquiry = await Enquiry.findOne({
+        _id: req.params.id,
+        customerId: req.user.id,
+        requestType: "PropertyBooking",
+        "propertyOffer.status": "Sent",
+        bookingId: null,
+      });
+      if (!enquiry) {
+        return res.status(409).json({
+          message: "No response-ready offer was found for this enquiry.",
+        });
+      }
+      if (
+        enquiry.propertyOffer.validUntil &&
+        new Date(enquiry.propertyOffer.validUntil) < new Date()
+      ) {
+        return res.status(409).json({ message: "This offer has expired." });
+      }
+      const previousStatus = enquiry.status;
+      enquiry.propertyOffer.status = response;
+      enquiry.propertyOffer.updatedAt = new Date();
+      enquiry.status = response === "Accepted" ? "Offer Accepted" : "Offer Rejected";
+      enquiry.statusHistory.push({
+        previousStatus,
+        status: enquiry.status,
+        changedBy: req.user.id,
+        remarks: `Customer ${response.toLowerCase()} the property offer.`,
+      });
+      const updated = await Enquiry.findOneAndUpdate(
+        {
+          _id: enquiry._id,
+          customerId: req.user.id,
+          "propertyOffer.status": "Sent",
+          bookingId: null,
+        },
+        {
+          $set: {
+            "propertyOffer.status": response,
+            "propertyOffer.customerResponse": response,
+            "propertyOffer.respondedAt": enquiry.propertyOffer.updatedAt,
+            "propertyOffer.respondedBy": req.user.id,
+            "propertyOffer.updatedAt": enquiry.propertyOffer.updatedAt,
+            status: enquiry.status,
+          },
+          $push: {
+            statusHistory: {
+              previousStatus,
+              status: enquiry.status,
+              changedBy: req.user.id,
+              remarks: `Customer ${response.toLowerCase()} the property offer.`,
+            },
+          },
+        },
+        { new: true }
+      );
+      if (!updated) {
+        return res.status(409).json({
+          message: "This offer has already received a response.",
+        });
+      }
+      await updated.populate(
+        "propertyId",
+        "title location price image images description property_type"
+      );
+      res.json({
+        success: true,
+        message: `Offer ${response.toLowerCase()}.`,
+        enquiry: toCustomerEnquiry(updated),
+      });
+    } catch (error) {
+      console.error("Property offer response error:", error);
+      res.status(500).json({ message: "Failed to save offer response." });
+    }
+  }
+);
 
 // =====================================================
 // GET A CUSTOMER'S OWN ENQUIRY
@@ -421,6 +524,20 @@ router.put(
       }
 
       const requestType = resolveRequestType(enquiry);
+      if (enquiry.bookingId && updates.propertyOffer) {
+        return res.status(409).json({
+          message: "An accepted offer cannot be changed after booking initiation.",
+        });
+      }
+      if (
+        enquiry.bookingId &&
+        Object.prototype.hasOwnProperty.call(updates, "status") &&
+        ["Rejected", "Cancelled", "Closed"].includes(updates.status)
+      ) {
+        return res.status(409).json({
+          message: "Manage this enquiry through its active booking instead.",
+        });
+      }
       const allowedStatuses = requestType === "BuildRequest"
         ? new Set([
             "Pending",
@@ -442,6 +559,8 @@ router.put(
             "Contacted",
             "Visit Scheduled",
             "Offer Made",
+            "Offer Accepted",
+            "Offer Rejected",
             "Booking in Progress",
             "Booking Confirmed",
             "Closed",
@@ -798,15 +917,19 @@ router.delete(
         });
       }
 
-      const enquiry = await Enquiry.findByIdAndDelete(
-        req.params.id
-      );
+      const existingEnquiry = await Enquiry.findById(req.params.id);
 
-      if (!enquiry) {
+      if (!existingEnquiry) {
         return res.status(404).json({
           message: "Enquiry not found.",
         });
       }
+      if (existingEnquiry.bookingId) {
+        return res.status(409).json({
+          message: "An enquiry with a booking cannot be deleted.",
+        });
+      }
+      await Enquiry.findByIdAndDelete(req.params.id);
 
       res.json({
         success: true,

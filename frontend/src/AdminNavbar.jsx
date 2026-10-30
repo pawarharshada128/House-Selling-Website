@@ -7,7 +7,6 @@ function AdminNavbar({
   buildRequestCount,
   setActiveMenu,
   onAddProperty,
-  onAddProject,
 }) {
   const navigate = useNavigate();
   const { t } = useLocale();
@@ -61,15 +60,6 @@ function AdminNavbar({
 
   const handleAddProperty = () => {
     onAddProperty();
-    closeMenu();
-  };
-
-  // =====================================================
-  // ADD PROJECT
-  // =====================================================
-
-  const handleAddProject = () => {
-    onAddProject();
     closeMenu();
   };
 
@@ -183,6 +173,14 @@ function AdminNavbar({
 
         <button
           type="button"
+          className={activeMenu === "bookings" ? "admin-nav-active" : ""}
+          onClick={() => handleMenu("bookings")}
+        >
+          {t("Bookings & Payments")}
+        </button>
+
+        <button
+          type="button"
           className={activeMenu === "reviews" ? "admin-nav-active" : ""}
           onClick={() => handleMenu("reviews")}
         >
@@ -218,15 +216,6 @@ function AdminNavbar({
         >
           {t("Add New Property")}
         </button>
-
-        {/* NEW PROJECT */}
-
-        {/* <button
-          type="button"
-          onClick={handleAddProject}
-        >
-          {t("New Project")}
-        </button> */}
 
         <LanguageSelector className="admin-language-selector" />
 

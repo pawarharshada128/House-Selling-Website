@@ -9,6 +9,8 @@ const Property = require("../models/Property");
 const User = require("../models/User");
 const Enquiry = require("../models/Enquiry");
 const Wishlist = require("../models/Wishlist");
+const Booking = require("../models/Booking");
+const Payment = require("../models/Payment");
 
 
 // =====================================================
@@ -76,13 +78,12 @@ router.get(
         });
 
       const inquiries = await Enquiry.countDocuments();
-      const bookings = await Enquiry.countDocuments({
-        $or: [
-          { requestType: "PropertyBooking" },
-          { requestType: { $exists: false }, propertyId: { $ne: null } },
-        ],
-      });
+      const bookings = await Booking.countDocuments();
       const favorites = await Wishlist.countDocuments();
+      const verifiedPayments = await Payment.aggregate([
+        { $match: { verificationStatus: "Verified" } },
+        { $group: { _id: null, total: { $sum: "$amount" } } },
+      ]);
 
 
       // -----------------------------------------------
@@ -110,7 +111,7 @@ router.get(
 
         favorites,
 
-        revenue: 0,
+        revenue: verifiedPayments[0]?.total || 0,
 
       });
 

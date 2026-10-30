@@ -2,8 +2,9 @@ const express = require("express");
 const router = express.Router();
 const Property = require("../models/Property");
 const authMiddleware = require("../middleware/authMiddleware");
-// GET all properties
 const adminMiddleware = require("../middleware/adminMiddleware");
+
+// GET all properties
 router.get("/", async (req, res) => {
     try {
         const properties = await Property.find();

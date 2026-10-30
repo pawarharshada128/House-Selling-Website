@@ -138,6 +138,20 @@ const propertyOfferSchema = new mongoose.Schema(
       enum: ["Draft", "Sent", "Accepted", "Rejected"],
       default: "Draft",
     },
+    customerResponse: {
+      type: String,
+      enum: ["Accepted", "Rejected", null],
+      default: null,
+    },
+    respondedAt: {
+      type: Date,
+      default: null,
+    },
+    respondedBy: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+      default: null,
+    },
     updatedAt: {
       type: Date,
       default: Date.now,
@@ -269,6 +283,12 @@ const enquirySchema = new mongoose.Schema(
       default: null,
     },
 
+    bookingId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Booking",
+      default: null,
+    },
+
     propertyTitle: {
       type: String,
       default: "",
@@ -304,6 +324,8 @@ const enquirySchema = new mongoose.Schema(
         "Contacted",
         "Visit Scheduled",
         "Offer Made",
+        "Offer Accepted",
+        "Offer Rejected",
         "Booking in Progress",
         "Booking Confirmed",
         "Site Visit Scheduled",

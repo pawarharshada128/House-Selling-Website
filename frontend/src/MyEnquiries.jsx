@@ -23,6 +23,7 @@ const STATUS_ALIASES = {
     "In Progress",
     "Booking in Progress",
     "Booking Confirmed",
+    "Offer Accepted",
     "Offer Made",
     "Quotation in Preparation",
     "Quotation Sent",
@@ -31,7 +32,7 @@ const STATUS_ALIASES = {
   ],
   "Visit Scheduled": ["Visit Scheduled", "Site Visit Scheduled"],
   Completed: ["Completed"],
-  Rejected: ["Rejected"],
+  Rejected: ["Rejected", "Offer Rejected"],
   Cancelled: ["Cancelled", "Closed"],
 };
 
@@ -93,6 +94,7 @@ const getLatestUpdate = (enquiry) => {
     ...validEntries(enquiry.statusHistory).map((entry) => entry.changedAt),
     enquiry.propertyOffer?.updatedAt,
     enquiry.quotation?.updatedAt,
+    ...validEntries(enquiry.siteVisits).map((visit) => visit.updatedAt || visit.createdAt),
     ...validEntries(enquiry.progressUpdates).map(
       (entry) => entry.updatedAt || entry.updateDate || entry.createdAt
     ),
@@ -122,6 +124,9 @@ function MyEnquiries() {
   const navigate = useNavigate();
   const { t, language } = useLocale();
   const [enquiries, setEnquiries] = useState([]);
+  const [bookingsByEnquiry, setBookingsByEnquiry] = useState({});
+  const [bookingLoadError, setBookingLoadError] = useState("");
+  const [respondingOfferId, setRespondingOfferId] = useState("");
   const [statusFilter, setStatusFilter] = useState("All");
   const [typeFilter, setTypeFilter] = useState("All");
   const [search, setSearch] = useState("");
@@ -132,7 +137,7 @@ function MyEnquiries() {
   const [error, setError] = useState("");
   const [reloadKey, setReloadKey] = useState(0);
 
-  const loadEnquiries = useCallback(async (signal) => {
+  const loadEnquiries = useCallback(async (signal, showLoading = true) => {
     const token = localStorage.getItem("token");
     let user = null;
     try {
@@ -149,7 +154,7 @@ function MyEnquiries() {
       return;
     }
 
-    setLoading(true);
+    if (showLoading) setLoading(true);
     setError("");
     try {
       const response = await fetch(`${API_URL}/enquiries/mine`, {
@@ -183,6 +188,40 @@ function MyEnquiries() {
         throw new Error(t("The enquiry response from the server was invalid."));
       }
       setEnquiries(data.enquiries);
+
+      try {
+        const bookingsResponse = await fetch(`${API_URL}/bookings/mine`, {
+          headers: { Authorization: `Bearer ${token}` },
+          signal,
+        });
+        const bookingsData = await bookingsResponse.json();
+        if (!bookingsResponse.ok) {
+          throw new Error(
+            bookingsResponse.status === 404
+              ? t("Booking details are unavailable because the updated booking API has not been deployed to the server yet.")
+              : bookingsData.message || t("Unable to load your booking details.")
+          );
+        }
+        if (!Array.isArray(bookingsData.bookings)) {
+          throw new Error(t("The booking response from the server was invalid."));
+        }
+        setBookingsByEnquiry(
+          Object.fromEntries(
+            bookingsData.bookings.map((booking) => [
+              String(booking.enquiry),
+              booking,
+            ])
+          )
+        );
+        setBookingLoadError("");
+      } catch (bookingError) {
+        if (bookingError.name === "AbortError") return;
+        console.error("My bookings error:", bookingError);
+        setBookingsByEnquiry({});
+        setBookingLoadError(
+          bookingError.message || t("Unable to load your booking details.")
+        );
+      }
     } catch (loadError) {
       if (loadError.name === "AbortError") return;
       console.error("My enquiries error:", loadError);
@@ -192,14 +231,65 @@ function MyEnquiries() {
     }
   }, [navigate, t]);
 
+  const respondToOffer = async (enquiryId, response) => {
+    setRespondingOfferId(enquiryId);
+    setError("");
+    try {
+      const token = localStorage.getItem("token");
+      const result = await fetch(
+        `${API_URL}/enquiries/${enquiryId}/property-offer-response`,
+        {
+          method: "PATCH",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token || ""}`,
+          },
+          body: JSON.stringify({ response }),
+        }
+      );
+      const data = await result.json();
+      if (result.status === 401 || result.status === 403) {
+        localStorage.removeItem("token");
+        localStorage.removeItem("user");
+        navigate("/login", {
+          replace: true,
+          state: { returnTo: "/my-enquiries" },
+        });
+        return;
+      }
+      if (!result.ok) throw new Error(data.message || t("Unable to respond to this offer."));
+      setEnquiries((previous) =>
+        previous.map((enquiry) =>
+          enquiry._id === enquiryId ? data.enquiry : enquiry
+        )
+      );
+    } catch (responseError) {
+      console.error("Offer response error:", responseError);
+      setError(responseError.message || t("Unable to respond to this offer."));
+    } finally {
+      setRespondingOfferId("");
+    }
+  };
+
   useEffect(() => {
     const controller = new AbortController();
-    const timer = window.setTimeout(
-      () => loadEnquiries(controller.signal),
-      0
-    );
+    const refresh = (showLoading = false) => {
+      if (document.visibilityState === "visible") {
+        loadEnquiries(controller.signal, showLoading);
+      }
+    };
+    const refreshOnFocus = () => refresh();
+    const refreshOnVisibilityChange = () => refresh();
+
+    refresh(true);
+    const intervalId = window.setInterval(() => refresh(), 30000);
+    window.addEventListener("focus", refreshOnFocus);
+    document.addEventListener("visibilitychange", refreshOnVisibilityChange);
+
     return () => {
-      window.clearTimeout(timer);
+      window.clearInterval(intervalId);
+      window.removeEventListener("focus", refreshOnFocus);
+      document.removeEventListener("visibilitychange", refreshOnVisibilityChange);
       controller.abort();
     };
   }, [loadEnquiries, reloadKey]);
@@ -233,11 +323,22 @@ function MyEnquiries() {
           (typeFilter === "Property" && !buildRequest);
         const property = getProperty(enquiry);
         const text = [
+          enquiry.name,
+          enquiry.email,
+          enquiry.phone,
           property?.title,
           enquiry.propertyTitle,
           enquiry._id,
           property?.location,
+          property?.property_type,
+          property?.description,
           enquiry.buildDetails?.landLocation,
+          enquiry.buildDetails?.plotArea,
+          enquiry.buildDetails?.homeType,
+          enquiry.buildDetails?.homeSize,
+          enquiry.buildDetails?.preferredDesign,
+          enquiry.buildDetails?.additionalRequirements,
+          enquiry.message,
         ]
           .filter(Boolean)
           .join(" ")
@@ -411,6 +512,14 @@ function MyEnquiries() {
             </button>
           </div>
         )}
+        {bookingLoadError && !error && !loading && (
+          <div className="my-enquiries-state error" role="status">
+            <p>{t(bookingLoadError)}</p>
+            <button type="button" onClick={() => setReloadKey((value) => value + 1)}>
+              {t("Retry")}
+            </button>
+          </div>
+        )}
 
         {loading && (
           <div className="my-enquiry-list" aria-label={t("Loading enquiries")} aria-busy="true">
@@ -471,6 +580,9 @@ function MyEnquiries() {
                   (dateValue(right.scheduledAt)?.getTime() || 0) -
                   (dateValue(left.scheduledAt)?.getTime() || 0)
               );
+              const upcomingVisits = visits.filter(
+                (visit) => visit.status === "Scheduled"
+              );
               const progressUpdates = validEntries(enquiry.progressUpdates).sort(
                 (left, right) =>
                   (dateValue(right.updateDate || right.createdAt)?.getTime() || 0) -
@@ -482,6 +594,7 @@ function MyEnquiries() {
                   (dateValue(right.changedAt)?.getTime() || 0)
               );
               const offer = enquiry.propertyOffer;
+              const booking = bookingsByEnquiry[String(enquiry._id)];
               const quotation = enquiry.quotation;
               const visibleOffer = offer && offer.status !== "Draft";
               const visibleQuotation = quotation && quotation.status !== "Draft";
@@ -528,6 +641,29 @@ function MyEnquiries() {
                         {submitted && <span><strong>{t("Submitted")}:</strong> {submitted}</span>}
                         {latestUpdate && <span><strong>{t("Latest update")}:</strong> {latestUpdate}</span>}
                       </div>
+
+                      {upcomingVisits.length > 0 && (
+                        <section className="my-enquiry-visit-notice" aria-live="polite">
+                          <h3>{t("Visit Scheduled")}</h3>
+                          {upcomingVisits.map((visit, index) => (
+                            <div key={visit._id || `${visit.scheduledAt}-${index}`}>
+                              <p>
+                                <strong>{t(visit.visitType || "Property Visit")}:</strong>{" "}
+                                {formatDate(visit.scheduledAt, language, true)}
+                              </p>
+                              {visit.location && (
+                                <p><strong>{t("Visit location")}:</strong> {visit.location}</p>
+                              )}
+                              {visit.instructions && (
+                                <p><strong>{t("Admin instructions")}:</strong> {visit.instructions}</p>
+                              )}
+                              {visit.notes && (
+                                <p><strong>{t("Visit notes")}:</strong> {visit.notes}</p>
+                              )}
+                            </div>
+                          ))}
+                        </section>
+                      )}
 
                       {enquiry.message && (
                         <p className="my-enquiry-message">
@@ -645,23 +781,71 @@ function MyEnquiries() {
                         )}
                       </section>
 
-                      <section className="my-enquiry-section">
-                        <h3>{t("Property Offer")}</h3>
-                        {!visibleOffer ? (
-                          <p className="my-enquiry-muted">{t("No published offer yet.")}</p>
-                        ) : (
+                      {!buildRequest && (
+                        <section className="my-enquiry-section">
+                          <h3>{t("Property Offer")}</h3>
+                          {!visibleOffer ? (
+                            <p className="my-enquiry-muted">{t("No published offer yet.")}</p>
+                          ) : (
+                            <div className="my-enquiry-update">
+                              {offer.title && <h4>{offer.title}</h4>}
+                              {formatCurrency(offer.amount) && <p><strong>{t("Offer amount")}:</strong> {formatCurrency(offer.amount)}</p>}
+                              {Number(offer.discountAmount) > 0 && <p><strong>{t("Discount")}:</strong> {formatCurrency(offer.discountAmount)}</p>}
+                              {Number(offer.discountPercent) > 0 && <p><strong>{t("Discount")}:</strong> {offer.discountPercent}%</p>}
+                              {offer.reference && <p><strong>{t("Reference")}:</strong> {offer.reference}</p>}
+                              {offer.details && <p>{offer.details}</p>}
+                              <p><strong>{t("Offer status")}:</strong> {t(offer.status)}</p>
+                              {formatDate(offer.validUntil, language) && <p><strong>{t("Valid until")}:</strong> {formatDate(offer.validUntil, language)}</p>}
+                              {offer.status === "Sent" && !booking && (
+                                <div className="my-enquiry-offer-actions">
+                                  <button
+                                    type="button"
+                                    disabled={Boolean(respondingOfferId) || (offer.validUntil && new Date(offer.validUntil) < new Date())}
+                                    onClick={() => respondToOffer(enquiry._id, "Accepted")}
+                                  >
+                                    {respondingOfferId === enquiry._id ? t("Saving...") : t("Accept Offer")}
+                                  </button>
+                                  <button
+                                    type="button"
+                                    className="my-enquiry-offer-reject"
+                                    disabled={Boolean(respondingOfferId) || (offer.validUntil && new Date(offer.validUntil) < new Date())}
+                                    onClick={() => respondToOffer(enquiry._id, "Rejected")}
+                                  >
+                                    {t("Reject Offer")}
+                                  </button>
+                                </div>
+                              )}
+                            </div>
+                          )}
+                        </section>
+                      )}
+
+                      {!buildRequest && booking && (
+                        <section className="my-enquiry-section">
+                          <h3>{t("Booking & Payments")}</h3>
                           <div className="my-enquiry-update">
-                            {offer.title && <h4>{offer.title}</h4>}
-                            {formatCurrency(offer.amount) && <p><strong>{t("Offer amount")}:</strong> {formatCurrency(offer.amount)}</p>}
-                            {Number(offer.discountAmount) > 0 && <p><strong>{t("Discount")}:</strong> {formatCurrency(offer.discountAmount)}</p>}
-                            {Number(offer.discountPercent) > 0 && <p><strong>{t("Discount")}:</strong> {offer.discountPercent}%</p>}
-                            {offer.reference && <p><strong>{t("Reference")}:</strong> {offer.reference}</p>}
-                            {offer.details && <p>{offer.details}</p>}
-                            <p><strong>{t("Offer status")}:</strong> {t(offer.status)}</p>
-                            {formatDate(offer.validUntil, language) && <p><strong>{t("Valid until")}:</strong> {formatDate(offer.validUntil, language)}</p>}
+                            <p><strong>{t("Booking reference")}:</strong> {booking.bookingReference}</p>
+                            <p><strong>{t("Booking status")}:</strong> {t(booking.bookingStatus)}</p>
+                            <p><strong>{t("Agreed amount")}:</strong> {formatCurrency(booking.agreedAmount)}</p>
+                            <p><strong>{t("Verified payments")}:</strong> {formatCurrency(booking.verifiedAmount)}</p>
+                            {formatDate(booking.confirmedAt, language) && (
+                              <p><strong>{t("Confirmed")}:</strong> {formatDate(booking.confirmedAt, language)}</p>
+                            )}
+                            {booking.payments?.length > 0 && (
+                              <div className="my-enquiry-payment-history">
+                                <strong>{t("Payment history")}</strong>
+                                {booking.payments.map((payment) => (
+                                  <p key={payment._id}>
+                                    {formatCurrency(payment.amount)} · {t(payment.paymentMethod)} ·{" "}
+                                    {t(payment.verificationStatus)}
+                                    {payment.transactionReference ? ` · ${payment.transactionReference}` : ""}
+                                  </p>
+                                ))}
+                              </div>
+                            )}
                           </div>
-                        )}
-                      </section>
+                        </section>
+                      )}
 
                       {buildRequest && (
                         <section className="my-enquiry-section">
@@ -736,26 +920,24 @@ function MyEnquiries() {
                         </section>
                       )}
 
-                      {!buildRequest && (
-                        <section className="my-enquiry-section">
-                          <h3>{t("Status history")}</h3>
-                          {history.length === 0 ? (
-                            <p className="my-enquiry-muted">{t("No status updates available yet.")}</p>
-                          ) : (
-                            <ol className="my-enquiry-timeline my-enquiry-status-timeline">
-                              {history.map((entry, index) => (
-                                <li key={`${entry.status}-${entry.changedAt || index}`}>
-                                  <div className="my-enquiry-section-heading">
-                                    <h4>{t(entry.status)}</h4>
-                                  </div>
-                                  {formatDate(entry.changedAt, language, true) && <span>{formatDate(entry.changedAt, language, true)}</span>}
-                                  {entry.remarks && <p><strong>{t("Remarks")}:</strong> {entry.remarks}</p>}
-                                </li>
-                              ))}
-                            </ol>
-                          )}
-                        </section>
-                      )}
+                      <section className="my-enquiry-section">
+                        <h3>{t("Status history")}</h3>
+                        {history.length === 0 ? (
+                          <p className="my-enquiry-muted">{t("No status updates available yet.")}</p>
+                        ) : (
+                          <ol className="my-enquiry-timeline my-enquiry-status-timeline">
+                            {history.map((entry, index) => (
+                              <li key={`${entry.status}-${entry.changedAt || index}`}>
+                                <div className="my-enquiry-section-heading">
+                                  <h4>{entry.previousStatus ? `${t(entry.previousStatus)} → ` : ""}{t(entry.status)}</h4>
+                                </div>
+                                {formatDate(entry.changedAt, language, true) && <span>{formatDate(entry.changedAt, language, true)}</span>}
+                                {entry.remarks && <p><strong>{t("Remarks")}:</strong> {entry.remarks}</p>}
+                              </li>
+                            ))}
+                          </ol>
+                        )}
+                      </section>
                     </div>
                   )}
                 </article>

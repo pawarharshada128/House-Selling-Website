@@ -2421,7 +2421,27 @@ video {
 }
 
 .request-list-toolbar {
-  grid-template-columns: minmax(180px, 1fr) minmax(150px, 190px) minmax(150px, 180px) auto auto;
+  grid-template-columns: minmax(180px, 1fr) repeat(4, minmax(130px, 160px)) minmax(130px, 160px) auto;
+}
+
+.request-date-filter {
+  display: grid;
+  min-width: 0;
+  gap: 4px;
+  color: #71635b;
+  font-size: 0.72rem;
+  font-weight: 600;
+}
+
+.request-date-filter input {
+  width: 100%;
+  min-width: 0;
+  padding: 10px 9px;
+  border: 1px solid #ddd;
+  border-radius: 7px;
+  background: #fff;
+  color: #444;
+  font: inherit;
 }
 
 .request-list-toolbar .clear-enquiry-filters {
@@ -2438,6 +2458,12 @@ video {
 
 .request-list-toolbar .clear-enquiry-filters:hover {
   background: #f7eee8;
+}
+
+@media (max-width: 1100px) {
+  .request-list-toolbar {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
 }
 
 .customer-request-card {

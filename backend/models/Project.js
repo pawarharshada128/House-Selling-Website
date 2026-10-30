@@ -20,6 +20,12 @@ const propertySchema = new mongoose.Schema(
       ],
     },
 
+    description: {
+      type: String,
+      default: "",
+      trim: true,
+    },
+
     location: {
       type: String,
       required: true,
@@ -50,12 +56,6 @@ const propertySchema = new mongoose.Schema(
       min: 0,
     },
 
-    description: {
-      type: String,
-      default: "",
-      trim: true,
-    },
-
     image: {
       type: String,
       default: "",
@@ -83,19 +83,19 @@ const propertySchema = new mongoose.Schema(
       default: false,
     },
     latitude: {
-  type: Number,
-  default: null
-},
+      type: Number,
+      default: null
+    },
 
-longitude: {
-  type: Number,
-  default: null
-},
+    longitude: {
+      type: Number,
+      default: null
+    },
 
-map_location: {
-  type: String,
-  default: ""
-},
+    map_location: {
+      type: String,
+      default: ""
+    },
   },
   {
     timestamps: true,
@@ -103,6 +103,6 @@ map_location: {
 );
 
 module.exports = mongoose.model(
-  "Property",
+  "Project",
   propertySchema
 );

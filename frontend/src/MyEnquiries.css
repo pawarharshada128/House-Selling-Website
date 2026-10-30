@@ -308,6 +308,8 @@
 .my-enquiry-status.site-visit-scheduled,
 .my-enquiry-status.booking-confirmed,
 .my-enquiry-status.booking-in-progress,
+.my-enquiry-status.offer-accepted,
+.my-enquiry-status.offer-rejected,
 .my-enquiry-status.contacted,
 .my-enquiry-status.offer-made,
 .my-enquiry-status.quotation-sent {
@@ -328,6 +330,33 @@
 .my-enquiry-message strong {
   color: #51413b;
   font-weight: 600;
+}
+
+.my-enquiry-visit-notice {
+  margin: 12px 0;
+  padding: 12px 15px;
+  border: 1px solid #dae6f5;
+  border-left: 4px solid #3970a5;
+  border-radius: 7px;
+  background: #f5f8fc;
+}
+
+.my-enquiry-visit-notice h3 {
+  margin: 0 0 7px;
+  color: #285586;
+  font-size: 0.9rem;
+}
+
+.my-enquiry-visit-notice p {
+  margin: 4px 0;
+  color: #463832;
+  font-size: 0.82rem;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+}
+
+.my-enquiry-visit-notice strong {
+  color: #285586;
 }
 
 .my-enquiry-message {
@@ -405,6 +434,54 @@
   color: #9a6a0a;
   text-decoration: underline;
   text-underline-offset: 3px;
+}
+
+.my-enquiry-offer-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 9px;
+  margin-top: 14px;
+}
+
+.my-enquiry-offer-actions button {
+  min-height: 38px;
+  padding: 8px 13px;
+  border: 0;
+  border-radius: 6px;
+  background: #47211a;
+  color: #fff;
+  font: inherit;
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.my-enquiry-offer-actions button:hover {
+  background: #684035;
+}
+
+.my-enquiry-offer-actions button:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+.my-enquiry-offer-actions .my-enquiry-offer-reject {
+  border: 1px solid #9a3933;
+  background: #fff;
+  color: #8a2c27;
+}
+
+.my-enquiry-payment-history {
+  display: grid;
+  gap: 6px;
+  margin-top: 12px;
+  padding-top: 10px;
+  border-top: 1px solid #eee6e0;
+}
+
+.my-enquiry-payment-history p {
+  margin: 0;
+  overflow-wrap: anywhere;
 }
 
 .my-enquiry-details-toggle {

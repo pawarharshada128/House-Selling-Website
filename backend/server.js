@@ -72,6 +72,7 @@ const reviewRoutes = require("./routes/reviewRoutes");
 const mapRoutes = require("./routes/mapRoutes");
 const uploadRoutes = require("./routes/uploadRoutes");
 const databaseImageRoutes = require("./routes/databaseImageRoutes");
+const bookingRoutes = require("./routes/bookingRoutes");
 
 app.use("/api/admin", adminRoutes);
 app.use("/api/auth", authRoutes);
@@ -79,6 +80,7 @@ app.use("/api/cart", cartRoutes);
 app.use("/api/properties", propertyRoutes);
 app.use("/api/wishlist", wishlistRoutes);
 app.use("/api/enquiries", enquiryRoutes);
+app.use("/api/bookings", bookingRoutes);
 app.use("/api/projects", projectRoutes);
 app.use("/api/blog", blogRoutes);
 app.use("/api/testimonials", testimonialRoutes);
